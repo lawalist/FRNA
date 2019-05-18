@@ -1,0 +1,47 @@
+.active {
+    --ion-text-color: var(--ion-color-primary);
+ 
+    ion-icon {
+        --ion-text-color-rgb: var(--ion-color-primary);
+    }
+}
+ 
+.parent-active {
+    font-weight: 500;
+    color: var(--ion-color-primary);
+    --ion-text-color-rgb: var(--ion-color-primary);
+    //--background: var(--ion-color-primary);
+}
+ 
+.sub-item {
+    padding-left: 20px;
+    font-size: small;
+}
+
+.bouton-menu {
+    display: inline-block;
+    overflow: hidden;
+    background: transparent;
+    border: none;
+    --color: default !important;
+    //font-size: 21px;
+    overflow: hidden;
+}
+/*$screen-breakpoints: (
+  xs: 0, // Extra small screen / phone
+  sm: 576px, // Small screen / phone
+  md: 768px, // Medium screen / tablet
+  lg: 992px, // Large screen / desktop
+  xl: 1200px // Extra large screen / wide desktop
+);*/
+//Afficher le bouton pour fixer le menu en fonction de la taille de l'ecran
+@media (max-width: 768px) {
+    ion-toggle {
+        display: none;
+    }
+}
+
+ion-toolbar{
+    --color: default !important;
+    --background: default !important;
+  }
