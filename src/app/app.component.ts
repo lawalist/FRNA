@@ -13,210 +13,214 @@ export class AppComponent {
   public boutonMenuClass = false;
   public appPages = [
     {
-      title: 'Acceuil',
+      title: 'Accueil',
       url: '/home',
       icon: 'home',
       open: false
     },
     {
       title: 'Institution',
-      icon: 'logo-ionic',
+      //icon: 'logo-ionic',
+      src: '../assets/svgs/university.svg',
       open: false,
       children: [
         {
-          title: 'Fédérations',
-          url: '#',
-          icon: 'logo-ionic'
+          title: 'Partenaires',
+          url: '/institution/partenaires',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Unions',
-          url: '#',
-          icon: 'logo-google'
+          url: '/institution/unions',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'OPs',
-          url: '#',
-          icon: 'logo-google'
+          url: '/institution/ops',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Membres/Producteurs',
-          url: '#',
-          icon: 'logo-google'
-        },
-        {
-          title: 'Autres partenaires',
-          url: '#',
-          icon: 'logo-google'
-        },
+          url: '/institution/membres',
+          icon: 'document',
+          color: ''
+        }
       ]
     },
     {
       title: 'Recherche',
-      icon: 'logo-ionic',
+      icon: 'medkit',
       open: false,
       children: [
         {
           title: 'Projets',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/recherche/projets',
+          icon: 'folder',
+          color: ''
         },
         {
           title: 'Protocoles',
-          url: '#',
-          icon: 'logo-google'
+          url: '/recherche/protocoles',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Traitements',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/recherche/traitements',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Essais',
-          url: '#',
-          icon: 'logo-google'
+          url: '/recherche/essais',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Pluviométrie',
-          url: '#',
-          icon: 'logo-google'
+          url: '/recherche/pluviometrie',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Typologie',
-          url: '#',
-          icon: 'logo-google'
+          url: '/recherche/typologie',
+          icon: 'document',
+          color: ''
         }
       ]
     },
     {
       title: 'Rapport',
-      icon: 'logo-ionic',
+      icon: 'stats',
       open: false,
       children: [
         {
           title: 'Restitution',
-          url: '#',
-          icon: 'logo-google'
+          url: '/rapports/restitution',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Statistiques',
-          url: '#',
-          icon: 'logo-google'
-        },
-        {
-          title: 'Autres',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/rapports/statistiques',
+          icon: 'document',
+          color: ''
         }
       ]
     },
     {
       title: 'Localités',
-      icon: 'logo-ionic',
+      icon: 'planet',
       open: false,
       children: [
         {
           title: 'Pays',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/localite/pays',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Régions',
-          url: '#',
-          icon: 'logo-google'
+          url: '/localite/regions',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Communes',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/localite/communes',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Départments',
-          url: '#',
-          icon: 'logo-google'
+          url: '/localite/departements',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Villages',
-          url: '#',
-          icon: 'logo-google'
+          url: '/localite/villages',
+          icon: 'document',
+          color: ''
         }
       ]
     },
     {
       title: 'Configuration',
-      icon: 'logo-ionic',
+      icon: 'construct',
       open: false,
       children: [
         {
-          title: 'Fédération',
-          url: '#',
-          icon: 'logo-ionic'
+          title: 'Partenaire',
+          url: '/configuration/partenaire',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Union',
-          url: '#',
-          icon: 'logo-google'
+          url: '/configuration/union',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'OP',
-          url: '#',
-          icon: 'logo-ionic'
+          url: '/configuration/op',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Membre',
-          url: '#',
-          icon: 'logo-google'
-        },
-        {
-          title: 'Autre partanaire',
-          url: '#',
-          icon: 'logo-google'
+          url: '/configuration/membre',
+          icon: 'document',
+          color: ''
         },
         {
           title: 'Champ',
-          url: '#',
-          icon: 'logo-google'
-        },
-        {
-          title: 'Variables essais',
-          url: '#',
-          icon: 'logo-google'
-        },
-        {
-          title: 'Membre',
-          url: '#',
-          icon: 'logo-google'
+          url: '/configuration/champ',
+          icon: 'document',
+          color: ''
         }
       ]
     },
     {
       title: 'Administration',
-      icon: 'logo-ionic',
+      icon: 'settings',
       open: false,
       children: [
         {
           title: 'Gestion des utilisateurs',
           url: '#',
-          icon: 'logo-ionic'
+          icon: 'document',
+          color: ''
         },
         {
-          title: 'Ajout/mise à jour filtre local',
+          title: 'Ajouter filtre local',
           url: '#',
-          icon: 'logo-ionic'
+          //icon: 'document',
+          src: '../assets/svgs/upload.svg',
+          color: ''
         },
         {
-          title: 'Ajout/mise à jour filtre serveur',
+          title: 'Ajouter filtre serveur',
           url: '#',
-          icon: 'logo-ionic'
+          icon: 'cloud-upload',
+          color: ''
         },
         {
           title: 'Vider la corbeille',
           url: '#',
-          icon: 'logo-ionic'
+          icon: 'trash',
+          color: ''
         },
         {
           title: 'Réinitialiser la BD',
           url: '#',
-          icon: 'logo-google'
+          icon: 'document',
+          color: 'danger'
         }
       ]
     }
@@ -244,6 +248,13 @@ export class AppComponent {
           p.open = false;
         }
       })
+  }
+
+  replier(){
+    this.appPages.forEach((p, index) =>{
+      if(p.open)
+        p.open = false;
+    })
   }
 
   boutonMenuControl(){

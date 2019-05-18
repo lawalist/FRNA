@@ -4,7 +4,7 @@
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
     <ion-title>
-      Home
+      Accueil
     </ion-title>
     <ion-buttons slot="end">
       <ion-button ion-button icon-only color="royal" (click)="presentPopover($event)">
@@ -16,7 +16,7 @@
 </ion-header>
 
 <ion-content>
-    <ion-card class="welcome-card">
+    <ion-card (click)="onChange()" class="welcome-card">
       <ion-img src="/assets/shapes.svg"></ion-img>
       <ion-card-header>
         <ion-card-subtitle>Get Started</ion-card-subtitle>
@@ -26,10 +26,23 @@
         <p>Now that your app has been created, you'll want to start building out features and components. Check out some of the resources below for next steps.</p>
       </ion-card-content>
     </ion-card>
-    <ion-list lines="none">
+    <ion-card class="welcome-card">
+      <div id='builder'></div>
+    </ion-card>
+    
+    <div class="well jsonviewer">
+      <pre id="json"><code class="language-json" #json></code></pre>
+    </div>
+    <div class="well jsonviewer">
+      <div id='formio'></div>
+    </div>
+
+    <ion-list (click)="load()" lines="none">
       <ion-list-header>
         <ion-label>Resources</ion-label>
       </ion-list-header>
+    
+
       <ion-item href="https://ionicframework.com/docs/">
         <ion-icon slot="start" color="medium" name="book"></ion-icon>
         <ion-label>Ionic Documentation</ion-label>
@@ -48,3 +61,8 @@
       </ion-item>
     </ion-list>
 </ion-content>
+<!--ion-footer>
+  <ion-toolbar>
+    <ion-title>Footer</ion-title>
+  </ion-toolbar>
+</ion-footer-->

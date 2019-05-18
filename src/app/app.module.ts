@@ -8,7 +8,10 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
-import { PopoverComponent } from '../app/component/popover/popover.component'
+import { PopoverComponent } from '../app/component/popover/popover.component';
+
+import { IonicStorageModule } from '@ionic/storage';
+
 
 @NgModule({
   declarations: [AppComponent, PopoverComponent],
@@ -16,6 +19,7 @@ import { PopoverComponent } from '../app/component/popover/popover.component'
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
+    IonicStorageModule.forRoot(),
     AppRoutingModule
   ],
   providers: [

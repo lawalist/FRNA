@@ -15,7 +15,7 @@
         <ion-list>
           <ng-container *ngFor="let p of appPages; let i = index">
             <ion-menu-toggle auto-hide="false" *ngIf="p.url">
-              <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
+              <ion-item [routerDirection]="'root'" (click)="replier()" [routerLink]="[p.url]">
                 <ion-icon slot="start" [name]="p.icon"></ion-icon>
                 <ion-label>
                   {{p.title}}
@@ -25,7 +25,9 @@
             <!-- Item with Children -->
      
           <ion-item button *ngIf="p.children?.length > 0" (click)="derouler(i)" [class.parent-active]="p.open" detail="false">
-            <ion-icon slot="start" [name]="p.icon"></ion-icon>
+            <!--ion-icon slot="start" [name]="p.icon"></ion-icon-->
+            <ion-icon *ngIf="p.icon" [name]="p.icon" slot="start"></ion-icon>
+            <ion-icon *ngIf="p.src" [src]="p.src" slot="start"></ion-icon>
             <ion-icon slot="end" name="ios-arrow-forward" *ngIf="!p.open"></ion-icon>
             <ion-icon slot="end" name="ios-arrow-down" *ngIf="p.open"></ion-icon>
             <!--ion-icon slot="end" src="../assets/feather-icon/chevron-right.svg" *ngIf="!p.open"></ion-icon>
@@ -36,8 +38,10 @@
             <!-- Children List for clicked Item -->
             <ion-list *ngIf="p.open">
               <ion-menu-toggle auto-hide="false" *ngFor="let sub of p.children; let j = index">
-                <ion-item class="sub-item" [routerLink]="sub.url" routerDirection="root" routerLinkActive="active">
-                  <ion-icon [name]="sub.icon" slot="start"></ion-icon>
+                <ion-item class="sub-item" [routerLink]="sub.url" routerDirection="root" routerLinkActive="active" [color]="sub.color">
+                  <!--ion-icon [name]="sub.icon" slot="start"></ion-icon-->
+                  <ion-icon *ngIf="sub.icon" [name]="sub.icon" slot="start"></ion-icon>
+                  <ion-icon *ngIf="sub.src" [src]="sub.src" slot="start"></ion-icon>
                   <ion-label>
                     {{ sub.title }}
                   </ion-label>

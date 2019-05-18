@@ -78,4 +78,10 @@
   .split-pane-visible > .split-pane-side {
     max-width: 15%;
   }
+
+  ion-toolbar{
+    --color: #ffffff;
+    --background: #9f3302;
+  }
+
 }
