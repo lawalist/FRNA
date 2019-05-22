@@ -3,6 +3,9 @@ import { Component } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { TranslateService } from '@ngx-translate/core';
+
+import { global } from '../app/globale/variable';
 
 @Component({
   selector: 'app-root',
@@ -11,10 +14,11 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 }) 
 export class AppComponent {
   public boutonMenuClass = false;
+  //public language: string;
   public appPages = [
     {
-      title: 'Accueil',
-      url: '/home',
+      title: 'Tableau de bord',
+      url: '/tableau-de-bord',
       icon: 'home',
       open: false
     },
@@ -130,14 +134,14 @@ export class AppComponent {
           color: ''
         },
         {
-          title: 'Communes',
-          url: '/localite/communes',
+          title: 'Départments',
+          url: '/localite/departements',
           icon: 'document',
           color: ''
         },
         {
-          title: 'Départments',
-          url: '/localite/departements',
+          title: 'Communes',
+          url: '/localite/communes',
           icon: 'document',
           color: ''
         },
@@ -229,7 +233,8 @@ export class AppComponent {
   constructor(
     private platform: Platform,
     private splashScreen: SplashScreen,
-    private statusBar: StatusBar
+    private statusBar: StatusBar,
+    private translate: TranslateService
   ) {
     this.initializeApp();
   }
@@ -238,7 +243,163 @@ export class AppComponent {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
       this.splashScreen.hide();
+      this.initTranslate();
     });
+  }
+
+  /*ionViewDidEnter(): void {
+    // initialize
+    this.initTranslate()
+  }*/
+
+  initialiseTranslation(){
+    this.translate.get('MENU.TABLEAU_DE_BORD').subscribe((res: string) => {
+      this.appPages[0].title = res;
+    });
+
+    //institution
+    this.translate.get('MENU.INSTITUTION.INSTITUTION').subscribe((res: string) => {
+      this.appPages[1].title = res;
+    });
+    //sous-menu institution
+    this.translate.get('MENU.INSTITUTION.PARTENAIRES').subscribe((res: string) => {
+      this.appPages[1].children[0].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.UNIONS').subscribe((res: string) => {
+      this.appPages[1].children[1].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.OPS').subscribe((res: string) => {
+      this.appPages[1].children[2].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.MEMBRES').subscribe((res: string) => {
+      this.appPages[1].children[3].title = res;
+    });
+
+    //Recherche
+    this.translate.get('MENU.RECHERCHE.RECHERCHE').subscribe((res: string) => {
+      this.appPages[2].title = res;
+    });
+    //sous-menu recherche
+    this.translate.get('MENU.RECHERCHE.PROJETS').subscribe((res: string) => {
+      this.appPages[2].children[0].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.PROTOCOLES').subscribe((res: string) => {
+      this.appPages[2].children[1].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.TRAITEMENTS').subscribe((res: string) => {
+      this.appPages[2].children[2].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.ESSAIS').subscribe((res: string) => {
+      this.appPages[2].children[3].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.PLUVIOMETRIE').subscribe((res: string) => {
+      this.appPages[2].children[4].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.TYPOLOGIE').subscribe((res: string) => {
+      this.appPages[2].children[5].title = res;
+    });
+    
+    //Rapport
+    this.translate.get('MENU.RAPPORT.RAPPORT').subscribe((res: string) => {
+      this.appPages[3].title = res;
+    });
+    //sous-menu rapport
+    this.translate.get('MENU.RAPPORT.RESTITUTION').subscribe((res: string) => {
+      this.appPages[3].children[0].title = res;
+    });
+    this.translate.get('MENU.RAPPORT.STATISTIQUES').subscribe((res: string) => {
+      this.appPages[3].children[1].title = res;
+    });
+
+    //Localités
+    this.translate.get('MENU.LOCALITES.LOCALITES').subscribe((res: string) => {
+      this.appPages[4].title = res;
+    });
+    //sous-menu localitées
+    this.translate.get('MENU.LOCALITES.PAYS').subscribe((res: string) => {
+      this.appPages[4].children[0].title = res;
+    });
+    this.translate.get('MENU.LOCALITES.REGIONS').subscribe((res: string) => {
+      this.appPages[4].children[1].title = res;
+    });
+    this.translate.get('MENU.LOCALITES.DEPARTEMENTS').subscribe((res: string) => {
+      this.appPages[4].children[2].title = res;
+    });
+    this.translate.get('MENU.LOCALITES.COMMUNES').subscribe((res: string) => {
+      this.appPages[4].children[3].title = res;
+    });
+    this.translate.get('MENU.LOCALITES.VILLAGES').subscribe((res: string) => {
+      this.appPages[4].children[4].title = res;
+    });
+
+    //Configuration
+    this.translate.get('MENU.CONFIGURATION.CONFIGURATION').subscribe((res: string) => {
+      this.appPages[5].title = res;
+    });
+    //sous-menu configuration
+    this.translate.get('MENU.CONFIGURATION.PARTENAIRE').subscribe((res: string) => {
+      this.appPages[5].children[0].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.UNION').subscribe((res: string) => {
+      this.appPages[5].children[1].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.OP').subscribe((res: string) => {
+      this.appPages[5].children[2].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.MEMBRE').subscribe((res: string) => {
+      this.appPages[5].children[3].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.CHAMP').subscribe((res: string) => {
+      this.appPages[5].children[4].title = res;
+    });
+
+    //Administration
+    this.translate.get('MENU.ADMINISTRATION.ADMINISTRATION').subscribe((res: string) => {
+      this.appPages[6].title = res;
+    });
+    //sous-menu Administration
+    this.translate.get('MENU.ADMINISTRATION.GESTION_DES_UTILISATEURS').subscribe((res: string) => {
+      this.appPages[6].children[0].title = res;
+    });
+    this.translate.get('MENU.ADMINISTRATION.AJOUTER_FILTRE_LOCAL').subscribe((res: string) => {
+      this.appPages[6].children[1].title = res;
+    });
+    this.translate.get('MENU.ADMINISTRATION.AJOUTER_FILTRE_SERVEUR').subscribe((res: string) => {
+      this.appPages[6].children[2].title = res;
+    });
+    this.translate.get('MENU.ADMINISTRATION.VIDER_LA_CORBEILLE').subscribe((res: string) => {
+      this.appPages[6].children[3].title = res;
+    });
+    this.translate.get('MENU.ADMINISTRATION.REINITIALISER_LA_BD').subscribe((res: string) => {
+      this.appPages[6].children[4].title = res;
+    });
+  }
+
+  public changeLanguage(): void {
+    this.translateLangue();
+  }
+
+  translateLangue(): void {
+    //console.log('language', this.language)
+    this.translate.use(global.langue);
+    this.initialiseTranslation();
+  }
+
+  initTranslate() {
+    // La langue par défaut est le français
+    this.translate.setDefaultLang(global.langue);
+
+    //Recupérer la langue du navigateur
+    if (this.translate.getBrowserLang() !== undefined) {
+      global.langue = this.translate.getBrowserLang();
+      console.log('La langue du navigateur est', this.translate.getBrowserLang());
+    }
+    else {
+      // Si non définit, utiliser la langue par défaut qui est le françias
+      global.langue = 'fr'; 
+    }
+
+    this.translateLangue();
   }
 
   derouler(i){

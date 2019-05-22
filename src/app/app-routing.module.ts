@@ -4,17 +4,10 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'home',
+    redirectTo: 'tableau-de-bord',
     pathMatch: 'full'
   },
-  {
-    path: 'home',
-    loadChildren: './home/home.module#HomePageModule'
-  },
-  {
-    path: 'list',
-    loadChildren: './list/list.module#ListPageModule'
-  },
+  { path: 'tableau-de-bord', loadChildren: './accueil/tableau-de-bord/tableau-de-bord.module#TableauDeBordPageModule' },
   { path: 'institution/partenaires', loadChildren: './institution/partenaire/partenaire.module#PartenairePageModule' },
   { path: 'institution/unions', loadChildren: './institution/union/union.module#UnionPageModule' },
   { path: 'institution/ops', loadChildren: './institution/op/op.module#OpPageModule' },
