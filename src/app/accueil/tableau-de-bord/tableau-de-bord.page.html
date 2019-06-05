@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>
+      Tableau de bord
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="presentPopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content class="content">
+  <ion-card mode="ios" (click)="onChange()">
+    <ion-img src="./assets/img/meteo.png"></ion-img>
+    <ion-card-header>
+      <ion-card-subtitle>Météo</ion-card-subtitle>
+      <ion-card-title>Bienvenue sur FRNA V2</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <!--p>Now that your app has been created, you'll want to start building out features and components. Check out some of the resources below for next steps.</p-->
+    </ion-card-content>
+  </ion-card>
+
+  <br>
+  <ion-card padding>
+      <div class="table-responsive" id="diva"></div>
+  </ion-card>
+  
+  <!--ion-card class="welcome-card">
+    <div id='builder'></div>
+  </ion-card>
+  
+  <div class="well jsonviewer">
+    <pre id="json"><code class="language-json" #json></code></pre>
+  </div>
+  <div class="well jsonviewer">
+    <div id='formio'></div>
+  </div-->
+
+  <ion-list lines="none">
+    <ion-list-header>
+      <ion-label>Résumé</ion-label>
+    </ion-list-header>
+  
+
+    <ion-item>
+      <ion-icon slot="start" color="medium" name="book"></ion-icon>
+      <ion-label>Graphe état d'avancement de la collecte des données</ion-label>
+    </ion-item>
+    <ion-item>
+      <ion-icon slot="start" color="medium" name="build"></ion-icon>
+      <ion-label>Alerte sècheresse</ion-label>
+    </ion-item>
+    <ion-item>
+      <ion-icon slot="start" color="medium" name="grid"></ion-icon>
+      <ion-label>Autres...</ion-label>
+    </ion-item>
+    <ion-item>
+      <ion-icon slot="start" color="medium" name="color-fill"></ion-icon>
+      <ion-label>Guide d'utilisation</ion-label>
+    </ion-item>
+  </ion-list>
+  <!--ion-footer>
+<ion-toolbar>
+  <ion-title>Footer</ion-title>
+</ion-toolbar>
+</ion-footer-->
+</ion-content>

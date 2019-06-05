@@ -1,6 +1,6 @@
 <ion-app>
   <ion-split-pane when="md" [disabled]=boutonMenuClass>
-    <ion-menu>
+    <ion-menu> 
       <ion-header>
         <ion-toolbar>
           <ion-title>{{'MENU.MENU' | translate}}</ion-title>
@@ -38,7 +38,7 @@
             <!-- Children List for clicked Item -->
             <ion-list *ngIf="p.open">
               <ion-menu-toggle auto-hide="false" *ngFor="let sub of p.children; let j = index">
-                <ion-item class="sub-item" [routerLink]="sub.url" routerDirection="root" routerLinkActive="active" [color]="sub.color">
+                <ion-item class="sub-item" [routerLink]="sub.url" routerLinkActive="active" [color]="sub.color">
                   <!--ion-icon [name]="sub.icon" slot="start"></ion-icon-->
                   <ion-icon *ngIf="sub.icon" [name]="sub.icon" slot="start"></ion-icon>
                   <ion-icon *ngIf="sub.src" [src]="sub.src" slot="start"></ion-icon>

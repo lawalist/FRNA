@@ -3,17 +3,18 @@ import { Component } from '@angular/core';
 import { Platform } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
+
 import { TranslateService } from '@ngx-translate/core';
 
 import { global } from '../app/globale/variable';
 
 @Component({
   selector: 'app-root',
-  templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss']
-}) 
+  templateUrl: 'app.component.html'
+})
 export class AppComponent {
   public boutonMenuClass = false;
+  public global = global;
   //public language: string;
   public appPages = [
     {
@@ -25,7 +26,7 @@ export class AppComponent {
     {
       title: 'Institution',
       //icon: 'logo-ionic',
-      src: '../assets/svgs/university.svg',
+      src: './../assets/svgs/university.svg',
       open: false,
       children: [
         {
@@ -196,35 +197,34 @@ export class AppComponent {
       open: false,
       children: [
         {
-          title: 'Gestion des utilisateurs',
-          url: '#',
+          title: 'Modules',
+          url: '/administration/modules',
           icon: 'document',
           color: ''
         },
         {
-          title: 'Ajouter filtre local',
-          url: '#',
-          //icon: 'document',
-          src: '../assets/svgs/upload.svg',
-          color: ''
-        },
-        {
-          title: 'Ajouter filtre serveur',
-          url: '#',
-          icon: 'cloud-upload',
-          color: ''
-        },
-        {
-          title: 'Vider la corbeille',
-          url: '#',
-          icon: 'trash',
-          color: ''
-        },
-        {
-          title: 'Réinitialiser la BD',
-          url: '#',
+          title: 'Utilisateurs',
+          url: '/administration/utilisateurs',
           icon: 'document',
-          color: 'danger'
+          color: ''
+        },
+        {
+          title: 'Localités',
+          url: '/administration/localites',
+          icon: 'document',
+          color: ''
+        },
+        {
+          title: 'Serveur',
+          url: '/administration/serveur',
+          icon: 'document',
+          color: ''
+        },
+        {
+          title: 'Base de données locale',
+          url: '/administration/bd-locale',
+          icon: 'document',
+          color: ''
         }
       ]
     }
@@ -358,19 +358,19 @@ export class AppComponent {
       this.appPages[6].title = res;
     });
     //sous-menu Administration
-    this.translate.get('MENU.ADMINISTRATION.GESTION_DES_UTILISATEURS').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.MODULES').subscribe((res: string) => {
       this.appPages[6].children[0].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.AJOUTER_FILTRE_LOCAL').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.UTILISATEURS').subscribe((res: string) => {
       this.appPages[6].children[1].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.AJOUTER_FILTRE_SERVEUR').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.LOCALITES').subscribe((res: string) => {
       this.appPages[6].children[2].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.VIDER_LA_CORBEILLE').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.SERVEUR').subscribe((res: string) => {
       this.appPages[6].children[3].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.REINITIALISER_LA_BD').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.BASE_DE_DONNEES_LOCALE').subscribe((res: string) => {
       this.appPages[6].children[4].title = res;
     });
   }
@@ -380,7 +380,6 @@ export class AppComponent {
   }
 
   translateLangue(): void {
-    //console.log('language', this.language)
     this.translate.use(global.langue);
     this.initialiseTranslation();
   }

@@ -75,13 +75,71 @@
   --ion-color-light-shade: #d7d8da;
   --ion-color-light-tint: #f5f6f9;
 
+
+  /**Personnelles**/
+  .vide {
+    --background: #f9f9f9;
+    //background: #f9f9f9;
+  }
+
   .split-pane-visible > .split-pane-side {
     max-width: 15%;
+  }
+
+
+  .alert-title{
+    color:red;
+  }
+
+  /*.alert-message{
+    //color:#e7333c;
+    font-size: 15px;
+   // background-color: red;
+  }*/
+
+  .alert-danger{
+    color:red;
   }
 
   ion-toolbar{
     //--color: #ffffff;
     //--background: #007bff /*#9f3302*/;
   }
+
+  .card-header-item{
+    --padding-start: 0px;
+    --padding-end : 0px;
+    --inner-padding-end: 0px; --padding-start:0px
+  }
+
+/*ion-content {
+    --background : #f3f3f3;
+}*/
+
+/*.w{
+  --width: 200 !important;
+  //--max-width: 100px;
+
+}*/
+
+ion-popover{
+  --width: 200px ;
+  //--max-width: 100px;
+}
+
+ion-card {
+  --background: #ffffff;
+  //background: default;
+}
+
+.content {
+  --background: #f3f3f3;
+}
+
+.hr {
+  border-bottom: 1px solid #ccc;
+  margin-left: 5px;
+  width: 100%;
+}
 
 }

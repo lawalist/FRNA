@@ -25,6 +25,7 @@ const routes: Routes = [
   
   { path: 'localite/pays', loadChildren: './localite/pays/pays.module#PaysPageModule' },
   { path: 'localite/regions', loadChildren: './localite/region/region.module#RegionPageModule' },
+  { path: 'localite/regions/pays/:idPays', loadChildren: './localite/region/region.module#RegionPageModule' },
   { path: 'localite/communes', loadChildren: './localite/commune/commune.module#CommunePageModule' },
   { path: 'localite/departements', loadChildren: './localite/departement/departement.module#DepartementPageModule' },
   { path: 'localite/villages', loadChildren: './localite/village/village.module#VillagePageModule' },
@@ -34,7 +35,14 @@ const routes: Routes = [
   { path: 'configuration/union', loadChildren: './configuration/union/union.module#UnionPageModule' },
   { path: 'configuration/partenaire', loadChildren: './configuration/partenaire/partenaire.module#PartenairePageModule' },
   { path: 'configuration/champ', loadChildren: './configuration/champ/champ.module#ChampPageModule' },
-  ];
+  
+  { path: 'administration/modules', loadChildren: './administration/modules/modules.module#ModulesPageModule' },
+  { path: 'administration/utilisateurs', loadChildren: './administration/utilisateurs/utilisateurs.module#UtilisateursPageModule' },
+  { path: 'administration/localites', loadChildren: './administration/localites/localites.module#LocalitesPageModule' },
+  { path: 'administration/serveur', loadChildren: './administration/serveur/serveur.module#ServeurPageModule' },
+  { path: 'administration/bd-locale', loadChildren: './administration/bd-locale/bd-locale.module#BDLocalePageModule' },
+
+];
 
 @NgModule({
   imports: [

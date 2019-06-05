@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>FRNA V2</title>
+  <title>Ionic App</title>
 
   <base href="./" />
 
@@ -16,14 +16,59 @@
   <!-- add to homescreen for ios -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <link rel='stylesheet' href='assets/external/formiojs/css/font-awesome-4.7.0.min.css'>
-  <link rel='stylesheet' href='assets/external/formiojs/css/bootstrap-4.3.1.min.css'>
-  <link rel='stylesheet' href='assets/external/formiojs/css/formio3.20.16.full.min.css'>
-  <script src='assets/external/formiojs/js/formio3.20.16.full.min.js'></script>
+
+  <!--formio css-->
+  <link rel='stylesheet' href='./assets/external/formiojs/css/font-awesome-4.7.0.min.css'>
+  <!--link href="./assets/external/datatable/css/bootstrap.min.css" rel="stylesheet" type="text/css" /-->
+  <link rel='stylesheet' href='./assets/external/formiojs/css/bootstrap3.3.7.min.css'>
+  <link rel='stylesheet' href='./assets/external/formiojs/css/formio3.20.16.full.min.css'>
+
+
+  <!-- DataTables css -->
+  <link href="./assets/external/datatable/css/dataTables.colVis.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/buttons.bootstrap.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/select.bootstrap.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/components.css" rel="stylesheet" type="text/css" />
+  <link href="./assets/external/datatable/css/core.css" rel="stylesheet" type="text/css" />
+  <!--link href="./assets/external/css/icons.css" rel="stylesheet" type="text/css" /-->
 </head>
 
 <body>
   <app-root></app-root>
+
+  <!--formio-->
+  <script src='./assets/external/formiojs/js/formio3.20.16.full.min.js'></script>
+
+  <!--Convert JSOn To HTML Table-->
+  <script src="./assets/external/JSONToTHMLTable/js/jquery-3.4.1.min.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/strsup.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/localread.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/csvparse.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/csvsup.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/jQuery-csv.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/js/convert.js"></script>
+
+
+  <!-- DataTables -->
+  <script>
+      var resizefunc = [];
+  </script>
+  <script src="./assets/external/datatable/js/jquery.dataTables.min.js"></script>
+  <!--script src="./assets/external/datatable/js/dataTables.bootstrap.js"></script-->
+  <script src="./assets/external/datatable/js/dataTables.bootstrap.min.js"></script>
+  <script src="./assets/external/datatable/js/dataTables.buttons.min.js"></script>
+  <script src="./assets/external/datatable/js/buttons.bootstrap.min.js"></script>
+  <script src="./assets/external/datatable/js/dataTables.select.min.js"></script>
+  <script src="./assets/external/datatable/js/jszip.min.js"></script>
+  <script src="./assets/external/datatable/js/pdfmake.min.js"></script>
+  <script src="./assets/external/datatable/js/vfs_fonts.js"></script>
+  <script src="./assets/external/datatable/js/buttons.html5.min.js"></script>
+  <script src="./assets/external/datatable/js/buttons.print.min.js"></script>
+  <script src="./assets/external/datatable/js/jquery.datatables.init.js"></script>
+  <script src="./assets/external/datatable/js/buttons.colVis.min.js"></script>
+
 </body>
 
 </html>

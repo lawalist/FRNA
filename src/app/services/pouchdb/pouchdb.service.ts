@@ -53,9 +53,18 @@ export class PouchdbService {
     return this.localDB.put(doc);
   }
 
+  deleteLocalie(doc){
+    doc.doc._deleted = true;
+    return doc;
+  }
+
   deleteRemoteDoc(doc){
     doc._deleted = true;
     return this.remoteDB.put(doc);
+  }
+
+  put(doc){    
+    return this.localDB.put(doc);
   }
 
   createLocalDoc(doc){
@@ -73,6 +82,44 @@ export class PouchdbService {
       doc.data.updated_by = '';
     }
     doc.data.deleted = false;
+    
+    return this.localDB.put(doc);
+  }
+
+  garderCreationTrace(doc){
+    let dat = new Date();
+    doc.created_at = dat.toJSON();
+    doc.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.created_by = global.info_user.name;
+    }else{
+      doc.created_by = '';
+    }
+    if(global.info_user !== null){
+      doc.updated_by = global.info_user.name;
+    }else{
+      doc.updated_by = '';
+    }
+    doc.deleted = false;
+    
+    return doc;
+  }
+
+  createLocalite(doc){
+    let dat = new Date();
+    doc.created_at = dat.toJSON();
+    doc.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.created_by = global.info_user.name;
+    }else{
+      doc.created_by = '';
+    }
+    if(global.info_user !== null){
+      doc.updated_by = global.info_user.name;
+    }else{
+      doc.updated_by = '';
+    }
+    doc.deleted = false;
     
     return this.localDB.put(doc);
   }
@@ -108,6 +155,60 @@ export class PouchdbService {
     }
     
     doc.data.deleted = false;
+    
+    return this.localDB.put(doc);
+  }
+
+  garderUpdateTrace(doc){
+    let dat = new Date();
+    doc.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.updated_by = global.info_user.name;
+    }else{
+      doc.updated_by = '';
+    }
+    
+    doc.deleted = false;
+    
+    return doc;
+  }
+
+  garderDeleteTrace(doc){
+    let dat = new Date();
+    doc.deleted_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.deleted_by = global.info_user.name;
+    }else{
+      doc.deleted_by = '';
+    }
+    doc.deleted = true;
+    return doc;
+  }
+
+  deleteLocalite(doc){
+    let dat = new Date();
+    doc.deleted_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.deleted_by = global.info_user.name;
+    }else{
+      doc.deleted_by = '';
+    }
+    doc.deleted = true;
+    this.localDB.put(doc);
+  }
+
+
+
+  updateLocalite(doc){
+    let dat = new Date();
+    doc.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.updated_by = global.info_user.name;
+    }else{
+      doc.updated_by = '';
+    }
+    
+    doc.deleted = false;
     
     return this.localDB.put(doc);
   }
@@ -342,20 +443,6 @@ export class PouchdbService {
     //this.localDB.put(newDoc);
     return  this.localDB.put(doc);//this.localDB.remove(doc);//.catch((err) => console.log(err));
   }
-
-  updateLocalite(doc){
-    /*let dat = new Date();
-    doc.updated_at = dat.toJSON();
-    if(global.info_user !== null){
-      doc.updated_by = global.info_user.name;
-    }else{
-      doc.updated_by = '';
-    }
-    
-    doc.deleted = false; */   
-    return this.localDB.put(doc); //.catch((err) => console.log(err));
-  }
-
 
 
   handleChange(change){

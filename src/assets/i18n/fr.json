@@ -1,0 +1,116 @@
+{
+    "GENERAL": {
+        "ANNULER": "Annuler",
+        "FERMER": "Fermer",
+        "SAUVEGARDER": "Sauvegarder",
+        "AJOUTER": "Ajouter",
+        "LISTE": "Liste des",
+        "INFOS": "Infos",
+        "MODIFIER": "Modifier",
+        "SUPPRIMER": "Supprimer",
+        "OPTIONS": "Options",
+        "NOUVEAU": "Nouveau",
+        "RECHERCHER": "Rechercher",
+        "MODE_TABLEAU": "Tableau",
+        "ACTION": "Action",
+        "MODE_LISTE": "Liste",
+        "LISTE_VIDE": "Aucun élément à afficher",
+        "ACTUALISER": "Tirer pour actualiser",
+        "ACTUALISATION": "Actualisation...",
+        "PAYS": "Pays",
+        "REGION": "Région",
+        "DEPARTEMENT": "Département",
+        "COMMUNE": "Commune",
+        "VILLAGE":"Village",
+        "REGIONS": "Régions",
+        "DEPARTEMENTS": "Départements",
+        "COMMUNES": "Communes",
+        "VILLAGES":"Villages",
+        "ALERT_CONFIERMER": "Confirmer!",
+        "ALERT_MESSAGE": "Etes vous sûr de vouloir supprimer cet/ces enregistrement(s)?",
+        "ALERT_CORBEILLE": "Enregistrement(s) déplacé(s) dans la corbeille avec succes.",
+        "ALERT_SUPPRIMER": "Enregistrement(s) supprimé(s) succes.",
+        "ALERT_ERREUR_SUPPRESSION": "Erreur suppression",
+        "ALERT_ERREUR_SAUVEGARDE": "Erreur sauvegarde",
+        "ALERT_SUPPRIMER_DIFINITIVEMENT": "Supprimer définitivement!",
+        "ALERT_ANNULER": "Annuler",
+        "ALERT_OUI": "Oui",
+        "ALERT_ENREGISTREMENT_DE_TROP": "Veuillez selectionne un seul enregistrment!",
+        "ALERT_FICHIER_CREER": "Fichier créé dans",
+        "ALERT_ERREUR_CREAION_FICHIER": "Erreur de création du fichier dans"
+        
+    },
+    "MENU": {
+        "MENU": "Menu",
+        "TABLEAU_DE_BORD": "Tableau de bord",
+        "INSTITUTION": {
+            "INSTITUTION": "Institution",
+            "PARTENAIRES": "Partenaires",
+            "UNIONS": "Unions",
+            "OPS": "OPs",
+            "MEMBRES": "Membres"
+        },
+        "RECHERCHE": {
+            "RECHERCHE": "Recherche",
+            "PROJETS": "Projets",
+            "PROTOCOLES": "Protocoles",
+            "TRAITEMENTS": "Traitements",
+            "ESSAIS": "Essais",
+            "PLUVIOMETRIE": "Pluviométrie",
+            "TYPOLOGIE": "Typologie"
+        },
+        "RAPPORT": {
+            "RAPPORT": "Rapport",
+            "RESTITUTION": "Restitution",
+            "STATISTIQUES": "Statistiques"
+        },
+        "LOCALITES": {
+            "LOCALITES": "Localités",
+            "PAYS": "Pays",
+            "REGIONS": "Régions",
+            "DEPARTEMENTS": "Départments",
+            "COMMUNES": "Communes",
+            "VILLAGES": "Villages"
+        },
+        "CONFIGURATION": {
+            "CONFIGURATION": "Configuration",
+            "PARTENAIRE": "Partenaire",
+            "UNION": "Union",
+            "OP": "OP",
+            "MEMBRE": "Membre",
+            "CHAMP": "Champ"
+        },
+        "ADMINISTRATION": {
+            "ADMINISTRATION": "Administration",
+            "MODULES": "Modules",
+            "UTILISATEURS": "Utilisateurs",
+            "LOCALITES": "Localités",
+            "SERVEUR": "Serveur",
+            "BASE_DE_DONNEES_LOCALE": "Base de données locale"
+        }
+    },
+    "PAYS_PAGE": {
+        "TITRE_LISTE": "Pays",
+        "TITRE_AJOUTER": "Ajouter un pays",
+        "TITRE_INFO": "Infos pays",
+        "TITRE_MODIFIER": "Modifier un pays",
+        "CODE": "Code (ISO)",
+        "NOM": "Nom",
+        "REFERENCE": "Référence OpenStreetMap",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un pays",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un pays",
+        "MESSAGES_VALIDATION": {
+            "CODEPAYS": {
+                "REQUIRED": "Le code du pays (ISO) est requis.",
+                "MINLENGTH": "Le code du pays doit comporter 2 lettres majuscules.",
+                "MAXLENGTH": "Le code du pays doit comporter 2 lettres majuscules.",
+                "PATTERN": "Le code du pays ne doit contenir que lettres majuscules.",
+                "VALIDCODEPAYS": "Le code du pays a été déjà pris."
+            },
+            "NOMPAYS": {
+                "REQUIRED": "Le nom du pays est requis."
+            }
+        }
+    }
+
+}

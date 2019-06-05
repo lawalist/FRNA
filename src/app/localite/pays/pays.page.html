@@ -2,11 +2,192 @@
   <ion-toolbar>
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
+      <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Pays</ion-title>
+    
+    <ion-title *ngIf="action == 'liste'">{{'PAYS_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'PAYS_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'PAYS_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'PAYS_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="action == 'infos'" slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="openRelationPays($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="action == 'liste'" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
 
+  <!--Mode liste-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header>
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title>
+        <ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      <ng-container *ngIf="pays && paysData">
+        <ion-virtual-scroll [items]="paysData">
+          <ion-item-sliding *virtualItem="let p">
+            <ion-item (click)="infos(p)">
+              <ion-label>
+                <h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong> {{p.codePays}}</h2>
+                <h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong> {{p.nomPays}}</h2>
+              </ion-label>
+            </ion-item>
+    
+            <ion-item-options side="start">
+              <ion-item-option (click)="modifier(p)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options side="end">
+              <ion-item-option color="danger" (click)="supprimer(p)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!pays || !pays.data || !pays.data.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
+    <ion-card-header>
+      <!--ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title-->
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title>
+        <ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
+          {{'GENERAL.ACTION' | translate}}
+          <ion-icon slot="start" name="ios-arrow-down"></ion-icon>
+        </ion-button>
+
+        <ion-button fill="outline" *ngIf="mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <!--les boutton export pour mobile-->
+      <ng-container *ngIf="mobile && styleAffichage == 'tableau'">
+        <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
+        <!--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button-->
+        <br>    
+      </ng-container>
+      <!--Le tabelau-->
+      <div *ngIf="pays && pays.data && pays.data.length > 0" class="table-responsive" id="pays"></div>
+      <!--Si le tableau est vide-->
+      <ion-list *ngIf="!pays || !pays.data || !pays.data.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card  mode="ios" *ngIf="action == 'infos'">
+    <ion-card-header>
+      <ion-card-title>{{'GENERAL.INFOS' | translate}} {{unPays.nomPays}}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row><ion-col><h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.codePays}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.nomPays}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'PAYS_PAGE.REFERENCE' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.referenceOpenStreetMap}}</ion-col></ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card  mode="ios" *ngIf="action == 'ajouter' || action == 'modifier'" padding>
+    <ion-card-header>
+      <ion-card-title *ngIf="action == 'ajouter'">{{'PAYS_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
+      <ion-card-title *ngIf="action == 'modifier'">{{'PAYS_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="paysForm" (ngSubmit)="onSubmit()">
+        <ion-item>
+            <ion-label position="floating">{{'PAYS_PAGE.CODE' | translate}}</ion-label>
+            <ion-input formControlName="codePays" type="text" class="form-controll" required></ion-input>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.codePays">
+            <div class="error-message" *ngIf="paysForm.get('codePays').hasError(validation.type) && (paysForm.get('codePays').dirty || paysForm.get('codePays').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+        <ion-item>
+            <ion-label position="floating">{{'PAYS_PAGE.NOM' | translate}}</ion-label>
+            <ion-input formControlName="nomPays" type="text"></ion-input>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.nomPays">
+            <div class="error-message" *ngIf="paysForm.get('nomPays').hasError(validation.type) && (paysForm.get('nomPays').dirty || paysForm.get('nomPays').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+        <ion-item>
+            <ion-label position="floating">{{'PAYS_PAGE.REFERENCE' | translate}}</ion-label>
+            <ion-input formControlName="referenceOpenStreetMap" type="text"></ion-input>
+        </ion-item>
+
+        <br>
+        <div class="form-group text-right m-b-0">
+            <ion-button type="submit" [disabled]="!paysForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+            <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+        </div> 
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="action == 'liste' && !seletedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success">
+      <ion-icon name="options"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+      <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
+      <ion-fab-list side="top">
+        <ion-fab-button (click)="supprimer(unPays)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>
+        <ion-fab-button (click)="modifier(unPays)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+      </ion-fab-list>
+    </ion-fab>
 </ion-content>
+
