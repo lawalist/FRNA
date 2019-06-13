@@ -1,13 +1,17 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { File } from '@ionic-native/file/ngx';
 import { CodePaysValidator } from '../../validators/pays.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
-import { AlertController, ToastController, ActionSheetController, Platform, PopoverController, NavController  } from '@ionic/angular';
+import { AlertController, ToastController, ModalController, ActionSheetController, Platform, PopoverController, NavController  } from '@ionic/angular';
 import { ActionComponent } from '../../component/action/action.component';
+import {RegionPage} from '../../localite/region/region.page';
 import { RelationsPaysComponent } from '../../component/relations-pays/relations-pays.component';
 import { global } from '../../../app/globale/variable';
+import { DepartementPage } from '../departement/departement.page';
+import { CommunePage } from '../commune/commune.page';
+import { VillagePage } from '../village/village.page';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var JSONToTHMLTable: any;
@@ -23,6 +27,7 @@ declare var cordova: any;
 })
 export class PaysPage implements OnInit {
 
+  @Input() codePays: any;
   paysForm: any;
   action: string = 'liste';
   pays: any;
@@ -46,7 +51,7 @@ export class PaysPage implements OnInit {
         { type: 'required', message: '' }
       ],
     }
-  constructor(private formBuilder: FormBuilder, private navCtrl: NavController, private file: File, private popoverController: PopoverController, private plateform: Platform, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+  constructor(private formBuilder: FormBuilder, public modalController: ModalController, private navCtrl: NavController, private file: File, private popoverController: PopoverController, private plateform: Platform, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
     this.translate.setDefaultLang(global.langue);
     if(plateform.is('android') || plateform.is('ios') || plateform.is('mobile')){
       this.mobile = true;
@@ -118,6 +123,9 @@ export class PaysPage implements OnInit {
     this.action ='modifier';
   }
 
+  selectItem(index){
+    alert(index)
+  }
 
   exportExcel(){
     let date =new Date().getTime();
@@ -162,7 +170,7 @@ export class PaysPage implements OnInit {
       message: this.translate.instant('GENERAL.ALERT_MESSAGE'),
       //cssClass: 'aler-confirm',
       mode: 'ios',
-      inputs: [
+      /*inputs: [
         {
           name: 'checkbox',
           type: 'checkbox',
@@ -170,7 +178,7 @@ export class PaysPage implements OnInit {
           value: 'oui',
           checked: false
         }
-      ],
+      ],*/
       buttons: [
         {
           text: this.translate.instant('GENERAL.ALERT_ANNULER'),
@@ -183,9 +191,21 @@ export class PaysPage implements OnInit {
           text: this.translate.instant('GENERAL.ALERT_OUI'),
           role: 'destructive',
           cssClass: 'alert-danger',
-          handler: (data) => {
+          handler: (/*data*/) => {
             //suppression définitive
-            if(data.toString() == 'oui'){
+            this.pays.data.splice(this.pays.data.indexOf(p), 1);
+            this.servicePouchdb.updateLocalite(this.pays).then((res) => {
+              this.pays._rev = res.rev;
+              this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
+              this.action = 'liste';
+              this.htmlTableAction = 'recharger';
+              this.actualiserTableau(this.pays.data);
+            }).catch((err) => {
+              this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+
+            });
+            //suppression définitive
+            /*if(data.toString() == 'oui'){
               this.pays.data.splice(this.pays.data.indexOf(p), 1)
               this.servicePouchdb.updateLocalite(this.pays).then((res) => {
                 this.pays._rev = res.rev;
@@ -208,7 +228,7 @@ export class PaysPage implements OnInit {
               }).catch((err) => {
                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
               });
-            }
+            }*/
           }
         }
       ]
@@ -224,7 +244,7 @@ export class PaysPage implements OnInit {
       message: this.translate.instant('GENERAL.ALERT_MESSAGE'),
       //cssClass: 'aler-confirm',
       mode: 'ios',
-      inputs: [
+      /*inputs: [
         {
           name: 'checkbox',
           type: 'checkbox',
@@ -232,7 +252,7 @@ export class PaysPage implements OnInit {
           value: 'oui',
           checked: false
         }
-      ],
+      ],*/
       buttons: [
         {
           text: this.translate.instant('GENERAL.ALERT_ANNULER'),
@@ -247,7 +267,26 @@ export class PaysPage implements OnInit {
           cssClass: 'alert-danger',
           handler: (data) => {
             //suppression définitive
-            if(data.toString() == 'oui'){
+            this.seletedIndexes.forEach((i) => {
+              var p = this.pays.data[i];
+              this.pays.data.splice(this.pays.data.indexOf(p), 1)
+            });
+
+            //update
+            this.servicePouchdb.updateLocalite(this.pays).then((res) => {
+              this.pays._rev = res.rev;
+              this.action = 'liste';
+              this.htmlTableAction = 'recharger';
+              this.actualiserTableau(this.pays.data);
+              //this.seletedIndexes = [];
+              this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
+            }).catch((err) => {
+              this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+              //this.seletedIndexes = [];
+            });
+            this.seletedIndexes = [];
+            
+            /*if(data.toString() == 'oui'){
               this.seletedIndexes.forEach((i) => {
                 var p = this.pays.data[i];
                 this.pays.data.splice(this.pays.data.indexOf(p), 1)
@@ -287,7 +326,7 @@ export class PaysPage implements OnInit {
               });
               this.seletedIndexes = [];
               
-            }
+            }*/
           }
         }
       ]
@@ -339,13 +378,6 @@ export class PaysPage implements OnInit {
       header: this.translate.instant('GENERAL.ACTION'),
       mode: 'ios',
       buttons: [{
-        text: this.translate.instant('GENERAL.NOUVEAU'),
-        icon: 'add',
-        handler: () => {
-          this.ajouter();
-          this.seletedIndexes = [];
-        }
-      },{
         text: this.translate.instant('GENERAL.INFOS'),
         icon: 'information-circle',
         handler: () => {
@@ -366,6 +398,13 @@ export class PaysPage implements OnInit {
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
           }
+        }
+      }, {
+        text: this.translate.instant('GENERAL.NOUVEAU'),
+        icon: 'add',
+        handler: () => {
+          this.ajouter();
+          this.seletedIndexes = [];
         }
       }, {
         text: this.translate.instant('GENERAL.SUPPRIMER'),
@@ -394,7 +433,7 @@ export class PaysPage implements OnInit {
       //componentProps: {"id": "salu"},
       animated: true,
       showBackdrop: true,
-      //mode: "ios"
+      mode: "ios"
     });
 
     popover.onWillDismiss().then((dataReturned) => {
@@ -436,21 +475,61 @@ export class PaysPage implements OnInit {
       //mode: "ios"
     });
 
-    /*popover.onWillDismiss().then((dataReturned) => {
+    popover.onWillDismiss().then((dataReturned) => {
       if(dataReturned !== null && dataReturned.data == 'region') {
-        this.navCtrl.navigateForward('/localite/regions/pays/'+this.unPays.codePays)
+        this.presentRegions(this.unPays.codePays);
+        //this.navCtrl.navigateForward('/localite/regions/pays/'+this.unPays.codePays)
       }else if(dataReturned !== null && dataReturned.data == 'departement') {
-        
+        this.presentDepartment(this.unPays.codePays);
       }else if(dataReturned !== null && dataReturned.data == 'commune') {
-        
+        this.presentCommune(this.unPays.codePays);
       } else if(dataReturned !== null && dataReturned.data == 'village') {
-        
+        this.presentVillage(this.unPays.codePays);
       }
 
-    });*/
+    });
     return await popover.present();
   }
 
+  async presentRegions(codePays) {
+    const modal = await this.modalController.create({
+      component: RegionPage,
+      componentProps: { codePays: codePays },
+      mode: 'ios',
+      cssClass: 'costom-modal',
+    });
+    return await modal.present();
+  }
+
+  async presentDepartment(codePays) {
+    const modal = await this.modalController.create({
+      component: DepartementPage,
+      componentProps: { codePays: codePays },
+      mode: 'ios',
+      cssClass: 'costom-modal',
+    });
+    return await modal.present();
+  }
+
+  async presentCommune(codePays) {
+    const modal = await this.modalController.create({
+      component: CommunePage,
+      componentProps: { codePays: codePays },
+      mode: 'ios',
+      cssClass: 'costom-modal',
+    });
+    return await modal.present();
+  }
+
+  async presentVillage(codePays) {
+    const modal = await this.modalController.create({
+      component: VillagePage,
+      componentProps: { codePays: codePays },
+      mode: 'ios',
+      cssClass: 'costom-modal',
+    });
+    return await modal.present();
+  }
 
   onSubmit(){
     let paysData = this.paysForm.value;
@@ -470,6 +549,9 @@ export class PaysPage implements OnInit {
           }
           //this.htmlTableAction = 'recharger';
           this.actualiserTableau(this.pays.data);
+
+          //initialiser la liste des régions
+          this.creerRegion(paysData.codePays);
         }).catch((err) => {
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
         });
@@ -478,6 +560,7 @@ export class PaysPage implements OnInit {
         paysData = this.servicePouchdb.garderCreationTrace(paysData);
         let pays = {
           _id: 'fuma:pays',
+          type: 'pays',
           data: [paysData]
         };
         this.pays = pays;
@@ -492,6 +575,9 @@ export class PaysPage implements OnInit {
           }
           //this.htmlTableAction = 'recharger';
           this.actualiserTableau(this.pays.data);
+          
+          //initialiser la liste des régions
+          this.creerRegion(paysData.codePays);
         }).catch((err) => {
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
         });
@@ -500,15 +586,25 @@ export class PaysPage implements OnInit {
       //si modification
       paysData = this.servicePouchdb.garderUpdateTrace(paysData);
       //this.pays.data.push(paysData);
-      for(let i = 0; i < this.pays.data.length; i++){
+      /*for(let i = 0; i < this.pays.data.length; i++){
         if(this.pays.data[i].codePays == paysData.codePays){
           this.pays.data[i] = paysData;
           break;
         }
-      }
+      }*/
+
+      this.pays.data[this.pays.data.indexOf(this.unPays)] = paysData;
       //this.unPays = paysData;
       this.servicePouchdb.updateLocalite(this.pays).then((res) => {
         this.pays._rev = res.rev;
+        //en cas de changement du code de pays ou du nom du pays, appliquer les changement dans la subdivision
+        if(this.unPays.codePays != paysData.codePays || this.unPays.nomPays != paysData.nomPays){
+          this.changerInfoPaysDansRegions(this.unPays.codePays, paysData);
+          this.changerInfoPaysDansDepartement(this.unPays.codePays, paysData);
+          this.changerInfoPaysDansCommune(this.unPays.codePays, paysData);
+          this.changerInfoPaysDansVillage(this.unPays.codePays, paysData);
+        }
+        this.action = 'infos';
         this.infos(paysData);
         if(this.mobile){
           this.paysData = this.pays.data;
@@ -517,16 +613,157 @@ export class PaysPage implements OnInit {
           this.htmlTableAction = 'recharger';
         }
         //this.actualiserTableau(this.pays.data);
-        this.action = 'infos';
       }).catch((err) => {
         alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
       });
     }
   }
 
+  creerRegion(codePays){
+    //initialise les régions du pays
+    let region: any = {
+      _id: 'fuma:region:'+codePays,
+      type: 'region',
+      data: []
+    };
+    this.servicePouchdb.createLocalite(region);
+  }
+
+  changerInfoPaysDansRegions(ancienCodePays, infoPays){
+    this.servicePouchdb.getLocalDocById('fuma:region:'+ancienCodePays).then((region) => {
+      if(region){
+        var oldRegion = {...region}
+        region.data.forEach((r, index) => {
+          if(ancienCodePays != infoPays.codePays){
+            r.codePays = infoPays.codePays;
+            r.codeRegion = infoPays.codePays+'-'+r.numeroRegion;
+          }
+          r.nomPays = infoPays.nomPays;
+          r = this.servicePouchdb.garderCreationTrace(r);
+        });
+
+
+        //encas de changement de code
+        if(ancienCodePays != infoPays.codePays){
+          //créer un nouveau document
+          delete region['_rev'];
+          region._id = 'fuma:region:'+infoPays.codePays;
+          this.servicePouchdb.createLocalite(region);
+          this.servicePouchdb.deleteLocaliteDefinitivement(oldRegion);
+        }else{
+          //changement de nom
+          this.servicePouchdb.updateLocalite(region);
+        }
+      }
+    });
+  }
+
+  changerInfoPaysDansDepartement(ancienCodePays, infoPays){
+    this.servicePouchdb.getLocalitePlageDocs('fuma:departement:'+ancienCodePays+'-', 'fuma:departement:'+ancienCodePays+'-\uffff').then((departements) => {
+      if(departements){
+        departements.forEach((departement) => {
+          var oldDepartement = {...departement}
+          departement.data.forEach((d, index) => {
+            if(ancienCodePays != infoPays.codePays){
+              d.codePays = infoPays.codePays;
+              d.codeRegion = infoPays.codePays+'-'+d.codeRegion.substr(3,2);// d.numeroRegion;
+              d.codeDepartement = d.codeRegion + d.numeroDepartement;
+            }
+            d.nomPays = infoPays.nomPays;
+            d = this.servicePouchdb.garderCreationTrace(d);
+          });
+  
+  
+          //encas de changement de code
+          if(ancienCodePays != infoPays.codePays){
+            //créer un nouveau document
+            delete departement['_rev'];
+            departement._id = 'fuma:departement:'+infoPays.codePays+'-'+departement._id.substr(departement._id.indexOf('-') + 1, 2);
+            this.servicePouchdb.createLocalite(departement);
+            this.servicePouchdb.deleteLocaliteDefinitivement(oldDepartement);
+          }else{
+            //changement de nom
+            this.servicePouchdb.updateLocalite(departement);
+          }
+        });
+        
+      }
+    });
+  }
+
+  
+  changerInfoPaysDansCommune(ancienCodePays, infoPays){
+    this.servicePouchdb.getLocalitePlageDocs('fuma:commune:'+ancienCodePays+'-', 'fuma:commune:'+ancienCodePays+'-\uffff').then((communes) => {
+      if(communes){
+        communes.forEach((commune) => {
+          var oldCommune = {...commune}
+          commune.data.forEach((c, index) => {
+            if(ancienCodePays != infoPays.codePays){
+              c.codePays = infoPays.codePays;
+              c.codeRegion = infoPays.codePays+'-'+c.codeRegion.substr(3,2);// d.numeroRegion;
+              c.codeDepartement = c.codeRegion + c.codeDepartement.substr(5,2);
+              c.codeCommune = c.codeDepartement + c.numeroCommune;
+            }
+            c.nomPays = infoPays.nomPays;
+            c = this.servicePouchdb.garderCreationTrace(c);
+          });
+  
+  
+          //encas de changement de code
+          if(ancienCodePays != infoPays.codePays){
+            //créer un nouveau document
+            delete commune['_rev'];
+            commune._id = 'fuma:commune:'+infoPays.codePays+'-'+commune._id.substr(commune._id.indexOf('-') + 1, 4);
+            this.servicePouchdb.createLocalite(commune);
+            this.servicePouchdb.deleteLocaliteDefinitivement(oldCommune);
+          }else{
+            //changement de nom
+            this.servicePouchdb.updateLocalite(commune);
+          }
+        });
+        
+      }
+    });
+  }
+
+  
+  changerInfoPaysDansVillage(ancienCodePays, infoPays){
+    this.servicePouchdb.getLocalitePlageDocs('fuma:village:'+ancienCodePays+'-', 'fuma:village:'+ancienCodePays+'-\uffff').then((villages) => {
+      if(villages){
+        villages.forEach((village) => {
+          var oldVillage = {...village}
+          village.data.forEach((v, index) => {
+            if(ancienCodePays != infoPays.codePays){
+              v.codePays = infoPays.codePays;
+              v.codeRegion = infoPays.codePays+'-'+v.codeRegion.substr(3,2);// d.numeroRegion;
+              v.codeDepartement = v.codeRegion + v.codeDepartement.substr(5,2);
+              v.codeCommune = v.codeDepartement + v.codeCommune.substr(7,2);
+              v.codeVillage = v.codeCommune + v.numeroVillage;
+            }
+            v.nomPays = infoPays.nomPays;
+            v = this.servicePouchdb.garderCreationTrace(v);
+          });
+  
+  
+          //encas de changement de code
+          if(ancienCodePays != infoPays.codePays){
+            //créer un nouveau document
+            delete village['_rev'];
+            village._id = 'fuma:village:'+infoPays.codePays+'-'+village._id.substr(village._id.indexOf('-') + 1, 6);
+            this.servicePouchdb.createLocalite(village);
+            this.servicePouchdb.deleteLocaliteDefinitivement(oldVillage);
+          }else{
+            //changement de nom
+            this.servicePouchdb.updateLocalite(village);
+          }
+        });
+        
+      }
+    });
+  }
 
   actualiserTableau(data){
-    if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+    if(data.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
       $('#pays').ready(()=>{
         if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
           //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
@@ -563,7 +800,7 @@ export class PaysPage implements OnInit {
         }
 
         //si non mobile ou mobile + mode tableau et 
-        if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+        if(this.pays.data.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
           $('#pays').ready(()=>{
             if(global.langue == 'en'){
               this.paysHTMLTable = JSONToTHMLTable(this.pays.data, "pays", null, this.mobile);
@@ -599,23 +836,34 @@ export class PaysPage implements OnInit {
     this.pays = null;
     this.servicePouchdb.getLocalDocById('fuma:pays').then((pays) => {
       if(pays){
-        this.pays = pays;
-        //si mobile crer la liste
-        if(this.mobile){
-          this.paysData = this.pays.data;
-        }
-
-        //si non mobile ou mobile + mode tableau et 
-        if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-          $('#pays').ready(()=>{
-            if(global.langue == 'en'){
-              this.paysHTMLTable = JSONToTHMLTable(this.pays.data, "pays", null, this.mobile);
-            }else{
-              this.paysHTMLTable = JSONToTHMLTable(this.pays.data, "pays", global.dataTable_fr, this.mobile);
+        if(this.codePays && this.codePays != ''){
+          for(let p of pays.data){
+            if(p.codePays == this.codePays){
+              this.unPays = p;
+              this.infos(p);
+              break;
             }
-            this.attacheEventToDataTable(this.paysHTMLTable.datatable);
-          });
+          }
+        }else{
+          this.pays = pays;
+          //si mobile crer la liste
+          if(this.mobile){
+            this.paysData = this.pays.data;
+          }
+  
+          //si non mobile ou mobile + mode tableau et 
+          if(this.pays.data.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
+            $('#pays').ready(()=>{
+              if(global.langue == 'en'){
+                this.paysHTMLTable = JSONToTHMLTable(this.pays.data, "pays", null, this.mobile);
+              }else{
+                this.paysHTMLTable = JSONToTHMLTable(this.pays.data, "pays", global.dataTable_fr, this.mobile);
+              }
+              this.attacheEventToDataTable(this.paysHTMLTable.datatable);
+            });
+          }
         }
+        
       }
     });
   }

@@ -1,12 +1,302 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
+  <ion-toolbar> 
+    <ion-buttons *ngIf="!codeCommune" slot="start">
       <ion-menu-button></ion-menu-button>
+      <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Communes</ion-title>
+    
+    <ion-title *ngIf="action == 'liste'">{{'COMMUNE_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'COMMUNE_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'COMMUNE_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'COMMUNE_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="!codeCommune && action == 'infos'" slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="openRelationCommune($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="action == 'liste'" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
 
+  <!--Mode liste-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header>
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} communes</ion-card-title>
+        <ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      <ng-container *ngIf="communes && communesData && communesData.length > 0">
+        <ion-virtual-scroll [items]="communesData">
+          <ion-item-sliding *virtualItem="let c">
+            <ion-item (click)="infos(c)">
+              <ion-label>
+                <h2><strong>{{'COMMUNE_PAGE.CODE' | translate}}:</strong> {{c.codeCommune}}</h2>
+                <h2><strong>{{'COMMUNE_PAGE.NUMERO' | translate}}:</strong> {{c.numeroCommune}}</h2>
+                <h2><strong>{{'COMMUNE_PAGE.NOM' | translate}}:</strong> {{c.nomCommune}}</h2>
+              </ion-label>
+            </ion-item>
+    
+            <ion-item-options side="start">
+              <ion-item-option (click)="modifier(c)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options side="end">
+              <ion-item-option color="danger" (click)="supprimer(c)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!communes || !communesData || !communesData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
+    <ion-card-header>
+      <!--ion-card-title>{{'GENERAL.LISTE' | translate}} région</ion-card-title-->
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} communes</ion-card-title>
+        <ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
+          {{'GENERAL.ACTION' | translate}}
+          <ion-icon slot="start" name="ios-arrow-down"></ion-icon>
+        </ion-button>
+
+        <ion-button fill="outline" *ngIf="communes && communesData && communesData.length > 0 &&mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <!--les boutton export pour mobile-->
+      <ng-container *ngIf="mobile && styleAffichage == 'tableau'">
+        <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
+        <!--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button-->
+        <br>    
+      </ng-container>
+      <!--Le tabelau-->
+      <!--Toutes les communes-->
+      <div *ngIf="(!codePays || !codeRegion || !codeDepartement) && communes && communesData && communesData.length > 0" class="table-responsive" id="commune"></div>
+      
+      <!--les région du pays sélectionnée-->
+      <div *ngIf="(codePays || codeRegion || codeDepartement) && communes && communesData && communesData.length > 0" class="table-responsive" id="commune-pays"></div>
+      <!--Si le tableau est vide-->
+      <ion-list *ngIf="!communes || communesData || !communesData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card  mode="ios" *ngIf="action == 'infos'">
+    <ion-card-header>
+        <ion-item class="card-header-item">
+          <ion-card-title>{{'GENERAL.INFOS' | translate}} {{uneCommune.nomCommune}}</ion-card-title>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentPays(uneCommune.codePays)">{{uneCommune.nomPays}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentRegion(uneCommune.codeRegion)">{{uneCommune.nomRegion}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentDepartement(uneCommune.codeDepartement)">{{uneCommune.nomDepartement}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'COMMUNE_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.codeCommune}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'COMMUNE_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.numeroCommune}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'COMMUNE_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.nomCommune}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.latitude}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LONGITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.longitude}}</ion-col></ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card  mode="ios" *ngIf="action == 'ajouter' || action == 'modifier'" padding>
+    <ion-card-header>
+      <ion-item class="card-header-item">
+        <ion-card-title *ngIf="action == 'ajouter'">{{'COMMUNE_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
+        <ion-card-title *ngIf="action == 'modifier'">{{'COMMUNE_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="communeForm" (ngSubmit)="onSubmit()">
+        <!--Info pays et région-->
+
+        <ion-row>
+          <!--Pays-->
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'COMMUNE_PAGE.SELECTIONPAYS' | translate}} <span class="required">*</span></ion-label>
+              <ion-select formControlName="codePays" (ionChange)="setNomPays(communeForm.value.codePays)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
+                <ion-select-option *ngFor="let p of paysData" [value]=p.codePays >{{p.codePays}} - {{p.nomPays}}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.codePays">
+                <div class="error-message" *ngIf="communeForm.get('codePays').hasError(validation.type) && (communeForm.get('codePays').dirty || communeForm.get('codePays').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+          <!--Région-->
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'COMMUNE_PAGE.SELECTIONREGION' | translate}} <span class="required">*</span></ion-label>
+              <ion-select formControlName="codeRegion" (ionChange)="setNomRegion(communeForm.value.codeRegion)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
+                <ion-select-option *ngFor="let r of regionData" [value]=r.codeRegion >{{r.codeRegion}} - {{r.nomRegion}}</ion-select-option>
+              </ion-select>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.codeRegion">
+                <div class="error-message" *ngIf="communeForm.get('codeRegion').hasError(validation.type) && (communeForm.get('codeRegion').dirty || communeForm.get('codeRegion').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+        </ion-row>
+
+        <!--Département-->
+        <ion-item>
+          <ion-label position="floating">{{'COMMUNE_PAGE.SELECTIONDEPARTEMENT' | translate}} <span class="required">*</span></ion-label>
+          <ion-select formControlName="codeDepartement" (ionChange)="setNomDepartement(communeForm.value.codeDepartement)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
+            <ion-select-option *ngFor="let d of departementData" [value]=d.codeDepartement >{{d.codeDepartement}} - {{d.nomDepartement}}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.codeDepartement">
+            <div class="error-message" *ngIf="communeForm.get('codeDepartement').hasError(validation.type) && (communeForm.get('codeDepartement').dirty || communeForm.get('codeDepartement').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+
+        <ion-row>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'COMMUNE_PAGE.NUMERO' | translate}} <span class="required">*</span></ion-label>
+              <ion-input formControlName="numeroCommune" type="text" class="form-controll" (ionBlur)="setCodeCommune(communeForm.value.numeroCommune)" required></ion-input>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.numeroCommune">
+                <div class="error-message" *ngIf="communeForm.get('numeroCommune').hasError(validation.type) && (communeForm.get('numeroCommune').dirty || communeForm.get('numeroCommune').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'COMMUNE_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
+              <ion-input formControlName="codeCommune" type="text" class="form-controll" required readonly></ion-input>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.codeCommune">
+                <div class="error-message" *ngIf="communeForm.get('codeCommune').hasError(validation.type) && (communeForm.get('codeCommune').dirty || communeForm.get('codeCommune').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+        </ion-row>  
+
+        <ion-item>
+            <ion-label position="floating">{{'COMMUNE_PAGE.NOM' | translate}} <span class="required">*</span></ion-label>
+            <ion-input formControlName="nomCommune" type="text"></ion-input>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.nomCommune">
+            <div class="error-message" *ngIf="communeForm.get('nomCommune').hasError(validation.type) && (communeForm.get('nomCommune').dirty || communeForm.get('nomCommune').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+
+        <ion-row>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'GENERAL.LATITUDE' | translate}}</ion-label>
+              <ion-input formControlName="latitude" type="number"></ion-input>
+            </ion-item>
+          </ion-col>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'GENERAL.LONGITUDE' | translate}}</ion-label>
+              <ion-input formControlName="longitude" type="number"></ion-input>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+
+        <br>
+        <div class="form-group text-right m-b-0">
+            <ion-button type="submit" [disabled]="!communeForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+            <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+        </div> 
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="action == 'liste' && !seletedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success">
+      <ion-icon name="options"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="!codeCommune && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button (click)="supprimer(uneCommune)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>
+      <ion-fab-button (click)="modifier(uneCommune)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+
+  <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="pin"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

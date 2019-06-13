@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { PopoverController } from '@ionic/angular';
+import { PopoverController, NavParams } from '@ionic/angular';
 
 @Component({
   selector: 'app-action',
@@ -7,8 +7,11 @@ import { PopoverController } from '@ionic/angular';
   styleUrls: ['./action.component.scss'],
 })
 export class ActionComponent implements OnInit {
+  parager: boolean;
 
-  constructor(private popoverController: PopoverController) { }
+  constructor(private popoverController: PopoverController, private navParams: NavParams) {
+    this.parager = this.navParams.data.parager;
+   }
 
   ngOnInit() {}
 
@@ -23,6 +26,11 @@ export class ActionComponent implements OnInit {
   async modifier() {
     await this.popoverController.dismiss('modifier');
   }
+  
+  async partager() {
+    await this.popoverController.dismiss('partager');
+  }
+
   async supprimer() {
     await this.popoverController.dismiss('supprimer');
   }

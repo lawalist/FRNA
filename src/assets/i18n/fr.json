@@ -1,6 +1,7 @@
 {
     "GENERAL": {
         "ANNULER": "Annuler",
+        "OK": "Ok",
         "FERMER": "Fermer",
         "SAUVEGARDER": "Sauvegarder",
         "AJOUTER": "Ajouter",
@@ -10,6 +11,7 @@
         "SUPPRIMER": "Supprimer",
         "OPTIONS": "Options",
         "NOUVEAU": "Nouveau",
+        "PARTAGER": "Partager",
         "RECHERCHER": "Rechercher",
         "MODE_TABLEAU": "Tableau",
         "ACTION": "Action",
@@ -37,7 +39,12 @@
         "ALERT_OUI": "Oui",
         "ALERT_ENREGISTREMENT_DE_TROP": "Veuillez selectionne un seul enregistrment!",
         "ALERT_FICHIER_CREER": "Fichier créé dans",
-        "ALERT_ERREUR_CREAION_FICHIER": "Erreur de création du fichier dans"
+        "ALERT_ERREUR_CREAION_FICHIER": "Erreur de création du fichier dans",
+        "OBTENTION_COORDONNEES": "Obtention des coordonnées en cours...",
+        "COORDONNEES_OBTENUES": "Coordonnées obtenues avec succes!",
+        "ERREUR_COORDONNEES": "Une erreur c'est produite lors de l'obtention des coordonnées. Veuillez reéssayer plus tard!",
+        "LATITUDE": "Latitude",
+        "LONGITUDE": "Longitude"
         
     },
     "MENU": {
@@ -94,8 +101,8 @@
         "TITRE_AJOUTER": "Ajouter un pays",
         "TITRE_INFO": "Infos pays",
         "TITRE_MODIFIER": "Modifier un pays",
-        "CODE": "Code (ISO)",
-        "NOM": "Nom",
+        "CODE": "Code (ISO) pays",
+        "NOM": "Nom pays",
         "REFERENCE": "Référence OpenStreetMap",
         "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un pays",
         "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un pays",
@@ -104,11 +111,223 @@
                 "REQUIRED": "Le code du pays (ISO) est requis.",
                 "MINLENGTH": "Le code du pays doit comporter 2 lettres majuscules.",
                 "MAXLENGTH": "Le code du pays doit comporter 2 lettres majuscules.",
-                "PATTERN": "Le code du pays ne doit contenir que lettres majuscules.",
+                "PATTERN": "Le code du pays ne doit contenir que des lettres majuscules.",
                 "VALIDCODEPAYS": "Le code du pays a été déjà pris."
             },
             "NOMPAYS": {
                 "REQUIRED": "Le nom du pays est requis."
+            }
+        }
+    },
+    "REGION_PAGE": {
+        "TITRE_LISTE": "Régions",
+        "TITRE_AJOUTER": "Ajouter une région",
+        "TITRE_INFO": "Infos région",
+        "TITRE_MODIFIER": "Modifier une région",
+        "CODE": "Code région",
+        "NUMERO": "Numéro région",
+        "NOM": "Nom région",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "SELECTIONPAYS": "Sélectionnez le pays",
+        "REFERENCE": "Référence OpenStreetMap",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une région",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une région",
+        "MESSAGES_VALIDATION": {
+            "CODEREGION": {
+                "REQUIRED": "Le code de la région est requis."
+            },
+            "NUMEROREGION": {
+                "REQUIRED": "Le numéro de la région est requis.",
+                "MINLENGTH": "Le numéro de la région doit comporter 2 chiffres.",
+                "MAXLENGTH": "Le numéro de la région doit comporter 2 chiffres.",
+                "PATTERN": "Le numéro de la région ne doit contenir que des chiffres.",
+                "VALIDNUMEROREGION": "Le numéro de la région doit être différent de 00.",
+                "UNIQUENUMEROREGION": "Le numéro de la région a été déjà pris."
+            },
+            "NOMREGION": {
+                "REQUIRED": "Le nom de la région est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "NOMPAYS": {
+                "REQUIRED": "Le nom du pays est requis."
+            },
+            "PAYSLOADING":{
+                "LOADING": "Liste des pays vide ou encours de chargement."
+            }
+        }
+    },
+    "DEPARTEMENT_PAGE": {
+        "TITRE_LISTE": "Départements",
+        "TITRE_AJOUTER": "Ajouter un département",
+        "TITRE_INFO": "Infos département",
+        "TITRE_MODIFIER": "Modifier un département",
+        "CODE": "Code département",
+        "NUMERO": "Numéro département",
+        "NOM": "Nom département",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "SELECTIONPAYS": "Sélectionnez le pays",
+        "SELECTIONREGION": "Sélectionnez la région",
+        "REFERENCE": "Référence OpenStreetMap",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un département",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un département",
+        "MESSAGES_VALIDATION": {
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le code du département est requis."
+            },
+            "NUMERODEPARTEMENT": {
+                "REQUIRED": "Le numéro du département est requis.",
+                "MINLENGTH": "Le numéro du département doit comporter 2 chiffres.",
+                "MAXLENGTH": "Le numéro du département doit comporter 2 chiffres.",
+                "PATTERN": "Le numéro du département ne doit contenir que des chiffres.",
+                "VALIDNUMERODEPARTEMENT": "Le numéro du département doit être différent de 00.",
+                "UNIQUENUMERODEPARTEMENT": "Le numéro du département a été déjà pris."
+            },
+            "NOMDEPARTEMENT": {
+                "REQUIRED": "Le nom du département est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "NOMPAYS": {
+                "REQUIRED": "Le nom du pays est requis."
+            },
+            "PAYSLOADING":{
+                "LOADING": "Liste des pays vide ou encours de chargement."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "NOMREGION": {
+                "REQUIRED": "Le nom de la région est requis."
+            },
+            "REGIONLOADING":{
+                "LOADING": "Liste des régions vide ou encours de chargement."
+            }
+        }
+    },
+    "COMMUNE_PAGE": {
+        "TITRE_LISTE": "Communes",
+        "TITRE_AJOUTER": "Ajouter une commune",
+        "TITRE_INFO": "Infos commune",
+        "TITRE_MODIFIER": "Modifier une commune",
+        "CODE": "Code commune",
+        "NUMERO": "Numéro commune",
+        "NOM": "Nom commune",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "SELECTIONPAYS": "Sélectionnez le pays",
+        "SELECTIONREGION": "Sélectionnez la région",
+        "SELECTIONDEPARTEMENT": "Sélectionnez le département",
+        "REFERENCE": "Référence OpenStreetMap",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une commune",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une commune",
+        "MESSAGES_VALIDATION": {
+            "CODECOMMUNE": {
+                "REQUIRED": "Le code de la commune est requis."
+            },
+            "NUMEROCOMMUNE": {
+                "REQUIRED": "Le numéro de la commune est requis.",
+                "MINLENGTH": "Le numéro de la commune doit comporter 2 chiffres.",
+                "MAXLENGTH": "Le numéro de la commune doit comporter 2 chiffres.",
+                "PATTERN": "Le numéro de la commune ne doit contenir que des chiffres.",
+                "VALIDNUMEROCOMMUNE": "Le numéro de la commune doit être différent de 00.",
+                "UNIQUENUMEROCOMMUNE": "Le numéro de la commune a été déjà pris."
+            },
+            "NOMCOMMUNE": {
+                "REQUIRED": "Le nom de la commune est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "NOMPAYS": {
+                "REQUIRED": "Le nom du pays est requis."
+            },
+            "PAYSLOADING":{
+                "LOADING": "Liste des pays vide ou encours de chargement."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "NOMREGION": {
+                "REQUIRED": "Le nom de la région est requis."
+            },
+            "REGIONLOADING":{
+                "LOADING": "Liste des régions vide ou encours de chargement."
+            },
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le département est requis."
+            },
+            "NOMDEPARTEMENT": {
+                "REQUIRED": "Le nom du département est requis."
+            },
+            "DEPARTEMENTLOADING":{
+                "LOADING": "Liste des départements vide ou encours de chargement."
+            }
+        }
+    },
+    "VILLAGE_PAGE": {
+        "TITRE_LISTE": "Villages",
+        "TITRE_AJOUTER": "Ajouter un village",
+        "TITRE_INFO": "Infos village",
+        "TITRE_MODIFIER": "Modifier un village",
+        "CODE": "Code village",
+        "NUMERO": "Numéro village",
+        "NOM": "Nom village",
+        "TYPE": "Type village",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "CODECOMMUNE": "Code commune",
+        "NOMCOMMUNET": "Nom commune",
+        "SELECTIONPAYS": "Sélectionnez le pays",
+        "SELECTIONREGION": "Sélectionnez la région",
+        "SELECTIONDEPARTEMENT": "Sélectionnez le département",
+        "SELECTIONCOMMUNE": "Sélectionnez la commune",
+        "REFERENCE": "Référence OpenStreetMap",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un village",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un village",
+        "MESSAGES_VALIDATION": {
+            "CODEVILLAGE": {
+                "REQUIRED": "Le code du village est requis."
+            },
+            "NUMEROVILLAGE": {
+                "REQUIRED": "Le numéro du village est requis.",
+                "MINLENGTH": "Le numéro du village doit comporter 3 chiffres.",
+                "MAXLENGTH": "Le numéro du village doit comporter 3 chiffres.",
+                "PATTERN": "Le numéro du village ne doit contenir que des chiffres.",
+                "VALIDNUMEROVILLAGE": "Le numéro du village doit être différent de 000.",
+                "UNIQUENUMEROVILLAGE": "Le numéro du village a été déjà pris."
+            },
+            "NOMVILLAGE": {
+                "REQUIRED": "Le nom du village est requis."
+            },
+            "TYPEVILLAGE": {
+                "REQUIRED": "Le type du village est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le département est requis."
+            },
+            "CODECOMMUNE": {
+                "REQUIRED": "La commune est requise."
             }
         }
     }

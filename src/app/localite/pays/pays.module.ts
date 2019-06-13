@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Routes, RouterModule } from '@angular/router';
-import { ActionComponent } from '../../../app/component/action/action.component';
+//import { ActionComponent } from '../../../app/component/action/action.component';
 import { RelationsPaysComponent } from '../../../app/component/relations-pays/relations-pays.component';
 import { File } from '@ionic-native/file/ngx';
 
@@ -40,8 +40,8 @@ const routes: Routes = [
     }),
     RouterModule.forChild(routes)
   ],
-  declarations: [PaysPage, ActionComponent, RelationsPaysComponent],
-  entryComponents: [ActionComponent, RelationsPaysComponent],
+  declarations: [PaysPage/*, ActionComponent*/, RelationsPaysComponent],
+  entryComponents: [/*ActionComponent,*/ RelationsPaysComponent],
   providers: [File]
 })
 export class PaysPageModule {}

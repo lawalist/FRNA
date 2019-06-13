@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-buttons slot="start">
+    <ion-buttons *ngIf="!codePays" slot="start">
       <ion-menu-button></ion-menu-button>
       <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
@@ -12,7 +12,7 @@
     <ion-title *ngIf="action == 'infos'">{{'PAYS_PAGE.TITRE_INFO' | translate}}</ion-title>
     <ion-title *ngIf="action == 'modifier'">{{'PAYS_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!codePays && action == 'infos'" slot="end">
       <ion-button ion-button icon-only color="royal" (click)="openRelationPays($event)">
         <ion-icon name="more"></ion-icon>
       </ion-button>
@@ -41,11 +41,11 @@
     </ion-card-header>
     <ion-card-content>
       <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
-      <ng-container *ngIf="pays && paysData">
+      <ng-container *ngIf="pays && paysData && paysData.length > 0">
         <ion-virtual-scroll [items]="paysData">
           <ion-item-sliding *virtualItem="let p">
             <ion-item (click)="infos(p)">
-              <ion-label>
+              <ion-label> 
                 <h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong> {{p.codePays}}</h2>
                 <h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong> {{p.nomPays}}</h2>
               </ion-label>
@@ -132,7 +132,7 @@
     <ion-card-content>
       <form [formGroup]="paysForm" (ngSubmit)="onSubmit()">
         <ion-item>
-            <ion-label position="floating">{{'PAYS_PAGE.CODE' | translate}}</ion-label>
+            <ion-label position="floating">{{'PAYS_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
             <ion-input formControlName="codePays" type="text" class="form-controll" required></ion-input>
         </ion-item>
         <div class="validation-errors">
@@ -144,7 +144,7 @@
           </ng-container>
         </div>
         <ion-item>
-            <ion-label position="floating">{{'PAYS_PAGE.NOM' | translate}}</ion-label>
+            <ion-label position="floating">{{'PAYS_PAGE.NOM' | translate}} <span class="required">*</span></ion-label>
             <ion-input formControlName="nomPays" type="text"></ion-input>
         </ion-item>
         <div class="validation-errors">
@@ -182,7 +182,7 @@
     </ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!codePays && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
       <ion-fab-list side="top">
         <ion-fab-button (click)="supprimer(unPays)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>

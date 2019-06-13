@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
-import { PopoverController } from '@ionic/angular';
+import { PopoverController, ModalController } from '@ionic/angular';
 import { PopoverComponent } from '../../component/popover/popover.component';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -49,7 +49,7 @@ export class TableauDeBordPage implements OnInit {
   };
   formio: any;
 
-    constructor(private popoverController: PopoverController, private servicePouchdb: PouchdbService, private translate: TranslateService) {
+    constructor(private popoverController: PopoverController, public modalController: ModalController, private servicePouchdb: PouchdbService, private translate: TranslateService) {
       
     }
 
@@ -72,7 +72,6 @@ export class TableauDeBordPage implements OnInit {
     return await popover.present();
   }
 
-  
 
   ionViewDidEnter(){ 
      var table;

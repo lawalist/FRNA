@@ -24,8 +24,9 @@ const routes: Routes = [
   { path: 'rapports/statistiques', loadChildren: './rapports/statistiques/statistiques.module#StatistiquesPageModule' },
   
   { path: 'localite/pays', loadChildren: './localite/pays/pays.module#PaysPageModule' },
+  //{ path: 'pays', loadChildren: './localite/pays/pays.module#PaysPageModule' },
   { path: 'localite/regions', loadChildren: './localite/region/region.module#RegionPageModule' },
-  { path: 'localite/regions/pays/:idPays', loadChildren: './localite/region/region.module#RegionPageModule' },
+  { path: 'localite/regions/pays/:codePays', loadChildren: './localite/region/region.module#RegionPageModule' },
   { path: 'localite/communes', loadChildren: './localite/commune/commune.module#CommunePageModule' },
   { path: 'localite/departements', loadChildren: './localite/departement/departement.module#DepartementPageModule' },
   { path: 'localite/villages', loadChildren: './localite/village/village.module#VillagePageModule' },

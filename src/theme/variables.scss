@@ -106,10 +106,19 @@
     //--background: #007bff /*#9f3302*/;
   }
 
+  .costom-modal{
+    --height: 95%;
+    --width: 95%
+  }
+
   .card-header-item{
     --padding-start: 0px;
     --padding-end : 0px;
     --inner-padding-end: 0px; --padding-start:0px
+  }
+
+  .pointer {
+    cursor: pointer;
   }
 
 /*ion-content {

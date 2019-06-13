@@ -21,6 +21,7 @@ const routes: Routes = [
     IonicModule,
     RouterModule.forChild(routes)
   ],
-  declarations: [TableauDeBordPage]
+  declarations: [TableauDeBordPage],
+  entryComponents: [],
 })
 export class TableauDeBordPageModule {}

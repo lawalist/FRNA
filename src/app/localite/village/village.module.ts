@@ -1,11 +1,24 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Routes, RouterModule } from '@angular/router';
 
 import { IonicModule } from '@ionic/angular';
 
 import { VillagePage } from './village.page';
+
+
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Geolocation } from '@ionic-native/geolocation/ngx';
+import { RelationsVillageComponent } from '../../../app/component/relations-village/relations-village.component';
+import { File } from '@ionic-native/file/ngx';
+import { HttpClientModule, HttpClient } from '@angular/common/http';
+import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+
+export function HttpLoaderFactory(http: HttpClient) {
+  return new TranslateHttpLoader(http, "./assets/i18n/", ".json");
+  }
+
 
 const routes: Routes = [
   {
@@ -18,9 +31,20 @@ const routes: Routes = [
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     IonicModule,
+    HttpClientModule,
+    TranslateModule.forRoot({
+      loader: {
+        provide: TranslateLoader,
+        useFactory: HttpLoaderFactory,
+        deps: [HttpClient]
+      }
+    }),
     RouterModule.forChild(routes)
   ],
-  declarations: [VillagePage]
+  declarations: [VillagePage, RelationsVillageComponent],
+  entryComponents: [RelationsVillageComponent],
+  providers: [File, Geolocation]
 })
 export class VillagePageModule {}

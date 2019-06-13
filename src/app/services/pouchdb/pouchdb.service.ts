@@ -20,9 +20,18 @@ export class PouchdbService {
   private  data: any;
 
   constructor(private storage: Storage) {
-    this.localDB = new PouchDB('frna-local-db')
+    this.localDB = new PouchDB('frna-local-db');
+    this.localDB.setMaxListeners(20); // or 30 or 40 or however many you need, 
+                                      //to prevent warning (node) warning: possible EventEmitter memory leak detected. 11 listeners added. 
+                                      //Use emitter.setMaxListeners() to increase limit.
+    //this.remoteDB = new PouchDB('http://localhost:5984/frna-v2');
+    //this.sync();
+    this.localDB.sync('http://localhost:5984/frna-v2', { live: true, retry: true });
    }
 
+   sync(){
+    PouchDB.sync(this.localDB, this.remoteDB);
+   }
    
   public getDB() {
     if (!this.localDB) {
@@ -54,7 +63,7 @@ export class PouchdbService {
   }
 
   deleteLocalie(doc){
-    doc.doc._deleted = true;
+    doc._deleted = true;
     return doc;
   }
 
@@ -197,6 +206,20 @@ export class PouchdbService {
     this.localDB.put(doc);
   }
 
+  deleteLocaliteDefinitivement(doc){
+    let dat = new Date();
+    doc.deleted_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.deleted_by = global.info_user.name;
+    }else{
+      doc.deleted_by = '';
+    }
+    doc.deleted = true;
+    doc._deleted = true;
+    this.localDB.put(doc);
+  }
+
+
 
 
   updateLocalite(doc){
@@ -226,6 +249,40 @@ export class PouchdbService {
     
     return this.remoteDB.put(doc);
   }
+
+
+  getLocalitePlageDocs(startkey, endkey){
+    //si non vide
+    let data: any;
+    if(data){
+      return data
+    }
+
+    
+    return new Promise ( resolve => {
+      this.localDB.allDocs({
+        include_docs: true,
+        startkey: startkey,
+        endkey: endkey
+      }).then((result) => {
+        //data = result.rows;
+        data = [];
+        let doc = result.rows.map((row) => {
+          if(!row.doc.deleted){
+            data.push(row.doc);
+          }
+            
+        });
+
+        
+        resolve(data);
+
+        this.localDB.changes({live: true, since: 'now', include_docs: true}).on('change', (change) => this.handleChange(change));
+      }).catch((err) => console.log(err));
+    } );
+  }
+
+
 
   getPlageDocs(startkey, endkey){
 
@@ -449,25 +506,29 @@ export class PouchdbService {
     let changeDoc = null;
     let changeIndex = null;
 
-    this.data.forEach((doc, index) => {
-      if(doc._id === change.id){
-        changeDoc = doc;
-        changeIndex = index;
-      }
-    });
+    if(this.data){
+      this.data.forEach((doc, index) => {
+        if(doc._id === change.id){
+          changeDoc = doc;
+          changeIndex = index;
+        }
+      });
+    }
+    
 
     //le document a ete supprime
 
-    if(change.delete){
+    if(change.delete && this.data){
       this.data.splice(changeIndex, 1);
     }else{
       //mise a jour
-      if(changeDoc){
+      if(changeDoc && this.data){
         this.data[changeIndex] = change.doc;
       }
       //ajout
       else{
-        this.data.push(change.doc);
+        if(this.data)
+          this.data.push(change.doc);
       }
     }
   }

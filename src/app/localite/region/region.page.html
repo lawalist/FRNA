@@ -1,12 +1,261 @@
 <ion-header>
   <ion-toolbar>
-    <ion-buttons slot="start">
+    <ion-buttons *ngIf="!codeRegion" slot="start">
       <ion-menu-button></ion-menu-button>
+      <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Régions</ion-title>
+    
+    <ion-title *ngIf="action == 'liste'">{{'REGION_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'REGION_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'REGION_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'REGION_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="!codeRegion && action == 'infos'" slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="openRelationRegion($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="action == 'liste'" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
 
+  <!--Mode liste-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header>
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} régions</ion-card-title>
+        <ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      <ng-container *ngIf="regions && regionsData && regionsData.length > 0">
+        <ion-virtual-scroll [items]="regionsData">
+          <ion-item-sliding *virtualItem="let p">
+            <ion-item (click)="infos(p)">
+              <ion-label>
+                <h2><strong>{{'REGION_PAGE.CODE' | translate}}:</strong> {{p.codeRegion}}</h2>
+                <h2><strong>{{'REGION_PAGE.NUMERO' | translate}}:</strong> {{p.numeroRegion}}</h2>
+                <h2><strong>{{'REGION_PAGE.NOM' | translate}}:</strong> {{p.nomRegion}}</h2>
+              </ion-label>
+            </ion-item>
+    
+            <ion-item-options side="start">
+              <ion-item-option (click)="modifier(p)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options side="end">
+              <ion-item-option color="danger" (click)="supprimer(p)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!regions || !regionsData || !regionsData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
+    <ion-card-header>
+      <!--ion-card-title>{{'GENERAL.LISTE' | translate}} région</ion-card-title-->
+      <ion-item class="card-header-item">
+        <ion-card-title>{{'GENERAL.LISTE' | translate}} régions</ion-card-title>
+        <ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
+          {{'GENERAL.ACTION' | translate}}
+          <ion-icon slot="start" name="ios-arrow-down"></ion-icon>
+        </ion-button>
+
+        <ion-button fill="outline" *ngIf="regions && regionsData && regionsData.length > 0 && mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <!--les boutton export pour mobile-->
+      <ng-container *ngIf="mobile && styleAffichage == 'tableau'">
+        <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
+        <!--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button-->
+        <br>    
+      </ng-container>
+      <!--Le tabelau-->
+      <!--Toutes les regions-->
+      <div *ngIf="!codePays && regions && regionsData && regionsData.length > 0" class="table-responsive" id="region"></div>
+      
+      <!--les région du pays sélectionnée-->
+      <div *ngIf="codePays && regions && regionsData && regionsData.length > 0" class="table-responsive" id="region-pays"></div>
+      <!--Si le tableau est vide-->
+      <ion-list *ngIf="!regions || !regionsData || !regionsData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card  mode="ios" *ngIf="action == 'infos'">
+    <ion-card-header>
+        <ion-item class="card-header-item">
+          <ion-card-title>{{'GENERAL.INFOS' | translate}} {{uneRegion.nomRegion}}</ion-card-title>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-grid>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentPays(uneRegion.codePays)">{{uneRegion.nomPays}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'REGION_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{uneRegion.codeRegion}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'REGION_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{uneRegion.numeroRegion}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'REGION_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{uneRegion.nomRegion}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneRegion.latitude}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LONGITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneRegion.longitude}}</ion-col></ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card  mode="ios" *ngIf="action == 'ajouter' || action == 'modifier'" padding>
+    <ion-card-header>
+      <ion-item class="card-header-item">
+        <ion-card-title *ngIf="action == 'ajouter'">{{'REGION_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
+        <ion-card-title *ngIf="action == 'modifier'">{{'REGION_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <form [formGroup]="regionForm" (ngSubmit)="onSubmit()">
+        <!--Info pays-->
+        <ion-item>
+            <ion-label position="floating">{{'REGION_PAGE.SELECTIONPAYS' | translate}} <span class="required">*</span></ion-label>
+            <ion-select formControlName="codePays" (ionChange)="setNomPays(regionForm.value.codePays)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
+              <ion-select-option *ngFor="let p of paysData" [value]=p.codePays >{{p.codePays}} - {{p.nomPays}}</ion-select-option>
+            </ion-select>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.codePays">
+            <div class="error-message" *ngIf="regionForm.get('codePays').hasError(validation.type) && (regionForm.get('codePays').dirty || regionForm.get('codePays').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+        
+        <ion-row>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'REGION_PAGE.NUMERO' | translate}} <span class="required">*</span></ion-label>
+              <ion-input formControlName="numeroRegion" type="text" class="form-controll" (ionBlur)="setCodeRegion(regionForm.value.numeroRegion)" required></ion-input>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.numeroRegion">
+                <div class="error-message" *ngIf="regionForm.get('numeroRegion').hasError(validation.type) && (regionForm.get('numeroRegion').dirty || regionForm.get('numeroRegion').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'REGION_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
+              <ion-input formControlName="codeRegion" type="text" class="form-controll" required readonly></ion-input>
+            </ion-item>
+            <div class="validation-errors">
+              <ng-container *ngFor="let validation of messages_validation.codeRegion">
+                <div class="error-message" *ngIf="regionForm.get('codeRegion').hasError(validation.type) && (regionForm.get('codeRegion').dirty || regionForm.get('codeRegion').touched)">
+                  <ion-icon name="information-circle-outline"></ion-icon>
+                  {{ validation.message }}
+                </div>
+              </ng-container>
+            </div>
+          </ion-col>
+        </ion-row>  
+
+        <ion-item>
+            <ion-label position="floating">{{'REGION_PAGE.NOM' | translate}} <span class="required">*</span></ion-label>
+            <ion-input formControlName="nomRegion" type="text"></ion-input>
+        </ion-item>
+        <div class="validation-errors">
+          <ng-container *ngFor="let validation of messages_validation.nomRegion">
+            <div class="error-message" *ngIf="regionForm.get('nomRegion').hasError(validation.type) && (regionForm.get('nomRegion').dirty || regionForm.get('nomRegion').touched)">
+              <ion-icon name="information-circle-outline"></ion-icon>
+              {{ validation.message }}
+            </div>
+          </ng-container>
+        </div>
+
+        <ion-row>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'GENERAL.LATITUDE' | translate}}</ion-label>
+              <ion-input formControlName="latitude" type="number"></ion-input>
+            </ion-item>
+          </ion-col>
+          <ion-col>
+            <ion-item>
+              <ion-label position="floating">{{'GENERAL.LONGITUDE' | translate}}</ion-label>
+              <ion-input formControlName="longitude" type="number"></ion-input>
+            </ion-item>
+          </ion-col>
+        </ion-row>
+
+        <br>
+        <div class="form-group text-right m-b-0">
+            <ion-button type="submit" [disabled]="!regionForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+            <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+        </div> 
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="action == 'liste' && !seletedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success">
+      <ion-icon name="options"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="!codeRegion && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button (click)="supprimer(uneRegion)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>
+      <ion-fab-button (click)="modifier(uneRegion)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+
+  <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="pin"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>
+
+
