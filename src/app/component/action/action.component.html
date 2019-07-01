@@ -4,8 +4,8 @@
   </ion-list-header-->
   
   <ion-item button (click)="infos()" detail="true">
-    <ion-icon name="information-circle" color="primary"></ion-icon>
-    <ion-label color="primary">{{'GENERAL.INFOS' | translate}}</ion-label>
+    <ion-icon name="eye" color="primary"></ion-icon>
+    <ion-label color="primary">{{'GENERAL.AFFICHER' | translate}}</ion-label>
   </ion-item>
   
   <ion-item button (click)="modifier()" detail="true">
@@ -18,10 +18,10 @@
     <ion-label color="primary">{{'GENERAL.PARTAGER' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item button (click)="ajouter()" detail="true">
+  <!--ion-item button (click)="ajouter()" detail="true">
     <ion-icon name="add" color="primary" ></ion-icon>
     <ion-label color="primary">{{'GENERAL.NOUVEAU' | translate}}</ion-label>
-  </ion-item>
+  </ion-item-->
 
   <ion-item button (click)="supprimer()" detail="true">
     <ion-icon name="trash" color="danger"></ion-icon>

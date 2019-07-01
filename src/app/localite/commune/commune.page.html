@@ -7,7 +7,16 @@
       </ion-button>
     </ion-buttons>
     
-    <ion-title *ngIf="action == 'liste'">{{'COMMUNE_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action == 'liste' && estModeCocherElemListe" slot="start">
+      <ion-button ion-button icon-only color="royal" (click)="changerModeCocherElemListe()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+
+      <ion-badge>{{seletedIndexes.length}}</ion-badge>
+    </ion-buttons>
+
+    <ion-title *ngIf="action == 'liste' && !estModeCocherElemListe">{{'COMMUNE_PAGE.TITRE_LISTE' | translate}}</ion-title>
     <ion-title *ngIf="action == 'ajouter'">{{'COMMUNE_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
     <ion-title *ngIf="action == 'infos'">{{'COMMUNE_PAGE.TITRE_INFO' | translate}}</ion-title>
     <ion-title *ngIf="action == 'modifier'">{{'COMMUNE_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
@@ -15,6 +24,24 @@
     <ion-buttons *ngIf="!codeCommune && action == 'infos'" slot="end">
       <ion-button ion-button icon-only color="royal" (click)="openRelationCommune($event)">
         <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
+      <ion-button *ngIf="seletedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
+        <ion-icon name="trash"></ion-icon>
+      </ion-button>
+                
+      <ion-button ion-button icon-only (click)="listOptionsPopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Close-->
+    <ion-buttons *ngIf="codeCommune || (codePays && action == 'liste')" slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="close()">
+        <ion-icon name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
@@ -36,7 +63,7 @@
     <ion-card-header>
       <ion-item class="card-header-item">
         <ion-card-title>{{'GENERAL.LISTE' | translate}} communes</ion-card-title>
-        <ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button>
+        <!--ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button-->
       </ion-item>
     </ion-card-header>
     <ion-card-content>
@@ -50,15 +77,16 @@
                 <h2><strong>{{'COMMUNE_PAGE.NUMERO' | translate}}:</strong> {{c.numeroCommune}}</h2>
                 <h2><strong>{{'COMMUNE_PAGE.NOM' | translate}}:</strong> {{c.nomCommune}}</h2>
               </ion-label>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(c.codeCommune)" slot="end"></ion-checkbox>
             </ion-item>
     
-            <ion-item-options side="start">
+            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
               <ion-item-option (click)="modifier(c)">
                 <ion-icon slot="icon-only" name="create"></ion-icon>
               </ion-item-option>
             </ion-item-options> 
     
-            <ion-item-options side="end">
+            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
               <ion-item-option color="danger" (click)="supprimer(c)">
                 <ion-icon slot="icon-only" name="trash"></ion-icon>
               </ion-item-option>
@@ -82,21 +110,86 @@
       <!--ion-card-title>{{'GENERAL.LISTE' | translate}} région</ion-card-title-->
       <ion-item class="card-header-item">
         <ion-card-title>{{'GENERAL.LISTE' | translate}} communes</ion-card-title>
-        <ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
+        <!--ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
           {{'GENERAL.ACTION' | translate}}
           <ion-icon slot="start" name="ios-arrow-down"></ion-icon>
-        </ion-button>
+        </ion-button-->
 
-        <ion-button fill="outline" *ngIf="communes && communesData && communesData.length > 0 &&mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button>
+        <ion-buttons class="hid-boutons" *ngIf="communes && communesData && communesData.length > 0" slot="end">
+
+          <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
+            <ion-icon name="square-outline"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && seletedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
+            <i style="font-size: 18px" class="fa fa-minus-square"></i>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
+            <ion-icon name="checkbox"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
+            <ion-icon name="refresh"></ion-icon>
+          </ion-button>
+
+          <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
+              <i style="font-size: 18px" class="fa fa-search-plus"></i>
+          </ion-button>
+
+          <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
+              <i style="font-size: 18px" class="fa fa-search-minus"></i>
+          </ion-button>
+
+          <div [class.barre-verticale]="seletedIndexes.length > 0">
+            <ion-button *ngIf="!filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
+              <ion-icon name="ios-funnel"></ion-icon>
+            </ion-button>
+
+            <ion-button *ngIf="filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+                <ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon>
+              </ion-button>
+          </div>
+
+          <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemInfo()">
+            <ion-icon name="eye"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemModifier()">
+            <ion-icon  name="create"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="openRelationCommuneDepuisListe($event)">
+            <ion-icon name="redo"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="seletedIndexes.length > 0" (click)="suppressionMultiple()">
+            <ion-icon  name="trash"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+        
+        <ion-buttons class="hid-action" *ngIf="communes && communesData && communesData.length > 0" slot="end">
+          
+          <div [class.barre-verticale]="seletedIndexes.length > 0">
+            <ion-button [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
+              <ion-icon name="more"></ion-icon>
+            </ion-button>
+          </div>
+          <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="seletedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+              <ion-icon name="construct"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+
+        <!--ion-button fill="outline" *ngIf="communes && communesData && communesData.length > 0 &&mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button-->
       </ion-item>
     </ion-card-header>
     <ion-card-content>
       <!--les boutton export pour mobile-->
-      <ng-container *ngIf="mobile && styleAffichage == 'tableau'">
+      <!--ng-container *ngIf="mobile && styleAffichage == 'tableau'">
         <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
-        <!--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button-->
+        <--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button->
         <br>    
-      </ng-container>
+      </ng-container-->
       <!--Le tabelau-->
       <!--Toutes les communes-->
       <div *ngIf="(!codePays || !codeRegion || !codeDepartement) && communes && communesData && communesData.length > 0" class="table-responsive" id="commune"></div>
@@ -104,7 +197,7 @@
       <!--les région du pays sélectionnée-->
       <div *ngIf="(codePays || codeRegion || codeDepartement) && communes && communesData && communesData.length > 0" class="table-responsive" id="commune-pays"></div>
       <!--Si le tableau est vide-->
-      <ion-list *ngIf="!communes || communesData || !communesData.length > 0" lines="none">        
+      <ion-list *ngIf="!communes || !communesData || !communesData.length > 0" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
@@ -122,11 +215,11 @@
     </ion-card-header>
     <ion-card-content>
       <ion-grid>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentPays(uneCommune.codePays)">{{uneCommune.nomPays}}</a> </ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(uneCommune.codePays)">{{uneCommune.nomPays}}</a> </ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentRegion(uneCommune.codeRegion)">{{uneCommune.nomRegion}}</a> </ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(uneCommune.codeRegion)">{{uneCommune.nomRegion}}</a> </ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="pointer" (click)="presentDepartement(uneCommune.codeDepartement)">{{uneCommune.nomDepartement}}</a> </ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentDepartement(uneCommune.codeDepartement)">{{uneCommune.nomDepartement}}</a> </ion-col></ion-row>
         <div class="hr"></div>
         <ion-row><ion-col><h2><strong>{{'COMMUNE_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{uneCommune.codeCommune}}</ion-col></ion-row>
         <div class="hr"></div>
@@ -146,6 +239,14 @@
       <ion-item class="card-header-item">
         <ion-card-title *ngIf="action == 'ajouter'">{{'COMMUNE_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
         <ion-card-title *ngIf="action == 'modifier'">{{'COMMUNE_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>
+      
+      
+        <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" slot="end" (click)="onSubmit()" type="submit" [disabled]="!communeForm.valid" color="success" block>
+          <ion-icon name="save"></ion-icon>
+        </ion-button>
+        <ion-button title="{{'GENERAL.ANNULER' | translate}}" slot="end" color="light" class="m-l-5" (click)="annuler()" block>
+            <ion-icon name="close"></ion-icon>
+        </ion-button>
       </ion-item>
     </ion-card-header>
     <ion-card-content>
@@ -193,7 +294,7 @@
         <ion-item>
           <ion-label position="floating">{{'COMMUNE_PAGE.SELECTIONDEPARTEMENT' | translate}} <span class="required">*</span></ion-label>
           <ion-select formControlName="codeDepartement" (ionChange)="setNomDepartement(communeForm.value.codeDepartement)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
-            <ion-select-option *ngFor="let d of departementData" [value]=d.codeDepartement >{{d.codeDepartement}} - {{d.nomDepartement}}</ion-select-option>
+            <ion-select-option *ngFor="let d of departementData" [value]=d.codeDepartement >{{d.nomDepartement}}</ion-select-option>
           </ion-select>
         </ion-item>
         <div class="validation-errors">
@@ -274,17 +375,17 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="action == 'liste' && !seletedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+  <!--ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button color="success">
       <ion-icon name="options"></ion-icon>
     </ion-fab-button>
-  </ion-fab>
+  </ion-fab-->
 
   <ion-fab *ngIf="!codeCommune && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>

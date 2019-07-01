@@ -13,8 +13,11 @@ import { HttpClientModule, HttpClient } from '@angular/common/http';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
+import { IonicSelectableModule } from 'ionic-selectable';
+
 import { PopoverComponent } from '../app/component/popover/popover.component';
 import { ActionComponent } from '../app/component/action/action.component';
+import { ActionDatatableComponent } from '../app/component/action-datatable/action-datatable.component';
 
 import { IonicStorageModule } from '@ionic/storage';
 import { RegionPageModule } from './localite/region/region.module';
@@ -22,6 +25,7 @@ import { PaysPageModule } from './localite/pays/pays.module';
 import { DepartementPageModule } from './localite/departement/departement.module';
 import { CommunePageModule } from './localite/commune/commune.module';
 import { VillagePageModule } from './localite/village/village.module';
+import { ListOptionsComponent } from './component/list-options/list-options.component';
 
 
 //Activé angular en mode production
@@ -31,8 +35,8 @@ export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, "./assets/i18n/", ".json");
 }
 @NgModule({
-  declarations: [AppComponent, PopoverComponent, ActionComponent],
-  entryComponents: [PopoverComponent, ActionComponent],
+  declarations: [AppComponent, PopoverComponent, ActionComponent, ListOptionsComponent, ActionDatatableComponent],
+  entryComponents: [PopoverComponent, ActionComponent, ListOptionsComponent, ActionDatatableComponent],
   imports: [
     BrowserModule,
     HttpClientModule, 
@@ -43,6 +47,7 @@ export function HttpLoaderFactory(http: HttpClient) {
         deps: [HttpClient]
       }
     }),
+    IonicSelectableModule,
     IonicModule.forRoot(),
     IonicStorageModule.forRoot(),
     AppRoutingModule,

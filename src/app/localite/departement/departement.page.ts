@@ -1,12 +1,11 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { NumeroDepartementValidator } from '../../validators/departement.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
-import { AlertController, ToastController, ModalController, ActionSheetController, Platform, PopoverController, NavController  } from '@ionic/angular';
+import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
 import { ActionComponent } from '../../component/action/action.component';
 import { RelationsDepartementComponent } from '../../component/relations-departement/relations-departement.component';
 import { global } from '../../../app/globale/variable';
@@ -14,6 +13,8 @@ import { PaysPage } from '../pays/pays.page';
 import { RegionPage } from '../region/region.page';
 import { CommunePage } from '../commune/commune.page';
 import { VillagePage } from '../village/village.page';
+import { ActionDatatableComponent } from 'src/app/component/action-datatable/action-datatable.component';
+import { ListOptionsComponent } from 'src/app/component/list-options/list-options.component';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var JSONToTHMLTable: any;
@@ -41,8 +42,14 @@ export class DepartementPage implements OnInit {
   departementHTMLTable: any;
   htmlTableAction: string;
   seletedIndexes: any = [];
-  mobile: boolean = false;
+  mobile = global.mobile;
   styleAffichage: string = "liste";
+  allSelected: boolean = false;
+  recherchePlus: boolean = false;
+  filterAjouter: boolean = false;
+  filterInitialiser: boolean = false;
+  
+  estModeCocherElemListe: boolean = false;
 
   messages_validation = {
     'codeDepartement': [
@@ -80,11 +87,8 @@ export class DepartementPage implements OnInit {
   }
 
   
-    constructor(private formBuilder: FormBuilder, private modalController: ModalController, private route: ActivatedRoute, private geolocation: Geolocation, private navCtrl: NavController, private file: File, private popoverController: PopoverController, private plateform: Platform, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+    constructor(private formBuilder: FormBuilder, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
       this.translate.setDefaultLang(global.langue);
-      if(this.plateform.is('android') || this.plateform.is('ios') || this.plateform.is('mobile')){
-        this.mobile = true;
-      }
 
     }
   
@@ -100,7 +104,7 @@ export class DepartementPage implements OnInit {
       this.getDepartement();
     }
   
-    changeStyle(){
+    /*changeStyle(){
       if(this.styleAffichage == 'liste'){
         this.styleAffichage = 'tableau';
         this.htmlTableAction = 'recharger';
@@ -109,7 +113,211 @@ export class DepartementPage implements OnInit {
         this.styleAffichage = 'liste';
         this.seletedIndexes = [];
       }
+    }*/
+
+    
+    changeStyle(){
+      if(this.styleAffichage == 'liste'){
+        this.styleAffichage = 'tableau';
+        this.htmlTableAction = 'recharger';
+        this.estModeCocherElemListe = false;
+        this.actualiserTableau(this.departementsData);
+      }else {
+        this.styleAffichage = 'liste';
+        this.seletedIndexes = [];
+        this.estModeCocherElemListe = false;
+      }
     }
+  
+    cocherElemListe(codeDepartement){
+      if(this.seletedIndexes.indexOf(codeDepartement) === -1){
+        //si coché
+        this.seletedIndexes.push(codeDepartement);
+      }else{
+        //si décocher
+        this.seletedIndexes.splice(this.seletedIndexes.indexOf(codeDepartement), 1);
+      }  
+      
+    }
+  
+    
+    removeMultipleElem(data, indexes){
+      let codes = [];
+      if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+        indexes.forEach((i) => {
+          codes.push(data[i].codeDepartement);
+        });
+      }else{
+        codes = indexes;
+      }
+      
+  
+      for(let i = 0; i < data.length; i++){
+        if(codes.length == 0){
+          break;
+        }
+        if(codes.indexOf(data[i].codeDepartement) !== -1){
+          codes.splice(codes.indexOf(data[i].codeDepartement), 1);
+          data.splice(i, 1);
+          i--;
+        }
+      }
+  
+      return data;
+    }
+  
+    changerModeCocherElemListe(){
+       if(this.estModeCocherElemListe){
+        this.estModeCocherElemListe = false
+       }else{
+        this.estModeCocherElemListe = true
+       }
+      this.seletedIndexes = [];
+    }
+  
+    cocherTousElemListe(){
+      this.departementsData.forEach((d) => {
+        //console.log(p.codePays+'   '+this.seletedIndexes.indexOf(p.codePays)+'    '+this.seletedIndexes)
+        if(this.seletedIndexes.indexOf(d.codeDepartement) === -1){
+          this.seletedIndexes.push(d.codeDepartement);
+        }
+      });
+  
+      $('ion-checkbox').prop("checked", true);
+    }
+  
+    decocherTousElemListe(){
+      $('ion-checkbox').prop("checked", false);
+      this.seletedIndexes = [];
+    }
+  
+  
+    async listOptionsPopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: ListOptionsComponent,
+        event: ev,
+        translucent: true,
+        componentProps: {"options": {
+          "estModeCocherElemListe": this.estModeCocherElemListe,
+          "dataLength": this.departementsData.length,
+          "seletedIndexesLength": this.seletedIndexes.length,
+          "styleAffichage": this.styleAffichage
+        }},
+        animated: true,
+        showBackdrop: true,
+        //mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'listSelectionMultiple') {
+          this.changerModeCocherElemListe();
+        }else  if(dataReturned !== null && dataReturned.data == 'listSelectAll') {
+          this.cocherTousElemListe();
+        }else  if(dataReturned !== null && dataReturned.data == 'listSelectNon') {
+          this.decocherTousElemListe();
+        } else  if(dataReturned !== null && dataReturned.data == 'changeStyle') {
+          this.changeStyle();
+        }      
+  
+      });
+      return await popover.present();
+    }
+  
+    
+    async supprimerElemCocherListe() {
+      const alert = await this.alertCtl.create({
+        header: this.translate.instant('GENERAL.ALERT_CONFIERMER'),
+        message: this.translate.instant('GENERAL.ALERT_MESSAGE'),
+        //cssClass: 'aler-confirm',
+        mode: 'ios',
+        buttons: [
+          {
+            text: this.translate.instant('GENERAL.ALERT_OUI'),
+            role: 'destructive',
+            cssClass: 'alert-danger',
+            handler: (data) => {
+              
+              var codesIndex = [];
+              let codes = [...this.seletedIndexes];
+              //console.log(codes)
+              for(let i = 0; i < this.departementsData.length; i++){
+                if(codes.length == 0){
+                  break;
+                }
+
+                //console.log(this.regionsData[i].codeRegion)
+                if(codes.indexOf(this.departementsData[i].codeDepartement) !== -1){
+                  //console.log('yes '+i)
+                  codes.splice(codes.indexOf(this.departementsData[i].codeDepartement), 1);
+                  codesIndex.push(i);
+                  i--;
+                }
+              }
+              //console.log(codesIndex)
+
+              var departementsConcernee: any = {};
+              codesIndex.forEach((si) => {
+                var d = this.departementsData[si];
+                var exist = 0;
+
+                if(departementsConcernee['fuma:departement:'+d.codeRegion]){
+                  departementsConcernee['fuma:departement:'+d.codeRegion].data.splice(departementsConcernee['fuma:departement:'+d.codeRegion].data.indexOf(d), 1);
+                  exist = 1;
+                }
+
+                if(!exist){
+                  for(let reg of this.departements){
+                    if('fuma:departement:'+d.codeRegion == reg._id){
+                      reg.data.splice(reg.data.indexOf(d), 1);
+                      departementsConcernee[reg._id] = reg
+                      break;
+                    }
+                  }
+                }
+              });
+
+              //mise à jour de departementsData
+              /*this.seletedIndexes.forEach((si) => {
+                this.departementsData.splice(this.departementsData.indexOf(this.departementsData[si]), 1);
+              });*/
+
+              //update
+              Object.keys(departementsConcernee).forEach((key, index) => {
+                this.servicePouchdb.updateLocalite(departementsConcernee[key]).then((res) => {
+                  departementsConcernee[key]._rev = res.rev;
+                  for(let i = 0; i < this.departements.length; i++){
+                    if(this.departements[i]._id == departementsConcernee[key]._id){
+                      this.departements[i] = departementsConcernee[key];
+                      break;
+                    }
+                  }
+                  if(index +1 == Object.keys(departementsConcernee).length){
+                    this.departementsData = [...this.removeMultipleElem(this.departementsData, this.seletedIndexes)];
+                    this.decocherTousElemListe();
+                    //this.htmlTableAction = 'recharger';
+                    //this.actualiserTableau(this.departementsData);
+                    this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
+                  }
+                }).catch((err) => {
+                  this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                });
+              });
+
+            }
+          },{
+            text: this.translate.instant('GENERAL.ALERT_ANNULER'),
+            role: 'cancel',
+            cssClass: 'secondary',
+            handler: () => {
+              console.log('Confirmation annulée');
+            }
+          }
+        ]
+      });
+  
+      await alert.present();
+    }
+  
   
     initForm(){
       //this.departementForm = null;
@@ -170,8 +378,10 @@ export class DepartementPage implements OnInit {
     }
   
     infos(d){
-      this.unDepartement = d;
-      this.action = 'infos';
+      if(!this.estModeCocherElemListe){
+        this.unDepartement = d;
+        this.action = 'infos';
+      }
     }
 
   
@@ -308,8 +518,12 @@ export class DepartementPage implements OnInit {
                 }
                 this.action = 'liste';
                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
-                this.htmlTableAction = 'recharger';
-                this.actualiserTableau(this.departementsData);
+                if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+                  this.dataTableRemoveRows();
+                  this.seletedIndexes = [];
+                }
+                //this.htmlTableAction = 'recharger';
+                //this.actualiserTableau(this.departementsData);
               }).catch((err) => {
                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
 
@@ -401,8 +615,10 @@ export class DepartementPage implements OnInit {
                   }
                   if(index +1 == Object.keys(departementsConcernee).length){
                     this.action = 'liste';
-                    this.htmlTableAction = 'recharger';
-                    this.actualiserTableau(this.departementsData);
+                    this.dataTableRemoveRows();
+                    this.seletedIndexes = [];
+                    //this.htmlTableAction = 'recharger';
+                    //this.actualiserTableau(this.departementsData);
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
                   }
                 }).catch((err) => {
@@ -411,7 +627,7 @@ export class DepartementPage implements OnInit {
               });
               
               
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }
           }
         ]
@@ -445,7 +661,7 @@ export class DepartementPage implements OnInit {
         this.action = "infos";
       }else{
         this.action = 'liste';
-        this.actualiserTableau(this.departementsData);
+        //this.actualiserTableau(this.departementsData);
       }
     }
   
@@ -454,7 +670,7 @@ export class DepartementPage implements OnInit {
         this.action = "infos";
       }else{
         this.action = 'liste';
-        this.actualiserTableau(this.departementsData);
+        //this.actualiserTableau(this.departementsData);
       }
     }
   
@@ -468,7 +684,7 @@ export class DepartementPage implements OnInit {
           handler: () => {
             if(this.seletedIndexes.length == 1){
               this.infos(this.departementsData[this.seletedIndexes[0]]);
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
             }
@@ -479,7 +695,7 @@ export class DepartementPage implements OnInit {
           handler: () => {
             if(this.seletedIndexes.length == 1){
               this.modifier(this.departementsData[this.seletedIndexes[0]]);
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
             }
@@ -489,7 +705,7 @@ export class DepartementPage implements OnInit {
           icon: 'add',
           handler: () => {
             this.ajouter();
-            this.seletedIndexes = [];
+            //this.seletedIndexes = [];
           }
         }, {
           text: this.translate.instant('GENERAL.SUPPRIMER'),
@@ -526,19 +742,21 @@ export class DepartementPage implements OnInit {
           this.ajouter();
           this.seletedIndexes = [];
         }else if(dataReturned !== null && dataReturned.data == 'infos') {
-          if(this.seletedIndexes.length == 1){
+          this.selectedItemInfo();
+          /*if(this.seletedIndexes.length == 1){
             this.infos(this.departementsData[this.seletedIndexes[0]]);
             this.seletedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
-          }
+          }*/
         }else if(dataReturned !== null && dataReturned.data == 'modifier') {
-          if(this.seletedIndexes.length == 1){
+          this.selectedItemModifier();
+          /*if(this.seletedIndexes.length == 1){
             this.modifier(this.departementsData[this.seletedIndexes[0]]);
             this.seletedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
-          }
+          }*/
         } else if(dataReturned !== null && dataReturned.data == 'supprimer') {
           this.suppressionMultiple();
         }
@@ -546,6 +764,56 @@ export class DepartementPage implements OnInit {
   
       });
       return await popover.present();
+    }
+
+    async actionDatatablePopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: ActionDatatableComponent,
+        event: ev,
+        translucent: true,
+        //componentProps: {"id": "salu"},
+        animated: true,
+        showBackdrop: true,
+        mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'dataTableSelectAll') {
+          this.dataTableSelectAll();
+        }else if(dataReturned !== null && dataReturned.data == 'dataTableSelectNon') {
+          this.dataTableSelectNon();
+        }else if(dataReturned !== null && dataReturned.data == 'doRefresh') {
+          this.doRefresh(null);
+        } else if(dataReturned !== null && dataReturned.data == 'dataTableAddRechercheParColonne') {
+          this.dataTableAddRechercheParColonne();
+        } else if(dataReturned !== null && dataReturned.data == 'dataTableAddCustomFiltre') {
+          this.dataTableAddCustomFiltre();
+        } else if(dataReturned !== null && dataReturned.data == 'exportExcel') {
+          this.exportExcel();
+        } else if(dataReturned !== null && dataReturned.data == 'changeStyle') {
+          this.changeStyle();
+        } 
+  
+      });
+      return await popover.present();
+    }
+
+    selectedItemInfo(){
+      if(this.seletedIndexes.length == 1){
+        this.infos(this.departementsData[this.seletedIndexes[0]]);
+        //this.seletedIndexes = [];
+      }else{
+        alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
+      }
+    }
+  
+    selectedItemModifier(){
+      if(this.seletedIndexes.length == 1){
+        this.modifier(this.departementsData[this.seletedIndexes[0]]);
+        //this.seletedIndexes = [];
+      }else{
+        alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
+      }
     }
   
     async openRelationDepartement(ev: any/*, codeDepartement*/) {
@@ -569,6 +837,29 @@ export class DepartementPage implements OnInit {
       });
       return await popover.present();
     }
+
+     
+  async openRelationDepartementDepuisListe(ev: any/*, codePays*/) {
+    const popover = await this.popoverController.create({
+      component: RelationsDepartementComponent,
+      event: ev,
+      translucent: true,
+      componentProps: {"codeDepartement": this.departementsData[this.seletedIndexes[0]].codeDepartement},
+      animated: true,
+      showBackdrop: true,
+      //mode: "ios"
+    });
+
+    popover.onWillDismiss().then((dataReturned) => {
+      if(dataReturned !== null && dataReturned.data == 'commune') {
+        this.presentCommune(this.departementsData[this.seletedIndexes[0]].codeDepartement);
+      } else if(dataReturned !== null && dataReturned.data == 'village') {
+        this.presentVillage(this.departementsData[this.seletedIndexes[0]].codeDepartement) 
+      }
+
+    });
+    return await popover.present();
+  }
 
     async presentCommune(codeDepartement) {
       const modal = await this.modalController.create({
@@ -636,19 +927,20 @@ export class DepartementPage implements OnInit {
               this.departementData = this.departements.data;
             }*/
             if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-              this.htmlTableAction = 'recharger';
+              //this.htmlTableAction = 'recharger';
+              //this.actualiserTableau(this.departementsData);
+              this.dataTableAddRow(departementData);
             }
             //this.htmlTableAction = 'recharger';
-            this.actualiserTableau(this.departementsData);
 
             //initialiser la liste des communes
-            this.creerCommune(departementData.codeDepartement);
+            //this.creerCommune(departementData.codeDepartement);
 
             //libérer la mémoire occupée par la liste des pays
             this.paysData = [];
             this.regionData = [];
           }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
           });
         }else{
           //créer un nouveau département
@@ -669,18 +961,19 @@ export class DepartementPage implements OnInit {
             this.action = 'liste';
             if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
               this.htmlTableAction = 'recharger';
+              this.actualiserTableau(this.departementsData);
             }
             //this.htmlTableAction = 'recharger';
-            this.actualiserTableau(this.departementsData);
+            
 
             //initialiser la liste des communes
-            this.creerCommune(departementData.codeDepartement);
+            //this.creerCommune(departementData.codeDepartement);
 
             //libérer la mémoire occupée par la liste des pays
             this.paysData = [];
             this.regionData = [];
           }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
           });
         }
       }else{
@@ -763,7 +1056,8 @@ export class DepartementPage implements OnInit {
             this.departementData = this.departements.data;
           }*/
           if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-            this.htmlTableAction = 'recharger';
+            //this.htmlTableAction = 'recharger';
+            this.dataTableUpdateRow(departementData);
           }
           //this.actualiserTableau(this.departements.data);
           //libérer la mémoire occupée par la liste des pays
@@ -785,7 +1079,7 @@ export class DepartementPage implements OnInit {
             });
           }
         }).catch((err) => {
-          alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+          alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
         });
       }
     }
@@ -816,6 +1110,8 @@ export class DepartementPage implements OnInit {
             this.servicePouchdb.updateLocalite(commune);
           }
         }
+      }).catch((err) => {
+        console.log(err);
       });
     }
 
@@ -849,6 +1145,8 @@ export class DepartementPage implements OnInit {
           });
           
         }
+      }).catch((err) => {
+        console.log(err);
       });
     }
   
@@ -871,18 +1169,18 @@ export class DepartementPage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", null, this.mobile);
+                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", global.dataTable_fr, this.mobile)
+                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", null, this.mobile);
+                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", global.dataTable_fr, this.mobile);
+                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -896,18 +1194,18 @@ export class DepartementPage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement", null, this.mobile);
+                this.departementHTMLTable = JSONToTHMLTable(data, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement", global.dataTable_fr, this.mobile)
+                this.departementHTMLTable = JSONToTHMLTable(data, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", null, this.mobile);
+                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", global.dataTable_fr, this.mobile);
+                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -933,20 +1231,24 @@ export class DepartementPage implements OnInit {
             if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.departements = [];
             if(this.mobile){
               this.departementsData = [];
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }
         }).catch((err) => {
           console.log('Erreur acces au département ==> '+err)
@@ -954,7 +1256,9 @@ export class DepartementPage implements OnInit {
           if(this.mobile){
             this.departementsData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
     
       }else if(this.codePays  && this.codePays != ''){
@@ -971,20 +1275,24 @@ export class DepartementPage implements OnInit {
             if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.departements = [];
             if(this.mobile){
               this.departementsData = [];
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }
         }).catch((err) => {
           console.log('Erreur acces au département ==> '+err)
@@ -992,7 +1300,9 @@ export class DepartementPage implements OnInit {
           if(this.mobile){
             this.departementsData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
 
       } else{
@@ -1009,31 +1319,41 @@ export class DepartementPage implements OnInit {
             if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#departement').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.departements = [];
             if(this.mobile){
               this.departementsData = [];
             }
-            event.target.complete();
-          }
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
+            }
         }).catch((err) => {
           console.log('Erreur acces au département ==> '+err)
           this.departements = [];
           if(this.mobile){
             this.departementsData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
     
       }
+
+      this.filterAjouter = false;
+      this.filterInitialiser = false;
+      this.recherchePlus = false;
       /*setTimeout(() => {
         event.target.complete();
       }, 2000);*/
@@ -1062,9 +1382,9 @@ export class DepartementPage implements OnInit {
               if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
                 $('#departement-pays').ready(()=>{
                   if(global.langue == 'en'){
-                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile);
+                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                   }else{
-                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile);
+                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                   }
                   this.attacheEventToDataTable(this.departementHTMLTable.datatable);
                 });
@@ -1091,9 +1411,9 @@ export class DepartementPage implements OnInit {
             if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
@@ -1120,9 +1440,9 @@ export class DepartementPage implements OnInit {
             if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#departement').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile);
+                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
@@ -1235,14 +1555,60 @@ export class DepartementPage implements OnInit {
         for(const i of indexes){
           self.seletedIndexes.push(i)
         }
+
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
         
       } )
       .on( 'deselect', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           self.seletedIndexes.splice(self.seletedIndexes.indexOf(i), 1)
         }
+
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
         
-      } );
+      } ).on( 'search.dt', function () {
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
+      });
+
+      //traduitre les collonnes de la table la table
+      this.translateDataTableCollumn();
+    }
+  
+    translateDataTableCollumn(){
+      var id = '';
+      if(this.codePays && this.codePays != ''){
+        id = 'departement-pays-datatable';
+      }else{ 
+        id = 'departement-datatable';
+      }
+
+
+      $('#'+id+' thead tr:eq(0) th:eq(0)').html(this.translate.instant('PAYS_PAGE.CODEPAYS'));
+      $('#'+id+' thead tr:eq(0) th:eq(1)').html(this.translate.instant('PAYS_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(2)').html(this.translate.instant('REGION_PAGE.CODE'));
+      $('#'+id+' thead tr:eq(0) th:eq(3)').html(this.translate.instant('REGION_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(4)').html(this.translate.instant('DEPARTEMENT_PAGE.CODE'));
+      $('#'+id+' thead tr:eq(0) th:eq(5)').html(this.translate.instant('DEPARTEMENT_PAGE.NUMERO'));
+      $('#'+id+' thead tr:eq(0) th:eq(6)').html(this.translate.instant('DEPARTEMENT_PAGE.NOM'));      
+      $('#'+id+' thead tr:eq(0) th:eq(7)').html(this.translate.instant('GENERAL.LATITUDE'));
+      $('#'+id+' thead tr:eq(0) th:eq(8)').html(this.translate.instant('GENERAL.LONGITUDE'));
+      
+      //$('#pays-datatable thead tr:eq(1) th:eq(0) input').attr("placeholder", this.translate.instant('GENERAL.RECHERCHER'));
     }
   
     translateLangue(){
@@ -1313,6 +1679,200 @@ export class DepartementPage implements OnInit {
       });
     }
   
+    dataTableAddRow(rowData){
+      let data = [];
+      Object.keys(rowData).forEach((key, index) => {
+        data.push(rowData[key]);
+      });
+  
+      this.departementHTMLTable.datatable.row.add(data).draw();
+    }
+  
+    dataTableUpdateRow(/*index, */rowData){
+      let data = [];
+      Object.keys(rowData).forEach((key, index) => {
+        data.push(rowData[key]);
+      });
+  
+      this.departementHTMLTable.datatable.row('.selected').data(data).draw();
+    }
+  
+    dataTableRemoveRows(){
+      //datatable.row(index).remove().draw();
+      this.departementHTMLTable.datatable.rows('.selected').remove().draw();
+    }
+  
+    
+  dataTableSelectAll(){
+    this.seletedIndexes = [];
+    this.departementHTMLTable.datatable.rows( { search: 'applied' } ).select();
+    var info = this.departementHTMLTable.datatable.page.info();
+    if(info.recordsDisplay == this.seletedIndexes.length){
+      this.allSelected = true;
+    }else{
+      this.allSelected = false;
+    }
+  }
+
+  dataTableSelectNon(){
+    this.departementHTMLTable.datatable.rows().deselect();
+    this.seletedIndexes = [];
+    this.allSelected = false;
+  }
+
+  dataTableAddRechercheParColonne(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'departement-pays-datatable';
+    }else{ 
+      id = 'departement-datatable';
+    }
+
+    $('#'+id+' thead tr:eq(1)').show();
+    this.recherchePlus = true;
+  }
+
+  dataTableRemoveRechercheParColonne(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'departement-pays-datatable';
+    }else{ 
+      id = 'departement-datatable';
+    }
+
+    $('#'+id+' thead tr:eq(1)').hide();
+    this.recherchePlus = false;
+  }
+
+  dataTableAddCustomFiltre(){
+    //.initComplete = function () {
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'departement-pays-datatable';
+    }else{ 
+      id = 'departement-datatable';
+    }
+
+    if(!this.filterAjouter && !this.filterInitialiser){
+      var i = -1;
+      var self = this;
+      $('#'+id+' tfoot').show();
+      this.departementHTMLTable.datatable.columns().every( function () {
+          i = i +1;
+          var column = this;
+          var select = $('<select multiple="multiple" id="'+id+i+'" placeholder="'+self.translate.instant('GENERAL.FILTRER')+'" class="form-control form-control-sm"></select>')
+              .appendTo( $(column.footer()).empty() )
+              .on( 'change', function () {
+                  /*var val = $.fn.dataTable.util.escapeRegex(
+                      $(this).val()
+                  );*/
+                  var val = $(this).val();
+                  var vide = false;
+                  if(val.indexOf('vide') !== -1){
+                      vide = true;
+                      val[val.indexOf('vide')] = '';
+                  }
+                  
+                  var mergedVal = val.join('|');
+                  column
+                      .search( mergedVal || vide ? '^'+mergedVal+'$' : '', true, false )
+                      .draw();
+                  
+                  var info = self.departementHTMLTable.datatable.page.info();
+                  if(info.recordsDisplay == self.seletedIndexes.length){
+                    self.allSelected = true;
+                  }else{
+                    self.allSelected = false;
+                  }
+
+              } );
+
+          column.data().unique().sort().each( function ( d, j ) {
+              if(!d){
+                  select.append( '<option value="vide">('+self.translate.instant('GENERAL.VIDE')+')</option>' )
+              }else{
+                  select.append( '<option value="'+d+'">'+d+'</option>' )
+              }
+              
+          } );
+
+          $('#'+id+i).multipleSelect({
+                filter: true,
+                //width: 150,
+                position: 'top',
+                formatSelectAll: function () {
+                  
+                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
+                },
+          
+                formatAllSelected: function () {
+                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
+                },
+          
+                formatCountSelected: function (count, total) {
+                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+                },
+          
+                formatNoMatchesFound: function () {
+                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
+                }
+                
+              });
+
+              $('.ms-parent').removeAttr("style");
+      } );
+
+      this.departementHTMLTable.datatable.on('column-visibility', function ( e, settings, colIdx, visibility ){
+        if(!$('#'+id+colIdx).attr('style') && visibility){
+            $('#'+id+colIdx).multipleSelect({
+                filter: true,
+                //width: 150,
+                position: 'top',
+                formatSelectAll: function () {
+                  
+                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
+                },
+          
+                formatAllSelected: function () {
+                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
+                },
+          
+                formatCountSelected: function (count, total) {
+                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+                },
+          
+                formatNoMatchesFound: function () {
+                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
+                }
+              });
+
+              $('.ms-parent').removeAttr("style");
+          }
+      });
+
+      this.filterAjouter = true;
+      this.filterInitialiser = true;
+
+    } else if(!this.filterAjouter && this.filterInitialiser){
+      $('#'+id+' tfoot').show();
+      //$('#'+id+' tfoot').removeAttr("style");
+      this.filterAjouter = true;
+    }
+   // }              
+  }
+
+  dataTableRemoveCustomFiltre(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'departement-pays-datatable';
+    }else{ 
+      id = 'departement-datatable';
+    }
+
+    $('#'+id+' tfoot').hide();
+    this.filterAjouter = false;
+  }
+
   
     filter(event) {
       const val = event.target.value.toLowerCase();
@@ -1330,9 +1890,14 @@ export class DepartementPage implements OnInit {
       
     }
   
+    async close(){
+      await this.modalController.dismiss();
+    }
     
     ionViewDidEnter(){ 
 
     }
-  
+
+    
+    
 }

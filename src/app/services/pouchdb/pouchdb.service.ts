@@ -133,6 +133,32 @@ export class PouchdbService {
     return this.localDB.put(doc);
   }
 
+  //supprimer définitivement
+  deleteDocDefinitivement(doc){
+    doc._deleted = true;
+
+    return this.localDB.put(doc);
+  }
+
+  createDoc(doc){
+    /*let dat = new Date();
+    doc.security.created_at = dat.toJSON();
+    doc.security.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.security.created_by = global.info_user.name;
+    }else{
+      doc.security.created_by = '';
+    }
+    if(global.info_user !== null){
+      doc.security.updated_by = global.info_user.name;
+    }else{
+      doc.security.updated_by = '';
+    }
+    doc.security.deleted = false;
+    */
+    return this.localDB.put(doc);
+  }
+
   
   createRemoteDoc(doc){
     let dat = new Date();
@@ -236,6 +262,21 @@ export class PouchdbService {
     return this.localDB.put(doc);
   }
 
+
+  updateDoc(doc){
+    /*let dat = new Date();
+    doc.updatet_at = dat.toJSON();
+    if(global.info_user !== null){
+      doc.updated_by = global.info_user.name;
+    }else{
+      doc.updated_by = '';
+    }
+    
+    doc.deleted = false;
+    */
+    return this.localDB.put(doc);
+  }
+
   updateRemoteDoc(doc){
     let dat = new Date();
     doc.data.updatet_at = dat.toJSON();
@@ -301,7 +342,7 @@ export class PouchdbService {
       }).then((result) => {
         data = [];
         let doc = result.rows.map((row) => {
-           if(!row.doc.data.deleted){
+           if(!row.doc.security.deleted){
             //data.push(row);
             data.push(row.doc);
           }

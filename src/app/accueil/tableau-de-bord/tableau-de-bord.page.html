@@ -28,10 +28,64 @@
     </ion-card-content>
   </ion-card>
 
-  <br>
+  <!--ion-item>
+    <ion-label>Port</ion-label>
+    <ionic-selectable
+      [(ngModel)]="port"
+      [items]="ports"
+      itemValueField="id"
+      itemTextField="name"
+      [canSearch]="true"
+      (onChange)="portChange($event)">
+    </ionic-selectable>
+  </ion-item-->
+
+  <!--br>
   <ion-card padding>
-      <div class="table-responsive" id="diva"></div>
-  </ion-card>
+      <ion-card-header>
+          <--ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title->
+          <ion-item class="card-header-item">
+            <ion-card-title> Tableau</ion-card-title>
+            <ion-buttons slot="end">
+
+                <div class="fa-layers fa-3x fa-fw">
+                    <span class="fa fa-filter"></span>
+                    <span class="fa fa-times" data-fa-transform="right-7 down-6 shrink-5"></span>
+                  </div>
+                  <hr>
+                  <div class="fa-layers fa-3x fa-fw">
+                    <span class="fa fa-slash" data-fa-mask="fa fa-filter" data-fa-transform="down-1.5 left-0.5"></span>
+                    <span class="fa fa-slash" data-fa-transform="left-0.5"></span>
+                  </div>
+
+                <span class="icon-stack">
+                    <i style="font-size: 18px" class="fa fa-filter fa fa-stack-base"></i>
+                    <i class="fa fa-remove"></i>
+                  </span>
+
+                <ion-button fill="solid" color="primary" slot="end" >
+                  <i class="fa fa-wrench"></i>
+                  <ion-icon slot="end" name="ios-arrow-down"></ion-icon>
+                </ion-button>
+      
+                <ion-button slot="end" ion-button icon-only color="royal">
+                    <ion-icon name="square-outline"></ion-icon>
+                    <ion-icon name="arrow-dropdown"></ion-icon>
+                </ion-button>
+                <ion-button slot="end" ion-button icon-only color="royal">
+                    <ion-icon name="checkbox-outline"></ion-icon>
+                </ion-button>
+                <ion-button slot="end" ion-button icon-only color="royal">
+                  <i class="fa fa-filter"></i>
+                </ion-button>
+              </ion-buttons>        
+          </ion-item>
+        </ion-card-header>
+        <ion-card-content>
+            <div class="table-responsive" id="diva"></div>
+        </ion-card-content>
+      
+  </ion-card-->
   
   <!--ion-card class="welcome-card">
     <div id='builder'></div>

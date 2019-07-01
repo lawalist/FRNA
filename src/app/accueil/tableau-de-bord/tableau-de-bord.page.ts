@@ -6,6 +6,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { global } from '../../globale/variable';
 //import * as $  from 'jquery';
 //import Form from 'formiojs/FormBuilder';
+import { IonicSelectableComponent } from 'ionic-selectable';
 
 //formio importé dans index, il suffit de la déclarer en tant que variable globale
 declare var Formio: any;
@@ -15,6 +16,10 @@ declare var $: any;
 //declare var parse_object: any;
 //declare var CSV: any;
 //declare var csvToTable: any;
+class Port {
+  public id: number;
+  public name: string
+}
 
 @Component({
   selector: 'app-tableau-de-bord',
@@ -23,6 +28,8 @@ declare var $: any;
 })
 export class TableauDeBordPage implements OnInit {
   @ViewChild('json') jsonElement?: ElementRef;
+  ports: Port[];
+  port: Port;
   public form: Object = {
     components: [
       {
@@ -50,9 +57,19 @@ export class TableauDeBordPage implements OnInit {
   formio: any;
 
     constructor(private popoverController: PopoverController, public modalController: ModalController, private servicePouchdb: PouchdbService, private translate: TranslateService) {
-      
+      this.ports = [
+        { id: 1, name: 'Tokai' },
+        { id: 2, name: 'Vladivostok' },
+        { id: 3, name: 'Navlakhi' }
+      ];
     }
 
+    portChange(event: {
+      component: IonicSelectableComponent,
+      value: any 
+    }) {
+      console.log('port:', event.value);
+    }
   async presentPopover(ev: any) {
     const popover = await this.popoverController.create({
       component: PopoverComponent,
@@ -74,6 +91,9 @@ export class TableauDeBordPage implements OnInit {
 
 
   ionViewDidEnter(){ 
+   // $('#dtBasicExample').ready(() => {
+     // $('#dtBasicExample').DataTables();
+   // })
      var table;
     /*Formio.icons = 'fontawesome';
       Formio.builder(document.getElementById('builder'), this.form, {
@@ -100,7 +120,14 @@ export class TableauDeBordPage implements OnInit {
         "foods": {
           "likes": ["fresh food"],
           "dislikes": ["stale food"]
-        }
+        },
+        "created_at": "2019-06-12T17:02:51.371Z",
+        "created_by": "default",
+        "updatet_at": "2019-06-12T17:02:51.371Z",
+        "updated_by": "default",
+        "deleted": false,
+        "deleted_at": "",
+        "deleted_by": ""
         },
         {
         "name": "Pupster",
@@ -108,7 +135,14 @@ export class TableauDeBordPage implements OnInit {
         "foods": {
           "likes": ["tomatoes", "peas"],
           "dislikes": ["bread"]
-        }
+        },
+        "created_at": "2019-06-12T17:02:51.371Z",
+        "created_by": "default",
+        "updatet_at": "2019-06-12T17:02:51.371Z",
+        "updated_by": "default",
+        "deleted": false,
+        "deleted_at": "",
+        "deleted_by": ""
         },
         {
         "name": "Tux",
@@ -117,10 +151,15 @@ export class TableauDeBordPage implements OnInit {
         }
     ];
     if(global.langue == 'en'){
-      table = JSONToTHMLTable(ss, "diva");
+      table = JSONToTHMLTable(ss, "diva", null, false, this.translate);
     }else{
-      table = JSONToTHMLTable(ss, "diva", global.dataTable_fr);
+      table = JSONToTHMLTable(ss, "diva", global.dataTable_fr, false, this.translate);
     }
+
+    //this.initMultipleSelect(this.translate);
+   // $('#diva-datatable thead tr:eq(0) th:eq(0)').html('new');
+    
+
       
     /*table.on( 'select', function ( e, dt, type, indexes ) {
       var rowData = table.rows( indexes ).data().toArray();
@@ -223,4 +262,32 @@ export class TableauDeBordPage implements OnInit {
   ngOnInit() {
   }
 
+
+
+  initMultipleSelect(t){
+    $(function () {
+      var self = this;
+      $('.multiple-select').multipleSelect({
+        filter: true,
+        width: 150,
+        position: 'top',
+        formatSelectAll: function () {
+          
+          return '['+t.instant('GENERAL.SELECTIONNER_TOUS')+']'
+        },
+  
+        formatAllSelected: function () {
+          return t.instant('GENERAL.TOUS_SELECTIONNES')
+        },
+  
+        formatCountSelected: function (count, total) {
+          return count + ' '+t.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+t.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+        },
+  
+        formatNoMatchesFound: function () {
+          return t.instant('GENERAL.AUCTUN_RESULTAT')
+        }
+      })
+    })
+  }
 }

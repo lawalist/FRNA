@@ -1,6 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 
-import { Platform } from '@ionic/angular';
+import { Platform, ToastController } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 
@@ -8,13 +8,19 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { global } from '../app/globale/variable';
 
+declare var $: any;
+
+
 @Component({
   selector: 'app-root',
   templateUrl: 'app.component.html'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   public boutonMenuClass = false;
   public global = global;
+  public lastTimeBackPress = 0;
+  public timePeriodToExit  = 2000;
+  public backButtonSubscrib;
   //public language: string;
   public appPages = [
     {
@@ -234,7 +240,8 @@ export class AppComponent {
     private platform: Platform,
     private splashScreen: SplashScreen,
     private statusBar: StatusBar,
-    private translate: TranslateService
+    private translate: TranslateService,
+    private toastCtl: ToastController
   ) {
     this.initializeApp();
   }
@@ -243,14 +250,75 @@ export class AppComponent {
     this.platform.ready().then(() => {
       this.statusBar.styleDefault();
       this.splashScreen.hide();
-      this.initTranslate();
+      if(this.platform.is('android') || this.platform.is('ios')){
+        global.mobile = true;
+      }
+
+      console.log('platform android ou ios = '+global.mobile);
+      this.initTranslate();      
+//this.initMultipleSelect(this.translate)
+      
     });
   }
+
+  ngOnInit(){
+    this.quitterApp();
+  }
+ initMultipleSelect(t){
+  $(function () {
+    var self = this;
+    $('.multiple-select').multipleSelect({
+      filter: true,
+      width: 150,
+      position: 'top',
+      formatSelectAll: function () {
+        
+        return '['+t.instant('GENERAL.SELECTIONNER_TOUS')+']'
+      },
+
+      formatAllSelected: function () {
+        return t.instant('GENERAL.TOUS_SELECTIONNES')
+      },
+
+      formatCountSelected: function (count, total) {
+        return count + ' '+t.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+t.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+      },
+
+      formatNoMatchesFound: function () {
+        return t.instant('GENERAL.AUCTUN_RESULTAT')
+      }
+    })
+  })
+ }
+
 
   /*ionViewDidEnter(): void {
     // initialize
     this.initTranslate()
   }*/
+
+  quitterApp(){
+    this.backButtonSubscrib = this.platform.backButton.subscribe(() => {   
+          //Double check to exit app
+          if (new Date().getTime() - this.lastTimeBackPress < this.timePeriodToExit) {
+            this.backButtonSubscrib.unsubscribe();
+            navigator['app'].exitApp(); //Exit from app
+          } else {
+              this.affMsg('Appuyez sur la touche retour à nouveau pour quitter!')
+              this.lastTimeBackPress = new Date().getTime();
+          }
+    });
+  }
+
+  async affMsg(msg){
+    const toast = await this.toastCtl.create({
+      message: msg,
+      position: 'middle',
+      duration: 3000
+    });
+
+    toast.present();
+  }
 
   initialiseTranslation(){
     this.translate.get('MENU.TABLEAU_DE_BORD').subscribe((res: string) => {

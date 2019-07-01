@@ -5,20 +5,17 @@ export class CodePaysValidator {
   static validCodePays(pays, action){
     return (fc: FormControl) => {
       //var codesPays: any = ['NE'];
-      if(pays && pays.data && action === 'ajouter'){
-        for(let i = 0; i < pays.data.length; i++){
-          if(fc.value === pays.data[i].codePays){
+      if(pays && pays.data && action == 'ajouter'){
+        for(let p of pays.data){
+          if(fc.value == p.codePays){
             return ({validCodePays: true});
-          } else {
-            return (null);
-          }
+          } 
         }
+        return (null);
       }else{
         return (null);
       }
-    }
-    
-    
+    } 
   }
 
 

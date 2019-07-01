@@ -1,12 +1,11 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { NumeroCommuneValidator } from '../../validators/commune.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
-import { AlertController, ToastController, ModalController, ActionSheetController, Platform, PopoverController, NavController  } from '@ionic/angular';
+import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController  } from '@ionic/angular';
 import { ActionComponent } from '../../component/action/action.component';
 import { RelationsCommuneComponent } from '../../component/relations-commune/relations-commune.component';
 import { global } from '../../../app/globale/variable';
@@ -14,6 +13,8 @@ import { PaysPage } from '../pays/pays.page';
 import { RegionPage } from '../region/region.page';
 import { DepartementPage } from '../departement/departement.page';
 import { VillagePage } from '../village/village.page';
+import { ActionDatatableComponent } from 'src/app/component/action-datatable/action-datatable.component';
+import { ListOptionsComponent } from 'src/app/component/list-options/list-options.component';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var JSONToTHMLTable: any;
@@ -44,8 +45,13 @@ export class CommunePage implements OnInit {
   communeHTMLTable: any;
   htmlTableAction: string;
   seletedIndexes: any = [];
-  mobile: boolean = false;
+  mobile = global.mobile;
   styleAffichage: string = "liste";
+  allSelected: boolean = false;
+  recherchePlus: boolean = false;
+  filterAjouter: boolean = false;
+  filterInitialiser: boolean = false;
+  estModeCocherElemListe: boolean = false;
 
   messages_validation = {
     'codeCommune': [
@@ -92,12 +98,8 @@ export class CommunePage implements OnInit {
   }
 
   
-    constructor(private formBuilder: FormBuilder, private modalController: ModalController, private route: ActivatedRoute, private geolocation: Geolocation, private navCtrl: NavController, private file: File, private popoverController: PopoverController, private plateform: Platform, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+    constructor(private formBuilder: FormBuilder, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
       this.translate.setDefaultLang(global.langue);
-      if(this.plateform.is('android') || this.plateform.is('ios') || this.plateform.is('mobile')){
-        this.mobile = true;
-      }
-
     }
   
     ngOnInit() {
@@ -115,7 +117,7 @@ export class CommunePage implements OnInit {
       this.getCommune();
     }
   
-    changeStyle(){
+    /*changeStyle(){
       if(this.styleAffichage == 'liste'){
         this.styleAffichage = 'tableau';
         this.htmlTableAction = 'recharger';
@@ -124,7 +126,209 @@ export class CommunePage implements OnInit {
         this.styleAffichage = 'liste';
         this.seletedIndexes = [];
       }
+    }*/
+
+    
+    changeStyle(){
+      if(this.styleAffichage == 'liste'){
+        this.styleAffichage = 'tableau';
+        this.htmlTableAction = 'recharger';
+        this.estModeCocherElemListe = false;
+        this.actualiserTableau(this.communesData);
+      }else {
+        this.styleAffichage = 'liste';
+        this.seletedIndexes = [];
+        this.estModeCocherElemListe = false;
+      }
     }
+  
+    cocherElemListe(codeCommune){
+      if(this.seletedIndexes.indexOf(codeCommune) === -1){
+        //si coché
+        this.seletedIndexes.push(codeCommune);
+      }else{
+        //si décocher
+        this.seletedIndexes.splice(this.seletedIndexes.indexOf(codeCommune), 1);
+      }  
+      
+    }
+  
+    
+    removeMultipleElem(data, indexes){
+      let codes = [];
+      if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+        indexes.forEach((i) => {
+          codes.push(data[i].codeCommune);
+        });
+      }else{
+        codes = indexes;
+      }
+      
+  
+      for(let i = 0; i < data.length; i++){
+        if(codes.length == 0){
+          break;
+        }
+        if(codes.indexOf(data[i].codeCommune) !== -1){
+          codes.splice(codes.indexOf(data[i].codeCommune), 1);
+          data.splice(i, 1);
+          i--;
+        }
+      }
+  
+      return data;
+    }
+  
+    changerModeCocherElemListe(){
+       if(this.estModeCocherElemListe){
+        this.estModeCocherElemListe = false
+       }else{
+        this.estModeCocherElemListe = true
+       }
+      this.seletedIndexes = [];
+    }
+  
+    cocherTousElemListe(){
+      this.communesData.forEach((c) => {
+        //console.log(p.codePays+'   '+this.seletedIndexes.indexOf(p.codePays)+'    '+this.seletedIndexes)
+        if(this.seletedIndexes.indexOf(c.codeCommune) === -1){
+          this.seletedIndexes.push(c.codeCommune);
+        }
+      });
+  
+      $('ion-checkbox').prop("checked", true);
+    }
+  
+    decocherTousElemListe(){
+      $('ion-checkbox').prop("checked", false);
+      this.seletedIndexes = [];
+    }
+  
+  
+    async listOptionsPopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: ListOptionsComponent,
+        event: ev,
+        translucent: true,
+        componentProps: {"options": {
+          "estModeCocherElemListe": this.estModeCocherElemListe,
+          "dataLength": this.communesData.length,
+          "seletedIndexesLength": this.seletedIndexes.length,
+          "styleAffichage": this.styleAffichage
+        }},
+        animated: true,
+        showBackdrop: true,
+        //mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'listSelectionMultiple') {
+          this.changerModeCocherElemListe();
+        }else  if(dataReturned !== null && dataReturned.data == 'listSelectAll') {
+          this.cocherTousElemListe();
+        }else  if(dataReturned !== null && dataReturned.data == 'listSelectNon') {
+          this.decocherTousElemListe();
+        } else  if(dataReturned !== null && dataReturned.data == 'changeStyle') {
+          this.changeStyle();
+        }      
+  
+      });
+      return await popover.present();
+    }
+  
+    
+    async supprimerElemCocherListe() {
+      const alert = await this.alertCtl.create({
+        header: this.translate.instant('GENERAL.ALERT_CONFIERMER'),
+        message: this.translate.instant('GENERAL.ALERT_MESSAGE'),
+        //cssClass: 'aler-confirm',
+        mode: 'ios',
+        buttons: [
+          {
+            text: this.translate.instant('GENERAL.ALERT_OUI'),
+            role: 'destructive',
+            cssClass: 'alert-danger',
+            handler: (data) => {
+              
+
+              var codesIndex = [];
+              let codes = [...this.seletedIndexes];
+              //console.log(codes)
+              for(let i = 0; i < this.communesData.length; i++){
+                if(codes.length == 0){
+                  break;
+                }
+
+                //console.log(this.regionsData[i].codeRegion)
+                if(codes.indexOf(this.communesData[i].codeCommune) !== -1){
+                  //console.log('yes '+i)
+                  codes.splice(codes.indexOf(this.communesData[i].codeCommune), 1);
+                  codesIndex.push(i);
+                  i--;
+                }
+              }
+
+              var communesConcernee: any = {};
+              codesIndex.forEach((si) => {
+                var c = this.communesData[si];
+                var exist = 0;
+
+                if(communesConcernee['fuma:commune:'+c.codeDepartement]){
+                  communesConcernee['fuma:commune:'+c.codeDepartement].data.splice(communesConcernee['fuma:commune:'+c.codeDepartement].data.indexOf(c), 1);
+                  exist = 1;
+                }
+
+                if(!exist){
+                  for(let com of this.communes){
+                    if('fuma:commune:'+c.codeDepartement == com._id){
+                      com.data.splice(com.data.indexOf(c), 1);
+                      communesConcernee[com._id] = com
+                      break;
+                    }
+                  }
+                }
+              });
+
+              //mise à jour de communesData
+             /* this.seletedIndexes.forEach((si) => {
+                this.communesData.splice(this.communesData.indexOf(this.communesData[si]), 1);
+              });
+*/
+              //update
+              Object.keys(communesConcernee).forEach((key, index) => {
+                this.servicePouchdb.updateLocalite(communesConcernee[key]).then((res) => {
+                  communesConcernee[key]._rev = res.rev;
+                  for(let i = 0; i < this.communes.length; i++){
+                    if(this.communes[i]._id == communesConcernee[key]._id){
+                      this.communes[i] = communesConcernee[key];
+                      break;
+                    }
+                  }
+                  if(index +1 == Object.keys(communesConcernee).length){
+                    this.communesData = [...this.removeMultipleElem(this.communesData, this.seletedIndexes)];
+                    this.decocherTousElemListe();
+                    this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
+                  }
+                }).catch((err) => {
+                  this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                });
+              });
+            }
+          },{
+            text: this.translate.instant('GENERAL.ALERT_ANNULER'),
+            role: 'cancel',
+            cssClass: 'secondary',
+            handler: () => {
+              console.log('Confirmation annulée');
+            }
+          }
+        ]
+      });
+  
+      await alert.present();
+    }
+  
+
   
     initForm(){
       //this.communeForm = null;
@@ -189,8 +393,10 @@ export class CommunePage implements OnInit {
     }
   
     infos(c){
-      this.uneCommune = c;
-      this.action = 'infos';
+      if(!this.estModeCocherElemListe){
+        this.uneCommune = c;
+        this.action = 'infos';
+      }
     }
 
   
@@ -328,8 +534,12 @@ export class CommunePage implements OnInit {
                 }
                 this.action = 'liste';
                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
-                this.htmlTableAction = 'recharger';
-                this.actualiserTableau(this.communesData);
+                if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
+                  this.dataTableRemoveRows();
+                  this.seletedIndexes = [];
+                }
+                //this.htmlTableAction = 'recharger';
+                //this.actualiserTableau(this.communesData);
               }).catch((err) => {
                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
 
@@ -431,8 +641,10 @@ export class CommunePage implements OnInit {
                   }
                   if(index +1 == Object.keys(communesConcernee).length){
                     this.action = 'liste';
-                    this.htmlTableAction = 'recharger';
-                    this.actualiserTableau(this.communesData);
+                    //this.htmlTableAction = 'recharger';
+                    //this.actualiserTableau(this.communesData);
+                    this.dataTableRemoveRows();
+                    this.seletedIndexes = [];
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
                   }
                 }).catch((err) => {
@@ -441,7 +653,7 @@ export class CommunePage implements OnInit {
               });
               
               
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }
           }
         ]
@@ -475,7 +687,7 @@ export class CommunePage implements OnInit {
         this.action = "infos";
       }else{
         this.action = 'liste';
-        this.actualiserTableau(this.communesData);
+        //this.actualiserTableau(this.communesData);
       }
     }
   
@@ -484,7 +696,7 @@ export class CommunePage implements OnInit {
         this.action = "infos";
       }else{
         this.action = 'liste';
-        this.actualiserTableau(this.communesData);
+        //this.actualiserTableau(this.communesData);
       }
     }
   
@@ -498,7 +710,7 @@ export class CommunePage implements OnInit {
           handler: () => {
             if(this.seletedIndexes.length == 1){
               this.infos(this.communesData[this.seletedIndexes[0]]);
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
             }
@@ -509,7 +721,7 @@ export class CommunePage implements OnInit {
           handler: () => {
             if(this.seletedIndexes.length == 1){
               this.modifier(this.communesData[this.seletedIndexes[0]]);
-              this.seletedIndexes = [];
+              //this.seletedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
             }
@@ -519,7 +731,7 @@ export class CommunePage implements OnInit {
           icon: 'add',
           handler: () => {
             this.ajouter();
-            this.seletedIndexes = [];
+            //this.seletedIndexes = [];
           }
         }, {
           text: this.translate.instant('GENERAL.SUPPRIMER'),
@@ -556,19 +768,21 @@ export class CommunePage implements OnInit {
           this.ajouter();
           this.seletedIndexes = [];
         }else if(dataReturned !== null && dataReturned.data == 'infos') {
-          if(this.seletedIndexes.length == 1){
+          this.selectedItemInfo();
+          /*if(this.seletedIndexes.length == 1){
             this.infos(this.communesData[this.seletedIndexes[0]]);
             this.seletedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
-          }
+          }*/
         }else if(dataReturned !== null && dataReturned.data == 'modifier') {
-          if(this.seletedIndexes.length == 1){
+          this.selectedItemModifier();
+          /*if(this.seletedIndexes.length == 1){
             this.modifier(this.communesData[this.seletedIndexes[0]]);
             this.seletedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
-          }
+          }*/
         } else if(dataReturned !== null && dataReturned.data == 'supprimer') {
           this.suppressionMultiple();
         }
@@ -576,6 +790,56 @@ export class CommunePage implements OnInit {
       return await popover.present();
     }
   
+    
+    async actionDatatablePopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: ActionDatatableComponent,
+        event: ev,
+        translucent: true,
+        //componentProps: {"id": "salu"},
+        animated: true,
+        showBackdrop: true,
+        mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'dataTableSelectAll') {
+          this.dataTableSelectAll();
+        }else if(dataReturned !== null && dataReturned.data == 'dataTableSelectNon') {
+          this.dataTableSelectNon();
+        }else if(dataReturned !== null && dataReturned.data == 'doRefresh') {
+          this.doRefresh(null);
+        } else if(dataReturned !== null && dataReturned.data == 'dataTableAddRechercheParColonne') {
+          this.dataTableAddRechercheParColonne();
+        } else if(dataReturned !== null && dataReturned.data == 'dataTableAddCustomFiltre') {
+          this.dataTableAddCustomFiltre();
+        } else if(dataReturned !== null && dataReturned.data == 'exportExcel') {
+          this.exportExcel();
+        } else if(dataReturned !== null && dataReturned.data == 'changeStyle') {
+          this.changeStyle();
+        } 
+  
+      });
+      return await popover.present();
+    }
+
+    selectedItemInfo(){
+      if(this.seletedIndexes.length == 1){
+        this.infos(this.communesData[this.seletedIndexes[0]]);
+        //this.seletedIndexes = [];
+      }else{
+        alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
+      }
+    }
+  
+    selectedItemModifier(){
+      if(this.seletedIndexes.length == 1){
+        this.modifier(this.communesData[this.seletedIndexes[0]]);
+        //this.seletedIndexes = [];
+      }else{
+        alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
+      }
+    }
   
     async openRelationCommune(ev: any/*, codeCommune*/) {
       const popover = await this.popoverController.create({
@@ -596,6 +860,28 @@ export class CommunePage implements OnInit {
       });
       return await popover.present();
     }
+
+    
+  async openRelationCommuneDepuisListe(ev: any/*, codePays*/) {
+    const popover = await this.popoverController.create({
+      component: RelationsCommuneComponent,
+      event: ev,
+      translucent: true,
+      componentProps: {"codeCommune": this.communesData[this.seletedIndexes[0]].codeCommune},
+      animated: true,
+      showBackdrop: true,
+      //mode: "ios"
+    });
+
+    popover.onWillDismiss().then((dataReturned) => {
+      if(dataReturned !== null && dataReturned.data == 'village') {
+        this.presentVillage(this.communesData[this.seletedIndexes[0]].codeCommune);
+      }
+
+    });
+    return await popover.present();
+  }
+
 
     async presentVillage(codeCommune) {
       const modal = await this.modalController.create({
@@ -653,20 +939,21 @@ export class CommunePage implements OnInit {
               this.communeData = this.communes.data;
             }*/
             if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-              this.htmlTableAction = 'recharger';
+              //this.htmlTableAction = 'recharger';
+              //this.actualiserTableau(this.communesData);
+              this.dataTableAddRow(communeData);
             }
             //this.htmlTableAction = 'recharger';
-            this.actualiserTableau(this.communesData);
 
             //initialiser la liste des communes
-            this.creerVillage(communeData.codeCommune);
+            //this.creerVillage(communeData.codeCommune);
 
             //libérer la mémoire occupée par la liste des pays
             this.paysData = [];
             this.regionData = [];
             this.departementData = [];
           }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
           });
         }else{
           //créer un nouveau commune
@@ -692,14 +979,14 @@ export class CommunePage implements OnInit {
             this.actualiserTableau(this.communesData);
 
             //initialiser la liste des communes
-            this.creerVillage(communeData.codeCommune);
+            //this.creerVillage(communeData.codeCommune);
             
             //libérer la mémoire occupée par la liste des pays
             this.paysData = [];
             this.regionData = [];
             this.departementData = [];
           }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
           });
         }
       }else{
@@ -775,7 +1062,8 @@ export class CommunePage implements OnInit {
             this.communeData = this.communes.data;
           }*/
           if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-            this.htmlTableAction = 'recharger';
+            //this.htmlTableAction = 'recharger';
+            this.dataTableUpdateRow(communeData);
           }
           //this.actualiserTableau(this.communes.data);
           //libérer la mémoire occupée par la liste des pays
@@ -798,7 +1086,7 @@ export class CommunePage implements OnInit {
             });
           }
         }).catch((err) => {
-          alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE'+': '+err.toString()));
+          alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
         });
       }
     }
@@ -831,6 +1119,8 @@ export class CommunePage implements OnInit {
             this.servicePouchdb.updateLocalite(village);
           }
         }
+      }).catch((err) => {
+        console.log(err);
       });
     }
 
@@ -854,18 +1144,18 @@ export class CommunePage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.communeHTMLTable = JSONToTHMLTable(data, "commune-pays", null, this.mobile);
+                this.communeHTMLTable = JSONToTHMLTable(data, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.communeHTMLTable = JSONToTHMLTable(data, "commune-pays", global.dataTable_fr, this.mobile)
+                this.communeHTMLTable = JSONToTHMLTable(data, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune-pays", null, this.mobile);
+                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune-pays", global.dataTable_fr, this.mobile);
+                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -879,18 +1169,18 @@ export class CommunePage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.communeHTMLTable = JSONToTHMLTable(data, "commune", null, this.mobile);
+                this.communeHTMLTable = JSONToTHMLTable(data, "commune", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.communeHTMLTable = JSONToTHMLTable(data, "commune", global.dataTable_fr, this.mobile)
+                this.communeHTMLTable = JSONToTHMLTable(data, "commune", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune", null, this.mobile);
+                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune", null, this.mobile , this.translate, global.peutExporterDonnees);
               }else{
-                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune", global.dataTable_fr, this.mobile);
+                this.communeHTMLTable = reCreateTHMLTable(this.communeHTMLTable.table, "commune", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -916,28 +1206,34 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.communes = [];
             if(this.mobile){
               this.communesData = [];
             }
-            event.target.complete();
-          }
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
+            }
         }).catch((err) => {
           console.log('Erreur acces à la commune ==> '+err)
           this.communes = [];
           if(this.mobile){
             this.communesData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
     
       }else if(this.codeRegion  && this.codeRegion != ''){
@@ -954,20 +1250,24 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.communes = [];
             if(this.mobile){
               this.communesData = [];
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }
         }).catch((err) => {
           console.log('Erreur acces à la commune ==> '+err)
@@ -975,7 +1275,9 @@ export class CommunePage implements OnInit {
           if(this.mobile){
             this.communesData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
 
       }else if(this.codePays  && this.codePays != ''){
@@ -992,20 +1294,24 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.communes = [];
             if(this.mobile){
               this.communesData = [];
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }
         }).catch((err) => {
           console.log('Erreur acces à la commune ==> '+err)
@@ -1013,7 +1319,9 @@ export class CommunePage implements OnInit {
           if(this.mobile){
             this.communesData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
 
       }else{
@@ -1030,20 +1338,24 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }else{
             this.communes = [];
             if(this.mobile){
               this.communesData = [];
             }
-            event.target.complete();
+            this.seletedIndexes = [];
+            if(event)
+              event.target.complete();
           }
         }).catch((err) => {
           console.log('Erreur acces à la commune ==> '+err)
@@ -1051,10 +1363,16 @@ export class CommunePage implements OnInit {
           if(this.mobile){
             this.communesData = [];
           }
-          event.target.complete();
+          this.seletedIndexes = [];
+          if(event)
+            event.target.complete();
         });
     
       }
+
+      this.filterAjouter = false;
+      this.filterInitialiser = false;
+      this.recherchePlus = false;
       /*setTimeout(() => {
         event.target.complete();
       }, 2000);*/
@@ -1083,9 +1401,9 @@ export class CommunePage implements OnInit {
               if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
                 $('#commune-pays').ready(()=>{
                   if(global.langue == 'en'){
-                    this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                    this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                   }else{
-                    this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                    this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                   }
                   this.attacheEventToDataTable(this.communeHTMLTable.datatable);
                 });
@@ -1113,9 +1431,9 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
@@ -1142,9 +1460,9 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
@@ -1171,9 +1489,9 @@ export class CommunePage implements OnInit {
             if(this.communesData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
               $('#commune').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", null, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", null, this.mobile , this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", global.dataTable_fr, this.mobile);
+                  this.communeHTMLTable = JSONToTHMLTable(this.communesData, "commune", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
@@ -1329,15 +1647,64 @@ export class CommunePage implements OnInit {
         for(const i of indexes){
           self.seletedIndexes.push(i)
         }
+
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
         
       } )
       .on( 'deselect', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           self.seletedIndexes.splice(self.seletedIndexes.indexOf(i), 1)
         }
+
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
         
-      } );
+      } ).on( 'search.dt', function () {
+        var info = datatable.page.info();
+        if(info.recordsDisplay == self.seletedIndexes.length){
+          self.allSelected = true;
+        }else{
+          self.allSelected = false;
+        }
+      });
+      
+      //traduitre les collonnes de la table la table
+      this.translateDataTableCollumn();
     }
+  
+    translateDataTableCollumn(){
+      var id = '';
+      if(this.codePays && this.codePays != ''){
+        id = 'commune-pays-datatable';
+      }else{ 
+        id = 'commune-datatable';
+      }
+
+
+      $('#'+id+' thead tr:eq(0) th:eq(0)').html(this.translate.instant('PAYS_PAGE.CODEPAYS'));
+      $('#'+id+' thead tr:eq(0) th:eq(1)').html(this.translate.instant('PAYS_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(2)').html(this.translate.instant('REGION_PAGE.CODE'));
+      $('#'+id+' thead tr:eq(0) th:eq(3)').html(this.translate.instant('REGION_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(4)').html(this.translate.instant('DEPARTEMENT_PAGE.CODE'));
+      $('#'+id+' thead tr:eq(0) th:eq(5)').html(this.translate.instant('DEPARTEMENT_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(6)').html(this.translate.instant('COMMUNE_PAGE.CODE'));    
+      $('#'+id+' thead tr:eq(0) th:eq(7)').html(this.translate.instant('COMMUNE_PAGE.NUMERO'));
+      $('#'+id+' thead tr:eq(0) th:eq(8)').html(this.translate.instant('COMMUNE_PAGE.NOM'));
+      $('#'+id+' thead tr:eq(0) th:eq(9)').html(this.translate.instant('GENERAL.LATITUDE'));
+      $('#'+id+' thead tr:eq(0) th:eq(10)').html(this.translate.instant('GENERAL.LONGITUDE'));
+      
+      //$('#pays-datatable thead tr:eq(1) th:eq(0) input').attr("placeholder", this.translate.instant('GENERAL.RECHERCHER'));
+    }
+
   
     translateLangue(){
       this.translate.use(global.langue);
@@ -1421,8 +1788,207 @@ export class CommunePage implements OnInit {
         this.messages_validation.departementLoading[0].message = res;
       });
     }
+
+    dataTableAddRow(rowData){
+      let data = [];
+      Object.keys(rowData).forEach((key, index) => {
+        data.push(rowData[key]);
+      });
   
+      this.communeHTMLTable.datatable.row.add(data).draw();
+    }
   
+    dataTableUpdateRow(/*index, */rowData){
+      let data = [];
+      Object.keys(rowData).forEach((key, index) => {
+        data.push(rowData[key]);
+      });
+  
+      this.communeHTMLTable.datatable.row('.selected').data(data).draw();
+    }
+  
+    dataTableRemoveRows(){
+      //datatable.row(index).remove().draw();
+      this.communeHTMLTable.datatable.rows('.selected').remove().draw();
+    }
+  
+    
+  dataTableSelectAll(){
+    this.seletedIndexes = [];
+    this.communeHTMLTable.datatable.rows( { search: 'applied' } ).select();
+    var info = this.communeHTMLTable.datatable.page.info();
+    if(info.recordsDisplay == this.seletedIndexes.length){
+      this.allSelected = true;
+    }else{
+      this.allSelected = false;
+    }
+  }
+
+  dataTableSelectNon(){
+    this.communeHTMLTable.datatable.rows().deselect();
+    this.seletedIndexes = [];
+    this.allSelected = false;
+  }
+
+  dataTableAddRechercheParColonne(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'commune-pays-datatable';
+    }else{ 
+      id = 'commune-datatable';
+    }
+
+    $('#'+id+' thead tr:eq(1)').show();
+    this.recherchePlus = true;
+  }
+
+  dataTableRemoveRechercheParColonne(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'commune-pays-datatable';
+    }else{ 
+      id = 'commune-datatable';
+    }
+
+    $('#'+id+' thead tr:eq(1)').hide();
+    this.recherchePlus = false;
+  }
+
+  dataTableAddCustomFiltre(){
+    //.initComplete = function () {
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'commune-pays-datatable';
+    }else{ 
+      id = 'commune-datatable';
+    }
+
+    if(!this.filterAjouter && !this.filterInitialiser){
+      var i = -1;
+      var self = this;
+      $('#'+id+' tfoot').show();
+      this.communeHTMLTable.datatable.columns().every( function () {
+          i = i +1;
+          var column = this;
+          var select = $('<select multiple="multiple" id="'+id+i+'" placeholder="'+self.translate.instant('GENERAL.FILTRER')+'" class="form-control form-control-sm"></select>')
+              .appendTo( $(column.footer()).empty() )
+              .on( 'change', function () {
+                  /*var val = $.fn.dataTable.util.escapeRegex(
+                      $(this).val()
+                  );*/
+                  var val = $(this).val();
+                  var vide = false;
+                  if(val.indexOf('vide') !== -1){
+                      vide = true;
+                      val[val.indexOf('vide')] = '';
+                  }
+                  
+                  var mergedVal = val.join('|');
+                  column
+                      .search( mergedVal || vide ? '^'+mergedVal+'$' : '', true, false )
+                      .draw();
+                  
+                  var info = self.communeHTMLTable.datatable.page.info();
+                  if(info.recordsDisplay == self.seletedIndexes.length){
+                    self.allSelected = true;
+                  }else{
+                    self.allSelected = false;
+                  }
+
+              } );
+
+          column.data().unique().sort().each( function ( d, j ) {
+              if(!d){
+                  select.append( '<option value="vide">('+self.translate.instant('GENERAL.VIDE')+')</option>' )
+              }else{
+                  select.append( '<option value="'+d+'">'+d+'</option>' )
+              }
+              
+          } );
+
+          $('#'+id+i).multipleSelect({
+                filter: true,
+                //width: 150,
+                position: 'top',
+                formatSelectAll: function () {
+                  
+                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
+                },
+          
+                formatAllSelected: function () {
+                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
+                },
+          
+                formatCountSelected: function (count, total) {
+                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+                },
+          
+                formatNoMatchesFound: function () {
+                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
+                }
+                
+              });
+
+              $('.ms-parent').removeAttr("style");
+      } );
+
+      this.communeHTMLTable.datatable.on('column-visibility', function ( e, settings, colIdx, visibility ){
+        if(!$('#'+id+colIdx).attr('style') && visibility){
+            $('#'+id+colIdx).multipleSelect({
+                filter: true,
+                //width: 150,
+                position: 'top',
+                formatSelectAll: function () {
+                  
+                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
+                },
+          
+                formatAllSelected: function () {
+                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
+                },
+          
+                formatCountSelected: function (count, total) {
+                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
+                },
+          
+                formatNoMatchesFound: function () {
+                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
+                }
+              });
+
+              $('.ms-parent').removeAttr("style");
+          }
+      });
+
+      this.filterAjouter = true;
+      this.filterInitialiser = true;
+
+    } else if(!this.filterAjouter && this.filterInitialiser){
+      $('#'+id+' tfoot').show();
+      //$('#'+id+' tfoot').removeAttr("style");
+      this.filterAjouter = true;
+    }
+   // }              
+  }
+
+  dataTableRemoveCustomFiltre(){
+    var id = '';
+    if(this.codePays && this.codePays != ''){
+      id = 'commune-pays-datatable';
+    }else{ 
+      id = 'commune-datatable';
+    }
+
+    $('#'+id+' tfoot').hide();
+    this.filterAjouter = false;
+  }
+
+  
+    async close(){
+      await this.modalController.dismiss();
+    }
+  
+
     filter(event) {
       const val = event.target.value.toLowerCase();
     
@@ -1440,8 +2006,11 @@ export class CommunePage implements OnInit {
     }
   
     
+
+
+    
     ionViewDidEnter(){ 
-
+       
     }
-
+    
 }
