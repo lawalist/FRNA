@@ -91,11 +91,23 @@ export class TableauDeBordPage implements OnInit {
 
 
   ionViewDidEnter(){ 
+    /*this.servicePouchdb.creatDocByTypeIndex().then((res) => {
+      console.log(res);
+      if(res){*/
+        this.servicePouchdb.getDocByType('partenaire').then((res) => {
+          console.log(res);
+        }).catch((err) => {
+          console.log(err)
+        })
+     /* }
+    }).catch((err) => {
+      console.log('err index: '+err)
+    })*/
    // $('#dtBasicExample').ready(() => {
      // $('#dtBasicExample').DataTables();
    // })
      var table;
-    /*Formio.icons = 'fontawesome';
+    Formio.icons = 'fontawesome';
       Formio.builder(document.getElementById('builder'), this.form, {
         language: 'fr',
         /*i18n: {
@@ -110,8 +122,8 @@ export class TableauDeBordPage implements OnInit {
             invalid_email: '{{field}} debe ser un correo electrónico válido.',
             error : 'Por favor, corrija los siguientes errores antes de enviar.',
           }
-        }*****
-      });*/
+        }*****/
+      });
 
      var ss = [
         {

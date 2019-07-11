@@ -2,9 +2,12 @@ import { Injectable } from '@angular/core';
 import { global } from '../../globale/variable';
 import PouchDB from 'pouchdb';
 import { Storage } from '@ionic/storage';
+import PouchdbFind from 'pouchdb-find';
 //PouchDB.plugin(require('pouchdb-find'));
 PouchDB.plugin(require('relational-pouch'));
-PouchDB.plugin(require('pouchdb-find'));
+PouchDB.plugin(PouchdbFind);
+//PouchDB.plugin(require('pouchdb-find'));
+
 
 @Injectable({
   providedIn: 'root'
@@ -20,6 +23,7 @@ export class PouchdbService {
   private  data: any;
 
   constructor(private storage: Storage) {
+    
     this.localDB = new PouchDB('frna-local-db');
     this.localDB.setMaxListeners(20); // or 30 or 40 or however many you need, 
                                       //to prevent warning (node) warning: possible EventEmitter memory leak detected. 11 listeners added. 
@@ -27,6 +31,7 @@ export class PouchdbService {
     //this.remoteDB = new PouchDB('http://localhost:5984/frna-v2');
     //this.sync();
     this.localDB.sync('http://localhost:5984/frna-v2', { live: true, retry: true });
+    this.creatDocByTypeIndex();
    }
 
    sync(){
@@ -51,6 +56,47 @@ export class PouchdbService {
 
   getLocalDocById(id){
     return this.localDB.get(id);
+  }
+
+  find(){
+    return this.localDB.find({
+      selector: {
+        deleted: false
+      }
+    });
+    
+  }
+
+  getDocByType(type, deleted = false/* , sort = true*/){
+    /*let options: any = {
+      selector: {
+        "type": type,
+        "security.deleted": deleted,
+        //'ecurity.created_at': {'$gt': null}
+      }  
+    }*/
+
+    /*if(sort){
+      options.sort = [{_id: 'desc'}]
+    }*/
+    
+    return this.localDB.find( {
+      selector: {
+        "type": type,
+        "security.deleted": deleted,
+      }});
+  }
+
+  creatDocByTypeIndex(){
+    this.localDB.createIndex({
+      index: {
+        fields: ['type', 'security.deleted']
+      }
+    }).then((res) => {
+      console.log('creatDocByTypeIndex: '+JSON.stringify(res));
+    }).catch((err) => {
+      console.log('creatDocByTypeIndex err: '+JSON.stringify(err));
+    });
   }
 
   getRemoteDocById(id){

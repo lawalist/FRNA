@@ -234,11 +234,12 @@
       </ion-item>
     </ion-card-header>
     <ion-card-content>
-      <form [formGroup]="paysForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="paysForm" class="needs-validation" (ngSubmit)="onSubmit()" novalidate>
         <ion-item>
             <ion-label position="floating">{{'PAYS_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
-            <ion-input formControlName="codePays" type="text" class="form-controll" required></ion-input>
+            <ion-input formControlName="codePays" type="text" required></ion-input>
         </ion-item>
+    
         <div class="validation-errors">
           <ng-container *ngFor="let validation of messages_validation.codePays">
             <div class="error-message" *ngIf="paysForm.get('codePays').hasError(validation.type) && (paysForm.get('codePays').dirty || paysForm.get('codePays').touched)">

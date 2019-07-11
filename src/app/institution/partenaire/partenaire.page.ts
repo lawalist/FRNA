@@ -950,11 +950,11 @@ export class PartenairePage implements OnInit {
   
     doRefresh(event) {
       
-      this.servicePouchdb.getPlageDocs('fuma:partenaire:', 'fuma:partenaire:\uffff').then((partenaires) => {
-        if(partenaires){
+      this.servicePouchdb.getDocByType('partenaire').then((res) => {
+        if(res && res.docs){
           this.partenairesData = [];
             //var datas = [];
-            for(let p of partenaires){
+            for(let p of res.docs){
               //datas = datas.concat(d.data);
               this.partenairesData.push({...p.data, ...p.formioData, ...p.security});
 
@@ -1015,12 +1015,12 @@ export class PartenairePage implements OnInit {
           console.log(err)
         });
       }else{
-        this.servicePouchdb.getPlageDocs('fuma:partenaire:', 'fuma:partenaire:\uffff').then((partenaires) => {
-          if(partenaires){
+        this.servicePouchdb.getDocByType('partenaire').then((res) => {
+          if(res && res.docs){
             //this.partenaires = [...partenaires];
             this.partenairesData = [];
             //var datas = [];
-            for(let p of partenaires){
+            for(let p of res.docs){
               //datas = datas.concat(d.data);
               this.partenairesData.push({...p.data, ...p.formioData, ...p.security});
 
