@@ -7,6 +7,7 @@ import { global } from '../../globale/variable';
 //import * as $  from 'jquery';
 //import Form from 'formiojs/FormBuilder';
 import { IonicSelectableComponent } from 'ionic-selectable';
+import Cropper from 'cropperjs';
 
 //formio importé dans index, il suffit de la déclarer en tant que variable globale
 declare var Formio: any;
@@ -30,6 +31,7 @@ export class TableauDeBordPage implements OnInit {
   @ViewChild('json') jsonElement?: ElementRef;
   ports: Port[];
   port: Port;
+  table: any;
   public form: Object = {
     components: [
       {
@@ -89,16 +91,251 @@ export class TableauDeBordPage implements OnInit {
     return await popover.present();
   }
 
+  pressed(){
+    console.log('pressed');
+  }
 
+  active(){
+    console.log('active');
+  }
+
+  released(){
+    console.log('released')
+  }
+  initSelect2(){
+    $(function () {
+      $('.select2').each(function () {
+        $(this).select2({
+          theme: 'bootstrap4',
+          width: 'style',
+          placeholder: $(this).attr('placeholder'),
+          allowClear: Boolean($(this).data('allow-clear')),
+        });
+      });
+    });
+  }
+
+
+  add(){
+    this.table.datatable.row.add({
+      "nom": "Moussa",
+      "prenom" : "Idi"
+      }).draw();
+    console.log('ok')
+  }
+
+  up(){
+    let i = 0;
+    this.table.datatable.row('.selected').data({
+      "nom": "Ada",
+      "prenom" : "Soli"
+      }).draw();
+      i++;
+  }
+
+  createEmptyHtmlTableWithColumns(id, cols){
+    //let cols = ['non', 'prenom', 'genre']
+    let dtId = id +'-datatable'
+    var html = '<table id='+dtId+' class="table table-hover table-bordered"  cellspacing="0" width="100%">\n';
+    html += "<thead><tr class='thead-light'>";
+    cols.forEach((c) => {
+      html += '<th>'+c+'</th>';
+    });
+    html += '</tr></thead>';
+    html += "<tbody>";
+    html += "</tbody>";
+    html += "<tfoot><tr>";
+    cols.forEach((c) => {
+      html += '<th>'+c+'</th>';
+    });
+
+    html += "</tr></tfoot>\n"
+    html += "</table>";
+    document.getElementById(id).innerHTML = html;
+  }
+       
   ionViewDidEnter(){ 
+    /*$( document ).ready(function() {
+      var avatar = document.getElementById('avatar');
+      var image = document.getElementById('image');
+      var input = document.getElementById('input');
+      var $progress = $('.progress');
+      var $progressBar = $('.progress-bar');
+      var $alert = $('.alert');
+      var $modal = $('#modal');
+      var cropper;
+
+      $('[data-toggle="tooltip"]').tooltip();
+
+      input.addEventListener('change', function (e) {
+        console.log('load');
+        var files = e.target.files;
+        var done = function (url) {
+          input.value = '';
+          image.src = url;
+          $alert.hide();
+          $modal.modal('show');
+        };
+        var reader;
+        var file;
+        var url;
+
+        if (files && files.length > 0) {
+          file = files[0];
+
+          if (URL) {
+            done(URL.createObjectURL(file));
+          } else if (FileReader) {
+            reader = new FileReader();
+            reader.onload = function (e) {
+              done(reader.result);
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+
+      $modal.on('shown.bs.modal', function () {
+        console.log('crop');
+        cropper = new Cropper(image, {
+          aspectRatio: 1,
+          viewMode: 3,
+        });
+      }).on('hidden.bs.modal', function () {
+        cropper.destroy();
+        cropper = null;
+      });
+
+      document.getElementById('crop').addEventListener('click', function () {
+        var initialAvatarURL;
+        var canvas;
+
+        $modal.modal('hide');
+
+        if (cropper) {
+          canvas = cropper.getCroppedCanvas({
+            width: 160,
+            height: 160,
+          });
+          initialAvatarURL = avatar.src;
+          avatar.src = canvas.toDataURL();
+          $progress.show();
+          $alert.removeClass('alert-success alert-warning');
+          canvas.toBlob(function (blob) {
+            var formData = new FormData();
+
+            formData.append('avatar', blob, 'avatar.jpg');
+            $.ajax('https://jsonplaceholder.typicode.com/posts', {
+              method: 'POST',
+              data: formData,
+              processData: false,
+              contentType: false,
+
+              xhr: function () {
+                var xhr = new XMLHttpRequest();
+
+                xhr.upload.onprogress = function (e) {
+                  var percent = '0';
+                  var percentage = '0%';
+
+                  if (e.lengthComputable) {
+                    percent = Math.round((e.loaded / e.total) * 100);
+                    percentage = percent + '%';
+                    $progressBar.width(percentage).attr('aria-valuenow', percent).text(percentage);
+                  }
+                };
+
+                return xhr;
+              },
+
+              success: function () {
+                $alert.show().addClass('alert-success').text('Upload success');
+              },
+
+              error: function () {
+                avatar.src = initialAvatarURL;
+                $alert.show().addClass('alert-warning').text('Upload error');
+              },
+
+              complete: function () {
+                $progress.hide();
+              },
+            });
+          });
+        }
+      });
+    });*/
+    
+    //this.createEmptyHtmlTableWithColumns('tt', ['non', 'prenom', 'genre'])
+
+   // document.getElementById('tt').innerHTML = html;
+
+    this.initSelect2();
+    let data = [{
+      "nom": "sani",
+      "prenom" : "Ali"
+      }];
+    var ss1 = {
+      "nom": null,
+      "prenom" : null
+      };
+
+    //this.table = JSONToTHMLTable(ss1, "ex1", null, false , this.translate, global.peutExporterDonnees, data);
+
+  
+    $(document).ready(function() {
+
+      /*this.table = $('#example').DataTable( {
+        "data": [
+          {
+            "id": "1",
+            "name": "Tiger Nixon",
+            "position": "System Architect",
+            "salary": "$320,800",
+            "start_date": "2011/04/25",
+            "office": "Edinburgh",
+            "extn": "5421"
+          },
+          {
+            "id": "2",
+            "name": "Garrett Winters",
+            "position": "Accountant",
+            "salary": "$170,750",
+            "start_date": "2011/07/25",
+            "office": "Tokyo",
+            "extn": "8422"
+          }
+        ],
+          "columns": [
+              { "data": "name" },
+              { "data": "position" },
+              { "data": "office" },
+              { "data": "extn" },
+              { "data": "start_date" },
+              { "data": "salary" }
+          ]
+      } );*/
+  } );
+    //this.servicePouchdb.relationalPouchFinDoc('partenaire', true, false, false);
+    /*this.servicePouchdb.findRelationalDocByType('union', {$ne: null}).then((res) => {
+      console.log(res)
+    })
+    /*$('select').each(function () {
+      $(this).select2({
+        theme: 'bootstrap4',
+        width: 'style',
+        placeholder: $(this).attr('placeholder'),
+        allowClear: Boolean($(this).data('allow-clear')),
+      });
+  });*/
     /*this.servicePouchdb.creatDocByTypeIndex().then((res) => {
       console.log(res);
       if(res){*/
-        this.servicePouchdb.getDocByType('partenaire').then((res) => {
+        /*this.servicePouchdb.getDocByType('partenaire').then((res) => {
           console.log(res);
         }).catch((err) => {
           console.log(err)
-        })
+        })*/
      /* }
     }).catch((err) => {
       console.log('err index: '+err)
@@ -107,7 +344,7 @@ export class TableauDeBordPage implements OnInit {
      // $('#dtBasicExample').DataTables();
    // })
      var table;
-    Formio.icons = 'fontawesome';
+    /*Formio.icons = 'fontawesome';
       Formio.builder(document.getElementById('builder'), this.form, {
         language: 'fr',
         /*i18n: {
@@ -122,8 +359,8 @@ export class TableauDeBordPage implements OnInit {
             invalid_email: '{{field}} debe ser un correo electrónico válido.',
             error : 'Por favor, corrija los siguientes errores antes de enviar.',
           }
-        }*****/
-      });
+        }*****
+      });*/
 
      var ss = [
         {
@@ -229,7 +466,7 @@ export class TableauDeBordPage implements OnInit {
 
 
   onChange(event) {
-    this.jsonElement.nativeElement.innerHTML = '';
+    /*this.jsonElement.nativeElement.innerHTML = '';
     this.jsonElement.nativeElement.appendChild(document.createTextNode(JSON.stringify(this.form, null, 4)));
 
     Formio.icons = 'fontawesome';
@@ -252,7 +489,7 @@ export class TableauDeBordPage implements OnInit {
       })
     })
     
-
+*/
   }
 
   load(){
@@ -272,6 +509,7 @@ export class TableauDeBordPage implements OnInit {
  
 
   ngOnInit() {
+    
   }
 
 

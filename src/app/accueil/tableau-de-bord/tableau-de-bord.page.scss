@@ -2,3 +2,30 @@
     max-height: 35vh;
     overflow: hidden;
 }
+
+.label {
+    cursor: pointer;
+  }
+
+  .progress {
+    display: none;
+    margin-bottom: 1rem;
+  }
+
+  .alert {
+    display: none;
+  }
+
+  .img-container img {
+    max-width: 100%;
+  }
+
+  #modal{
+      position: absolute !important;
+      top: 10px !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      z-index: 10040 !important;
+      overflow: auto;
+      overflow-y: auto;
+  }

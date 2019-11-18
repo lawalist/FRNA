@@ -17,17 +17,50 @@
 
 
 <ion-content class="content">
-  <ion-card mode="ios" (click)="onChange()">
+  <ion-card (click)="onChange()">
     <ion-img src="./assets/img/meteo.png"></ion-img>
     <ion-card-header>
       <ion-card-subtitle>Météo</ion-card-subtitle>
-      <ion-card-title>Bienvenue sur FRNA V2</ion-card-title>
+      <ion-card-title>Bienvenue sur FRNA2</ion-card-title>
+      <button ion-button ion-long-press [interval]="1000" (onPressing)="active()"></button>
     </ion-card-header>
     <ion-card-content>
       <!--p>Now that your app has been created, you'll want to start building out features and components. Check out some of the resources below for next steps.</p-->
     </ion-card-content>
   </ion-card>
 
+  <div class="container">
+      <h1>Upload cropped image to server</h1>
+      <label class="label" data-toggle="tooltip" title="Change your avatar">
+        <img class="rounded" id="avatar" src="https://avatars0.githubusercontent.com/u/3456749?s=160" alt="avatar">
+        <input type="file" class="sr-only" id="input" name="image" accept="image/*">
+      </label>
+      <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+      </div>
+      <div class="alert" role="alert"></div>
+      <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalLabel">Crop the image</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="img-container">
+                <img id="image" src="https://avatars0.githubusercontent.com/u/3456749">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" id="crop">Crop</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   <!--ion-item>
     <ion-label>Port</ion-label>
     <ionic-selectable
@@ -87,7 +120,7 @@
       
   </ion-card-->
   
-  <ion-card class="welcome-card">
+  <!--ion-card class="welcome-card">
     <div id='builder'></div>
   </ion-card>
   
@@ -96,8 +129,9 @@
   </div>
   <div class="well jsonviewer">
     <div id='formio'></div>
-  </div>
+  </div-->
 
+  <!--div id="tt"></div-->
   <ion-list lines="none">
     <ion-list-header>
       <ion-label>Résumé</ion-label>
@@ -127,3 +161,4 @@
 </ion-toolbar>
 </ion-footer-->
 </ion-content>
+

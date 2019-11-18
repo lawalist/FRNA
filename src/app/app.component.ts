@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { Platform, ToastController } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { Router } from '@angular/router';
 
 import { TranslateService } from '@ngx-translate/core';
 
@@ -36,6 +37,12 @@ export class AppComponent implements OnInit {
       open: false,
       children: [
         {
+          title: 'Mon institution',
+          url: '/institution/mon-institution',
+          icon: 'document',
+          color: ''
+        },
+        {
           title: 'Partenaires',
           url: '/institution/partenaires',
           icon: 'document',
@@ -55,7 +62,7 @@ export class AppComponent implements OnInit {
         },
         {
           title: 'Membres/Producteurs',
-          url: '/institution/membres',
+          url: '/membres',
           icon: 'document',
           color: ''
         }
@@ -153,8 +160,8 @@ export class AppComponent implements OnInit {
           color: ''
         },
         {
-          title: 'Villages',
-          url: '/localite/villages',
+          title: 'Localites',
+          url: '/localite/localites',
           icon: 'document',
           color: ''
         }
@@ -241,7 +248,8 @@ export class AppComponent implements OnInit {
     private splashScreen: SplashScreen,
     private statusBar: StatusBar,
     private translate: TranslateService,
-    private toastCtl: ToastController
+    private toastCtl: ToastController,
+    private router: Router
   ) {
     this.initializeApp();
   }
@@ -300,13 +308,16 @@ export class AppComponent implements OnInit {
   quitterApp(){
     this.backButtonSubscrib = this.platform.backButton.subscribe(() => {   
           //Double check to exit app
-          if (new Date().getTime() - this.lastTimeBackPress < this.timePeriodToExit) {
-            this.backButtonSubscrib.unsubscribe();
-            navigator['app'].exitApp(); //Exit from app
-          } else {
-              this.affMsg('Appuyez sur la touche retour à nouveau pour quitter!')
-              this.lastTimeBackPress = new Date().getTime();
+          if(this.router.url === '/tableau-de-bord' || this.router.url === ''){
+            if (new Date().getTime() - this.lastTimeBackPress < this.timePeriodToExit) {
+              this.backButtonSubscrib.unsubscribe();
+              navigator['app'].exitApp(); //Exit from app
+            } else {
+                this.affMsg('Appuyez sur la touche retour à nouveau pour quitter!')
+                this.lastTimeBackPress = new Date().getTime();
+            }
           }
+          
     });
   }
 
@@ -330,17 +341,20 @@ export class AppComponent implements OnInit {
       this.appPages[1].title = res;
     });
     //sous-menu institution
-    this.translate.get('MENU.INSTITUTION.PARTENAIRES').subscribe((res: string) => {
+    this.translate.get('MENU.INSTITUTION.MONINSTITUTION').subscribe((res: string) => {
       this.appPages[1].children[0].title = res;
     });
-    this.translate.get('MENU.INSTITUTION.UNIONS').subscribe((res: string) => {
+    this.translate.get('MENU.INSTITUTION.PARTENAIRES').subscribe((res: string) => {
       this.appPages[1].children[1].title = res;
     });
-    this.translate.get('MENU.INSTITUTION.OPS').subscribe((res: string) => {
+    this.translate.get('MENU.INSTITUTION.UNIONS').subscribe((res: string) => {
       this.appPages[1].children[2].title = res;
     });
-    this.translate.get('MENU.INSTITUTION.MEMBRES').subscribe((res: string) => {
+    this.translate.get('MENU.INSTITUTION.OPS').subscribe((res: string) => {
       this.appPages[1].children[3].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.MEMBRES').subscribe((res: string) => {
+      this.appPages[1].children[4].title = res;
     });
 
     //Recherche
@@ -396,7 +410,7 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.LOCALITES.COMMUNES').subscribe((res: string) => {
       this.appPages[4].children[3].title = res;
     });
-    this.translate.get('MENU.LOCALITES.VILLAGES').subscribe((res: string) => {
+    this.translate.get('MENU.LOCALITES.LOCALITES').subscribe((res: string) => {
       this.appPages[4].children[4].title = res;
     });
 

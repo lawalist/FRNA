@@ -12,13 +12,18 @@ import { global } from '../../../app/globale/variable';
 import { PaysPage } from '../pays/pays.page';
 import { RegionPage } from '../region/region.page';
 import { CommunePage } from '../commune/commune.page';
-import { VillagePage } from '../village/village.page';
+import { LocalitePage } from '../localite/localite.page';
 import { ActionDatatableComponent } from 'src/app/component/action-datatable/action-datatable.component';
-import { ListOptionsComponent } from 'src/app/component/list-options/list-options.component';
+import { ListeMoreComponent } from 'src/app/component/liste-more/liste-more.component';
+import { isDefined } from '@angular/compiler/src/util';
+import { DerniereModificationComponent } from 'src/app/component/derniere-modification/derniere-modification.component';
+import { DatatableConstructComponent } from 'src/app/component/datatable-construct/datatable-construct.component';
+import { ListeActionComponent } from 'src/app/component/liste-action/liste-action.component';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
-declare var JSONToTHMLTable: any;
-declare var reCreateTHMLTable: any;
+declare var createDataTable: any;
+declare var JSONToCSVAndTHMLTable: any;
+//declare var reCreateTHMLTable: any;
 declare var $: any;
 declare var cordova: any;
 
@@ -29,19 +34,21 @@ declare var cordova: any;
 })
 export class DepartementPage implements OnInit {
  
-  @Input() codePays: string;
-  @Input() codeRegion: string;
-  @Input() codeDepartement: string;
+  @Input() idPays: string;
+  @Input() idRegion: string;
+  @Input() idDepartement: string;
   departementForm: FormGroup;
   action: string = 'liste';
   departements: any;
   departementsData: any = [];
+  allDepartementsData: any = [];
   paysData: any = [];
   regionData: any = [];
   unDepartement: any;
+  uneDepartementDoc: any;
   departementHTMLTable: any;
   htmlTableAction: string;
-  seletedIndexes: any = [];
+  selectedIndexes: any = [];
   mobile = global.mobile;
   styleAffichage: string = "liste";
   allSelected: boolean = false;
@@ -50,12 +57,15 @@ export class DepartementPage implements OnInit {
   filterInitialiser: boolean = false;
   
   estModeCocherElemListe: boolean = false;
+  rechargerListeMobile = false;
+  doModification: boolean = false;
+  colonnes = ['nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nom', 'numero', 'code', 'latitude', 'longitude']
 
   messages_validation = {
-    'codeDepartement': [
+    'code': [
         { type: 'required', message: '' },
       ],
-    'numeroDepartement': [
+    'numero': [
       { type: 'required', message: '' },
       { type: 'minlength', message: '' },
       { type: 'maxlength', message: '' },
@@ -63,22 +73,16 @@ export class DepartementPage implements OnInit {
       { type: 'validNumeroDepartement', message: '' },
       { type: 'uniqueNumeroDepartement', message: '' }
     ],
-    'nomDepartement': [
+    'nom': [
       { type: 'required', message: '' }
     ],
-    'codePays': [
-      { type: 'required', message: '' }
-    ],
-    'nomPays': [
+    'idPays': [
       { type: 'required', message: '' }
     ],
     'paysLoading': [
       { type: 'loagin', message: '' }
     ],
-    'codeRegion': [
-      { type: 'required', message: '' }
-    ],
-    'nomRegion': [
+    'idRegion': [
       { type: 'required', message: '' }
     ],
     'regionLoading': [
@@ -93,13 +97,22 @@ export class DepartementPage implements OnInit {
     }
   
     ngOnInit() {
-      if(this.codeDepartement && this.codeDepartement != ''){
-        this.codeRegion = this.codeDepartement.substr(0, 5);
-      }
+      /*if(this.code && this.code != ''){
+        this.codeRegion = this.code.substr(0, 5);
+      }*/
       //au cas où la région est en mode modal, on chercher info region
-      if(this.codeRegion && this.codeRegion != ''){
-        this.codePays = this.codeRegion.substr(0, 2);
-      }
+      /*if(this.codeRegion && this.codeRegion != ''){
+        if(this.departementHTMLTable && this.departementHTMLTable.datatable.row(0).data().codePays){
+          this.codePays = this.departementHTMLTable.datatable.row(0).data().codePays;
+        }else{
+          this.servicePouchdb.findRelationalDocByTypeAndID('region', this.codeRegion).then((res) => {
+            if(res && res.resions){
+              this.codePays = res.resgions[0].codePays;
+            }
+          })
+        }
+        //this.codePays = this.codeRegion.substr(0, 2);
+      }*/
       this.translateLangue();
       this.getDepartement();
     }
@@ -111,53 +124,137 @@ export class DepartementPage implements OnInit {
         this.actualiserTableau(this.departementsData);
       }else {
         this.styleAffichage = 'liste';
-        this.seletedIndexes = [];
+        this.selectedIndexes = [];
       }
     }*/
 
+    
     
     changeStyle(){
       if(this.styleAffichage == 'liste'){
         this.styleAffichage = 'tableau';
         this.htmlTableAction = 'recharger';
+        this.selectedIndexes = [];
+        this.allSelected = false;
+        this.recherchePlus = false;
+        this.filterAjouter = false;
         this.estModeCocherElemListe = false;
         this.actualiserTableau(this.departementsData);
       }else {
         this.styleAffichage = 'liste';
-        this.seletedIndexes = [];
+        this.selectedIndexes = [];
+        this.allSelected = false;
+        this.recherchePlus = false;
+        this.filterAjouter = false;
         this.estModeCocherElemListe = false;
       }
     }
+    
+    setInputRequredError(id, filedName){
+      if(this.departementForm.get(filedName).errors && (this.departementForm.get(filedName).dirty || this.departementForm.get(filedName).touched)){
+        //$('#'+id).addClass( "required has-error" );
+        $('#'+id).addClass( "has-error" );
+        $('#'+id +' input').addClass( "is-invalid" );
+      }
+      else{
+     //$('#'+id).removeClass( "required has-error" );
+      $('#'+id).removeClass( "has-error" );
+        $('#'+id +' input').removeClass( "is-invalid" );
+      }
   
-    cocherElemListe(codeDepartement){
-      if(this.seletedIndexes.indexOf(codeDepartement) === -1){
+    }
+
+    setSelectRequredError(id, filedName){
+      if(this.departementForm.get(filedName).errors){
+        //$('#'+id).addClass( "required has-error" );
+        $('#'+id).addClass( "has-error" );
+        $('#'+id +' select').addClass( "is-invalid" );
+      }
+      else{
+     //$('#'+id).removeClass( "required has-error" );
+      $('#'+id).removeClass( "has-error" );
+        $('#'+id +' select').removeClass( "is-invalid" );
+      }
+  
+    }
+
+    initSelect2(id, placeholder){
+      var self = this;
+      $(function () {
+        $('#'+id+' select').select2({
+          theme: 'bootstrap4',
+          width: 'style',
+          placeholder: placeholder,
+          allowClear: Boolean($('#'+id+' select').data('allow-clear')),
+        });
+
+        
+
+        $('#'+id+' select').on('select2:select', function (e) {
+          //console.log('sele')
+          //var data = e.params.data;
+          self.departementForm.controls[id].setValue(e.params.data.id)
+          if(id == 'idPays'){
+            self.setCodeAndNomPays(self.departementForm.value[id]);
+          }else if(id == 'idRegion'){
+            self.setCodeAndNomRegion(self.departementForm.value[id]);
+          }
+          self.setSelectRequredError(id, id)
+        });
+
+        $('#'+id+' select').on("select2:unselect", function (e) { 
+          self.departementForm.controls[id].setValue(null); 
+          if(id == 'idPays'){
+            self.setCodeAndNomPays(self.departementForm.value[id]);
+            self.regionData = [];
+          }else if(id == 'idRegion'){
+            self.setCodeAndNomRegion(self.departementForm.value[id]);
+          }
+          self.setSelectRequredError(id, id)
+        });
+      });
+    }
+
+    setSelect2DefaultValue(id, value){
+      var self = this;
+      $(function () { 
+        $('#'+id+' select').val(value); // Select the option with a value of '1'
+        $('#'+id+' select').trigger('change');
+
+        if(!self.doModification){
+          $('#'+id+' select').trigger({
+            type: 'select2:select',
+            params: {
+              data: {
+                "id": value
+              }
+            }
+          });
+        }
+        
+      });
+    }
+  
+    cocherElemListe(id){
+      if(this.selectedIndexes.indexOf(id) === -1){
         //si coché
-        this.seletedIndexes.push(codeDepartement);
+        this.selectedIndexes.push(id);
       }else{
         //si décocher
-        this.seletedIndexes.splice(this.seletedIndexes.indexOf(codeDepartement), 1);
+        this.selectedIndexes.splice(this.selectedIndexes.indexOf(id), 1);
       }  
       
     }
   
     
     removeMultipleElem(data, indexes){
-      let codes = [];
-      if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-        indexes.forEach((i) => {
-          codes.push(data[i].codeDepartement);
-        });
-      }else{
-        codes = indexes;
-      }
-      
   
       for(let i = 0; i < data.length; i++){
-        if(codes.length == 0){
+        if(indexes.length == 0){
           break;
         }
-        if(codes.indexOf(data[i].codeDepartement) !== -1){
-          codes.splice(codes.indexOf(data[i].codeDepartement), 1);
+        if(indexes.indexOf(data[i].id) !== -1){
+          indexes.splice(indexes.indexOf(data[i].id), 1);
           data.splice(i, 1);
           i--;
         }
@@ -172,14 +269,25 @@ export class DepartementPage implements OnInit {
        }else{
         this.estModeCocherElemListe = true
        }
-      this.seletedIndexes = [];
+      
+       if(this.selectedIndexes){
+        this.decocherTousElemListe();
+        this.selectedIndexes = [];
+      }
+    }
+
+    active(){
+      if(!this.estModeCocherElemListe){
+        this.estModeCocherElemListe = true
+        this.selectedIndexes = [];
+       } 
     }
   
     cocherTousElemListe(){
       this.departementsData.forEach((d) => {
-        //console.log(p.codePays+'   '+this.seletedIndexes.indexOf(p.codePays)+'    '+this.seletedIndexes)
-        if(this.seletedIndexes.indexOf(d.codeDepartement) === -1){
-          this.seletedIndexes.push(d.codeDepartement);
+        //console.log(p.codePays+'   '+this.selectedIndexes.indexOf(p.codePays)+'    '+this.selectedIndexes)
+        if(this.selectedIndexes.indexOf(d.id) === -1){
+          this.selectedIndexes.push(d.id);
         }
       });
   
@@ -188,19 +296,19 @@ export class DepartementPage implements OnInit {
   
     decocherTousElemListe(){
       $('ion-checkbox').prop("checked", false);
-      this.seletedIndexes = [];
+      this.selectedIndexes = [];
     }
   
   
     async listOptionsPopover(ev: any) {
       const popover = await this.popoverController.create({
-        component: ListOptionsComponent,
-        event: ev,
+        component: ListeMoreComponent,
+        event: ev, 
         translucent: true,
         componentProps: {"options": {
           "estModeCocherElemListe": this.estModeCocherElemListe,
           "dataLength": this.departementsData.length,
-          "seletedIndexesLength": this.seletedIndexes.length,
+          "selectedIndexesLength": this.selectedIndexes.length,
           "styleAffichage": this.styleAffichage
         }},
         animated: true,
@@ -215,14 +323,121 @@ export class DepartementPage implements OnInit {
           this.cocherTousElemListe();
         }else  if(dataReturned !== null && dataReturned.data == 'listSelectNon') {
           this.decocherTousElemListe();
-        } else  if(dataReturned !== null && dataReturned.data == 'changeStyle') {
+        } else /* if(dataReturned !== null && dataReturned.data == 'changeStyle') {
           this.changeStyle();
-        }      
+        }else  */if(dataReturned !== null && dataReturned.data == 'exporter') {
+          this.exporter();
+        }    
   
       });
       return await popover.present();
     }
   
+
+    async exporter() {
+      const alert = await this.alertCtl.create({
+        header: this.translate.instant('GENERAL.ALERT_EXPORTER'),
+        message: this.translate.instant('GENERAL.ALERT_EXPORTER_MESSAGE'),
+        //cssClass: 'aler-confirm',
+        mode: 'ios',
+        inputs: [
+          {
+            name: 'radio',
+            type: 'radio',
+            label: 'Excel',
+            value: 'excel',
+            checked: true
+          },
+          {
+            name: 'radio',
+            type: 'radio',
+            label: 'CSV',
+            value: 'csv',
+            checked: false
+          }
+  
+        ],
+        buttons: [
+          {
+            text: this.translate.instant('GENERAL.ALERT_ANNULER'),
+            role: 'cancel',
+            cssClass: 'secondary',
+            handler: () => {
+              console.log('Exportation annulée annulée');
+            }
+          },
+          {
+            text: this.translate.instant('GENERAL.ALERT_OK'),
+            role: 'destructive',
+            cssClass: 'alert-danger',
+            handler: (data) => {
+              console.log(data.toString())
+              if(data.toString() == 'csv'){
+                console.log('csv')
+                this.exportCSV();
+              }else{
+                console.log('ecel')
+                this.exportExcel();
+              }
+  
+            }
+          }
+        ]
+      });
+  
+      await alert.present();
+    }
+  
+  
+    exportExcel(){
+      let data = [...this.departementsData];
+      data.map((d) => {
+        delete d['id'];
+      })
+      let date =new Date().getTime();
+      var htmlTable = JSONToCSVAndTHMLTable(data, 'table', this.translate, 'xlsx')
+      //document.getElementById(id).innerHTML = result.table;
+      let blob = new Blob([htmlTable], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8"
+        //type: "text/plain;charset=utf-8"
+        //type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8"
+        //type: 'application/vnd.ms-excel;charset=utf-8'
+        //type: "application/vnd.ms-excel;charset=utf-8"
+      });
+  
+      let fileDestiny: string = cordova.file.externalRootDirectory;
+      this.file.writeFile(fileDestiny, 'FRNA_Export_Departements_'+date+'.xls', blob).then(()=> {
+          alert(this.translate.instant('GENERAL.ALERT_FICHIER_CREER')+": " + fileDestiny);
+      }).catch(()=>{
+          alert(this.translate.instant('GENERAL.ALERT_ERREUR_CREAION_FICHIER')+": " + fileDestiny);
+      });
+    }
+  
+    exportCSV(){
+      let data = [...this.departementsData];
+      data.map((d) => {
+        delete d['id'];
+      })
+      let date =new Date().getTime();
+      var csv = JSONToCSVAndTHMLTable(data, 'table', this.translate, 'csv')
+      //document.getElementById(id).innerHTML = result.table;
+      let blob = new Blob([csv], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8"
+        //type: "text/plain;charset=utf-8"
+        //type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8"
+        //type: 'application/vnd.ms-excel;charset=utf-8'
+        //type: "application/vnd.ms-excel;charset=utf-8"
+      });
+  
+      let fileDestiny: string = cordova.file.externalRootDirectory;
+      this.file.writeFile(fileDestiny, 'FRNA_Export_Departements_'+date+'.csv', blob).then(()=> {
+          alert(this.translate.instant('GENERAL.ALERT_FICHIER_CREER')+": " + fileDestiny);
+      }).catch(()=>{
+          alert(this.translate.instant('GENERAL.ALERT_ERREUR_CREAION_FICHIER')+": " + fileDestiny);
+      });
+    }
+  
+    
     
     async supprimerElemCocherListe() {
       const alert = await this.alertCtl.create({
@@ -237,72 +452,22 @@ export class DepartementPage implements OnInit {
             cssClass: 'alert-danger',
             handler: (data) => {
               
-              var codesIndex = [];
-              let codes = [...this.seletedIndexes];
-              //console.log(codes)
-              for(let i = 0; i < this.departementsData.length; i++){
-                if(codes.length == 0){
-                  break;
-                }
-
-                //console.log(this.regionsData[i].codeRegion)
-                if(codes.indexOf(this.departementsData[i].codeDepartement) !== -1){
-                  //console.log('yes '+i)
-                  codes.splice(codes.indexOf(this.departementsData[i].codeDepartement), 1);
-                  codesIndex.push(i);
-                  i--;
-                }
-              }
-              //console.log(codesIndex)
-
-              var departementsConcernee: any = {};
-              codesIndex.forEach((si) => {
-                var d = this.departementsData[si];
-                var exist = 0;
-
-                if(departementsConcernee['fuma:departement:'+d.codeRegion]){
-                  departementsConcernee['fuma:departement:'+d.codeRegion].data.splice(departementsConcernee['fuma:departement:'+d.codeRegion].data.indexOf(d), 1);
-                  exist = 1;
-                }
-
-                if(!exist){
-                  for(let reg of this.departements){
-                    if('fuma:departement:'+d.codeRegion == reg._id){
-                      reg.data.splice(reg.data.indexOf(d), 1);
-                      departementsConcernee[reg._id] = reg
-                      break;
-                    }
-                  }
-                }
+              this.selectedIndexes.forEach((id) => {
+                this.servicePouchdb.findRelationalDocByID('departement', id).then((res) => {
+                  this.servicePouchdb.deleteRelationalDocDefinitivement(res.departements[0]).then((res) => {
+                  }).catch((err) => {
+                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                   });//fin delete
+                 }).catch((err) => {
+                   this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                 });//fin get
               });
-
-              //mise à jour de departementsData
-              /*this.seletedIndexes.forEach((si) => {
-                this.departementsData.splice(this.departementsData.indexOf(this.departementsData[si]), 1);
-              });*/
-
-              //update
-              Object.keys(departementsConcernee).forEach((key, index) => {
-                this.servicePouchdb.updateLocalite(departementsConcernee[key]).then((res) => {
-                  departementsConcernee[key]._rev = res.rev;
-                  for(let i = 0; i < this.departements.length; i++){
-                    if(this.departements[i]._id == departementsConcernee[key]._id){
-                      this.departements[i] = departementsConcernee[key];
-                      break;
-                    }
-                  }
-                  if(index +1 == Object.keys(departementsConcernee).length){
-                    this.departementsData = [...this.removeMultipleElem(this.departementsData, this.seletedIndexes)];
-                    this.decocherTousElemListe();
-                    //this.htmlTableAction = 'recharger';
-                    //this.actualiserTableau(this.departementsData);
-                    this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
-                  }
-                }).catch((err) => {
-                  this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
-                });
-              });
-
+              
+              this.departementsData = this.removeMultipleElem(this.departementsData, this.selectedIndexes);
+              this.allDepartementsData = this.removeMultipleElem(this.allDepartementsData, this.selectedIndexes);
+              this.decocherTousElemListe();
+              this.departementsData = [...this.departementsData];
+              this.selectedIndexes = [];
             }
           },{
             text: this.translate.instant('GENERAL.ALERT_ANNULER'),
@@ -322,58 +487,101 @@ export class DepartementPage implements OnInit {
     initForm(){
       //this.departementForm = null;
       this.departementForm = this.formBuilder.group({
-        codePays: ['', Validators.required],
         nomPays: ['', Validators.required],
-        codeRegion: ['', Validators.required],
+        codePays: ['', Validators.required],
+        idPays: ['', Validators.required],
         nomRegion: ['', Validators.required],
-        codeDepartement: ['', {disabled: true}, Validators.required],
-        numeroDepartement: [''/*, Validators.compose([NumeroDepartementValidator.uniqueNumeroDepartement(this.departementsData, 'ajouter'), Validators.maxLength(2), Validators.minLength(2), Validators.pattern('^[0-9]+$'), Validators.required])*/],
-        nomDepartement: ['', Validators.required],
+        codeRegion: ['', Validators.required],
+        idRegion: ['', Validators.required],
+        nom: ['', Validators.required],
+        numero: ['', Validators.compose([NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(1), Validators.pattern('^[0-9A-ZA-z]+$'), Validators.required])],
+        code: ['', Validators.required],
         latitude: [''],
         longitude: [''],
-        created_at: [''],
-        created_by: [''],
-        updatet_at: [''],
-        updated_by: [''],
-        deleted: [''],
-        deleted_at: [''],
-        deleted_by: ['']
       });
 
-      this.departementForm.valueChanges.subscribe(change => {
-        this.departementForm.get('numeroDepartement').setValidators([NumeroDepartementValidator.uniqueNumeroDepartement(this.departementsData, this.departementForm.value.codeRegion, 'ajouter'), NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(2), Validators.pattern('^[0-9]+$'), Validators.required]);
-      });
+      this.validerNumeroDepartement()
+      /*this.departementForm.valueChanges.subscribe(change => {
+        this.departementForm.get('numero').setValidators([NumeroDepartementValidator.uniqueNumeroDepartement(this.departementsData, this.departementForm.value.codeRegion, 'ajouter'), NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(2), Validators.pattern('^[0-9]+$'), Validators.required]);
+      });*/
     }
   
-    editForm(d){
+    editForm(dDoc){
       //this.departementForm = null;
+      let departement = dDoc.departements[0];
+      let codePays;
+      let idPays;
+      let nomPays;
+      let codeRegion;
+      let nomRegion;
+      let idRegion;
+      if(dDoc.pays[0]){
+        idPays = dDoc.pays[0].id;
+        codePays = dDoc.pays[0].formData.code;
+        nomPays = dDoc.pays[0].formData.nom;
+      }
+
+      if(dDoc.regions[0]){
+        idRegion = dDoc.regions[0].id;
+        codeRegion = dDoc.regions[0].formData.code;
+        nomRegion = dDoc.regions[0].formData.nom;
+      }
+      //this.unionForm = null;
+      let d = departement.formData
       this.departementForm = this.formBuilder.group({
-        codePays: [d.codePays, Validators.required],
-        nomPays: [d.nomPays, Validators.required],
-        codeRegion: [d.codeRegion, Validators.required],
-        nomRegion: [d.nomRegion, Validators.required],
-        codeDepartement: [d.codeDepartement, Validators.required],
-        numeroDepartement: [d.numeroDepartement],
-        nomDepartement: [d.nomDepartement, Validators.required],
+        nomPays: [nomPays, Validators.required],
+        codePays: [codePays, Validators.required],
+        idPays: [idPays, Validators.required],
+        nomRegion: [nomRegion, Validators.required],
+        codeRegion: [codeRegion, Validators.required],
+        idRegion: [idRegion, Validators.required],
+        nom: [d.nom, Validators.required],
+        code: [d.code, Validators.required],
+        numero: [d.numero,  Validators.compose([NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(1), Validators.pattern('^[0-9A-ZA-z]+$'), Validators.required])],
         latitude: [d.latitude],
         longitude: [d.latitude],
-        created_at: [d.created_at],
-        created_by: [d.created_by],
-        updatet_at: [d.updatet_at],
-        updated_by: [d.updated_by],
-        deleted: [d.deleted],
-        deleted_at: [d.deleted_at],
-        deleted_by: [d.deleted_by]
       });
 
-      this.departementForm.valueChanges.subscribe(change => {
-        this.departementForm.get('numeroDepartement').setValidators([NumeroDepartementValidator.uniqueNumeroDepartement(this.departementsData, this.departementForm.value.codeRegion, 'ajouter'), NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(2), Validators.pattern('^[0-9]+$'), Validators.required]);
-      });
+      this.validerNumeroDepartement();
+      /*this.departementForm.valueChanges.subscribe(change => {
+        this.departementForm.get('numero').setValidators([NumeroDepartementValidator.uniqueNumeroDepartement(this.departementsData, this.departementForm.value.codeRegion, 'ajouter'), NumeroDepartementValidator.validNumeroDepartement(), Validators.maxLength(2), Validators.minLength(2), Validators.pattern('^[0-9]+$'), Validators.required]);
+      });*/
     }
   
+    validerNumeroDepartement(){
+      let numeroControl = this.departementForm.controls['numero'];
+      numeroControl.valueChanges.subscribe((value) => {
+        this.servicePouchdb.findRelationalDocByTypeAndCode('departement', this.departementForm.value.codeRegion + value).then((res) => {
+          if(res && res.departements && res.departements[0] && (this.action != 'modifier' || (this.action == 'modifier' && value != this.unDepartement.numero))){
+            numeroControl.setErrors({uniqueNumeroDepartement: true});
+          }
+        });
+      });
+    }
+
+
     ajouter(){
-      this.getPays();
+      this.doModification = false;
+      if(this.idRegion && this.idRegion != ''){
+        if(this.departementHTMLTable && this.departementHTMLTable.datatable && this.departementHTMLTable.datatable.row(0) && this.departementHTMLTable.datatable.row(0).data()){
+          this.idPays = this.departementHTMLTable.datatable.row(0).data().idPays;
+          this.getPays();
+        }else{
+          this.servicePouchdb.findRelationalDocByTypeAndID('region', this.idRegion).then((res) => {
+            if(res && res.regions){
+              this.idPays = res.regions[0].pays;
+              this.getPays();
+            }
+          })
+        }
+        //this.codePays = this.codeRegion.substr(0, 2);
+      }else {
+        this.getPays();
+      }
+      //
       this.initForm();
+      this.initSelect2('idPays', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONPAYS'));
+      this.initSelect2('idRegion', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONREGION'));
       this.action = 'ajouter';
     }
   
@@ -386,11 +594,31 @@ export class DepartementPage implements OnInit {
 
   
     modifier(d){
-      this.getPays();
-      this.getRegionParPays(d.codePays);
-      this.editForm(d);
-      this.unDepartement = d;
-      this.action ='modifier';
+      this.doModification = true;
+      this.servicePouchdb.findRelationalDocByID('departement', d.id).then((res) => {
+        if(res && res.departements){
+          this.getPays();
+          this.getRegionParPays(d.idPays);
+          this.editForm(res);
+          this.initSelect2('idPays', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONPAYS'));
+          this.initSelect2('idRegion', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONREGION'));
+          //.setSelect2DefaultValue('codePays', d.codePays)
+          //this.setSelect2DefaultValue('codeRegion', d.codeRegion)
+          /*$('#numero input').ready(()=>{
+            $('#numero input').attr('disabled', true)
+          });*/
+
+          this.uneDepartementDoc = res.departements[0];
+          this.unDepartement = d;
+          this.action ='modifier';
+        }
+      }).catch((err) => {
+        alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+      })
+
+      
+      //this.unDepartement = d;
+      //this.action ='modifier';
     }
 
     getPosition(){
@@ -405,7 +633,7 @@ export class DepartementPage implements OnInit {
       });
     }
   
-    exportExcel(){
+    /*exportExcel(){
       let date =new Date().getTime();
       let blob = new Blob([document.getElementById('departement-datatable').innerHTML], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8"
@@ -439,7 +667,7 @@ export class DepartementPage implements OnInit {
       }).catch(()=>{
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_CREAION_FICHIER')+": " + fileDestiny);
       });
-    }
+    }*/
   
     clone(obj) {
       // Handle the 3 simple types, and null or undefined
@@ -494,40 +722,24 @@ export class DepartementPage implements OnInit {
             cssClass: 'alert-danger',
             handler: () => {
               //suppression définitive
-              this.departementsData.splice(this.departementsData.indexOf(d), 1);
-              //chercher la departement concernée
-              var departementConcernee;
-              for(let reg of this.departements){
-                if('fuma:departement:'+d.codeRegion == reg._id/*.substr(reg._id.length - 2, 2)*/){
-                  departementConcernee = reg;
-                  break;
-                }
-              }
-
-              //mise à jour dans la région
-              departementConcernee.data.splice(departementConcernee.data.indexOf(d), 1)
-      
-              this.servicePouchdb.updateLocalite(departementConcernee).then((res) => {
-                departementConcernee._rev = res.rev;
-                //mise à jour de la liste des régions
-                for(let i = 0; i < this.departements.length; i++){
-                  if(this.departements[i]._id == departementConcernee._id){
-                    this.departements[i] = departementConcernee;
-                    break;
+              this.servicePouchdb.findRelationalDocByID('departement', d.id).then((res) => {
+                this.servicePouchdb.deleteRelationalDocDefinitivement(res.departements[0]).then((res) => {
+                  this.departementsData.splice(this.departementsData.indexOf(d), 1);
+                  this.action = 'liste';
+                  if(!this.mobile){
+                    this.dataTableRemoveRows();
+                    this.selectedIndexes = [];
+                  }else{
+                    this.departementsData = [...this.departementsData];
+                    this.allDepartementsData.splice(this.allDepartementsData.indexOf(d), 1);
+                    this.selectedIndexes = [];
                   }
-                }
-                this.action = 'liste';
-                this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
-                if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-                  this.dataTableRemoveRows();
-                  this.seletedIndexes = [];
-                }
-                //this.htmlTableAction = 'recharger';
-                //this.actualiserTableau(this.departementsData);
-              }).catch((err) => {
-                this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
-
-              });
+                }).catch((err) => {
+                   this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                 });//fin delete
+               }).catch((err) => {
+                 this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+               });//fin get
             }
           }
         ]
@@ -536,20 +748,20 @@ export class DepartementPage implements OnInit {
       await alert.present();
     }
   
-    async presentPays(codePays) {
+    async presentPays(idPays) {
       const modal = await this.modalController.create({
         component: PaysPage,
-        componentProps: { codePays: codePays },
+        componentProps: { idPays: idPays },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
       return await modal.present();
     }
   
-    async presentRegion(codeRegion) {
+    async presentRegion(idRegion) {
       const modal = await this.modalController.create({
         component: RegionPage,
-        componentProps: { codeRegion: codeRegion },
+        componentProps: { idRegion: idRegion },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -577,57 +789,23 @@ export class DepartementPage implements OnInit {
             cssClass: 'alert-danger',
             handler: () => {
               //suppression définitive
-              var departementsConcernee: any = {};
-              this.seletedIndexes.forEach((si) => {
-                var d = this.departementsData[si];
-                var exist = 0;
-
-                if(departementsConcernee['fuma:departement:'+d.codeRegion]){
-                  departementsConcernee['fuma:departement:'+d.codeRegion].data.splice(departementsConcernee['fuma:departement:'+d.codeRegion].data.indexOf(d), 1);
-                  exist = 1;
-                }
-
-                if(!exist){
-                  for(let reg of this.departements){
-                    if('fuma:departement:'+d.codeRegion == reg._id){
-                      reg.data.splice(reg.data.indexOf(d), 1);
-                      departementsConcernee[reg._id] = reg
-                      break;
-                    }
-                  }
-                }
-              });
-
-              //mise à jour de departementsData
-              this.seletedIndexes.forEach((si) => {
-                this.departementsData.splice(this.departementsData.indexOf(this.departementsData[si]), 1);
-              });
-
-              //update
-              Object.keys(departementsConcernee).forEach((key, index) => {
-                this.servicePouchdb.updateLocalite(departementsConcernee[key]).then((res) => {
-                  departementsConcernee[key]._rev = res.rev;
-                  for(let i = 0; i < this.departements.length; i++){
-                    if(this.departements[i]._id == departementsConcernee[key]._id){
-                      this.departements[i] = departementsConcernee[key];
-                      break;
-                    }
-                  }
-                  if(index +1 == Object.keys(departementsConcernee).length){
-                    this.action = 'liste';
-                    this.dataTableRemoveRows();
-                    this.seletedIndexes = [];
-                    //this.htmlTableAction = 'recharger';
-                    //this.actualiserTableau(this.departementsData);
-                    this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
-                  }
-                }).catch((err) => {
-                  this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
-                });
-              });
-              
-              
-              //this.seletedIndexes = [];
+              this.selectedIndexes.forEach((id) => {
+                this.servicePouchdb.findRelationalDocByID('departement', id).then((res) => {
+                  this.servicePouchdb.deleteRelationalDocDefinitivement(res.departements[0]).then((res) => {
+                  }).catch((err) => {
+                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                   });//fin delete
+                 }).catch((err) => {
+                   this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
+                 });//fin get
+              })
+  
+              this.action = 'liste';
+              //this.htmlTableAction = 'recharger';
+              //this.actualiserTableau(this.paysData);
+              this.dataTableRemoveRows();
+              this.selectedIndexes = [];
+              this.afficheMessage(this.translate.instant('GENERAL.ALERT_SUPPRIMER'));
             }
           }
         ]
@@ -670,9 +848,88 @@ export class DepartementPage implements OnInit {
         this.action = "infos";
       }else{
         this.action = 'liste';
-        //this.actualiserTableau(this.departementsData);
+        //this.action = this.cacheAction; 
+        //recharger la liste
+        if(this.rechargerListeMobile){
+          this.departementsData = [...this.departementsData];
+          this.rechargerListeMobile = false;
+        }
+        ///this.actualiserTableau(this.paysData);
       }
     }
+  
+    async listActionPopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: ListeActionComponent,
+        event: ev,
+        translucent: true,
+        componentProps: {
+          "action": this.action,
+          "localite": true
+        },
+        animated: true,
+        showBackdrop: true,
+        //mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'supprimer') {
+          this.supprimer(this.unDepartement);
+        }else if(dataReturned !== null && dataReturned.data == 'derniereModification') {
+          this.selectedItemDerniereModification();          
+        }     
+      });
+      return await popover.present();
+    }
+  
+
+    async datatableConstructPopover(ev: any) {
+      const popover = await this.popoverController.create({
+        component: DatatableConstructComponent,
+        event: ev,
+        translucent: true,
+        componentProps: {"action": this.action, "cacheAction": this.action, "localite": true},
+        animated: true,
+        showBackdrop: true,
+        mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'derniereModification') {
+          this.selectedItemDerniereModification();
+        }else if(dataReturned !== null && dataReturned.data == 'supprimer') {
+          this.supprimer(this.unDepartement);
+        }
+      });
+      return await popover.present();
+    }
+    
+    async presentDerniereModification(departement) {
+      const modal = await this.modalController.create({
+        component: DerniereModificationComponent,
+        componentProps: { _id: departement.id, _rev: departement.rev, security: departement.security },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    selectedItemDerniereModification(){
+      if(this.unDepartement.id && this.unDepartement.id != ''){
+        this.servicePouchdb.findRelationalDocByID('departement', this.unDepartement.id).then((res) => {
+          if(res && res.departements[0]){
+            this.presentDerniereModification(res.departements[0]);
+          }else{
+            alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
+          }
+        });
+        //this.selectedIndexes = [];
+      }else{
+        alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
+      }
+    }
+
+
   
     async actionActionSheet() {
       const actionSheet = await this.actionSheetCtl.create({
@@ -682,9 +939,9 @@ export class DepartementPage implements OnInit {
           text: this.translate.instant('GENERAL.INFOS'),
           icon: 'information-circle',
           handler: () => {
-            if(this.seletedIndexes.length == 1){
-              this.infos(this.departementsData[this.seletedIndexes[0]]);
-              //this.seletedIndexes = [];
+            if(this.selectedIndexes.length == 1){
+              this.infos(this.departementsData[this.selectedIndexes[0]]);
+              //this.selectedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
             }
@@ -693,9 +950,9 @@ export class DepartementPage implements OnInit {
           text: this.translate.instant('GENERAL.MODIFIER'),
           icon: 'create',
           handler: () => {
-            if(this.seletedIndexes.length == 1){
-              this.modifier(this.departementsData[this.seletedIndexes[0]]);
-              //this.seletedIndexes = [];
+            if(this.selectedIndexes.length == 1){
+              this.modifier(this.departementsData[this.selectedIndexes[0]]);
+              //this.selectedIndexes = [];
             }else{
               alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
             }
@@ -705,7 +962,7 @@ export class DepartementPage implements OnInit {
           icon: 'add',
           handler: () => {
             this.ajouter();
-            //this.seletedIndexes = [];
+            //this.selectedIndexes = [];
           }
         }, {
           text: this.translate.instant('GENERAL.SUPPRIMER'),
@@ -740,20 +997,20 @@ export class DepartementPage implements OnInit {
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'ajouter') {
           this.ajouter();
-          this.seletedIndexes = [];
+          this.selectedIndexes = [];
         }else if(dataReturned !== null && dataReturned.data == 'infos') {
           this.selectedItemInfo();
-          /*if(this.seletedIndexes.length == 1){
-            this.infos(this.departementsData[this.seletedIndexes[0]]);
-            this.seletedIndexes = [];
+          /*if(this.selectedIndexes.length == 1){
+            this.infos(this.departementsData[this.selectedIndexes[0]]);
+            this.selectedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
           }*/
         }else if(dataReturned !== null && dataReturned.data == 'modifier') {
           this.selectedItemModifier();
-          /*if(this.seletedIndexes.length == 1){
-            this.modifier(this.departementsData[this.seletedIndexes[0]]);
-            this.seletedIndexes = [];
+          /*if(this.selectedIndexes.length == 1){
+            this.modifier(this.departementsData[this.selectedIndexes[0]]);
+            this.selectedIndexes = [];
           }else{
             alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
           }*/
@@ -799,29 +1056,33 @@ export class DepartementPage implements OnInit {
     }
 
     selectedItemInfo(){
-      if(this.seletedIndexes.length == 1){
-        this.infos(this.departementsData[this.seletedIndexes[0]]);
-        //this.seletedIndexes = [];
-      }else{
+     // if(this.selectedIndexes.length == 1){
+      let row  = this.departementHTMLTable.datatable.row('.selected').index();
+      let data  = this.departementHTMLTable.datatable.row(row).data();
+      this.infos(data);
+        //this.selectedIndexes = [];
+      /*}else{
         alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'));
-      }
+      }*/
     }
   
     selectedItemModifier(){
-      if(this.seletedIndexes.length == 1){
-        this.modifier(this.departementsData[this.seletedIndexes[0]]);
-        //this.seletedIndexes = [];
-      }else{
+      //if(this.selectedIndexes.length == 1){
+        let row  = this.departementHTMLTable.datatable.row('.selected').index();
+        let data  = this.departementHTMLTable.datatable.row(row).data();
+        this.modifier(data);
+        //this.selectedIndexes = [];
+      /*}else{
         alert(this.translate.instant('GENERAL.ALERT_ENREGISTREMENT_DE_TROP'))
-      }
+      }*/
     }
   
-    async openRelationDepartement(ev: any/*, codeDepartement*/) {
+    async openRelationDepartement(ev: any/*, code*/) {
       const popover = await this.popoverController.create({
         component: RelationsDepartementComponent,
         event: ev,
         translucent: true,
-        componentProps: {"codeDepartement": this.unDepartement.codeDepartement},
+        componentProps: {"idDepartement": this.unDepartement.id},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -829,9 +1090,9 @@ export class DepartementPage implements OnInit {
   
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'commune') {
-          this.presentCommune(this.unDepartement.codeDepartement);
-        } else if(dataReturned !== null && dataReturned.data == 'village') {
-          this.presentVillage(this.unDepartement.codeDepartement) 
+          this.presentCommune(this.unDepartement.id);
+        } else if(dataReturned !== null && dataReturned.data == 'localite') {
+          this.presentLocalite(this.unDepartement.id) 
         }
   
       });
@@ -839,12 +1100,12 @@ export class DepartementPage implements OnInit {
     }
 
      
-  async openRelationDepartementDepuisListe(ev: any/*, codePays*/) {
+  async openRelationDepartementDepuisListe(ev: any/*, idPays*/) {
     const popover = await this.popoverController.create({
       component: RelationsDepartementComponent,
       event: ev,
       translucent: true,
-      componentProps: {"codeDepartement": this.departementsData[this.seletedIndexes[0]].codeDepartement},
+      componentProps: {"idDepartement": this.selectedIndexes[0]},
       animated: true,
       showBackdrop: true,
       //mode: "ios"
@@ -852,335 +1113,219 @@ export class DepartementPage implements OnInit {
 
     popover.onWillDismiss().then((dataReturned) => {
       if(dataReturned !== null && dataReturned.data == 'commune') {
-        this.presentCommune(this.departementsData[this.seletedIndexes[0]].codeDepartement);
-      } else if(dataReturned !== null && dataReturned.data == 'village') {
-        this.presentVillage(this.departementsData[this.seletedIndexes[0]].codeDepartement) 
+        this.presentCommune(this.selectedIndexes[0]);
+      } else if(dataReturned !== null && dataReturned.data == 'localite') {
+        this.presentLocalite(this.selectedIndexes[0]) 
       }
 
     });
     return await popover.present();
   }
 
-    async presentCommune(codeDepartement) {
+    async presentCommune(idDepartement) {
       const modal = await this.modalController.create({
         component: CommunePage,
-        componentProps: { codeDepartement: codeDepartement },
+        componentProps: { idDepartement: idDepartement },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
       return await modal.present();
     }
 
-    async presentVillage(codeDepartement) {
+    async presentLocalite(idDepartement) {
       const modal = await this.modalController.create({
-        component: VillagePage,
-        componentProps: { codeDepartement: codeDepartement },
+        component: LocalitePage,
+        componentProps: { idDepartement: idDepartement },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
       return await modal.present();
     }
   
-    existeDepartement(codeRegion){
-      for(let reg of this.departements){
-        if('fuma:departement:'+codeRegion == reg._id){
-          return 1;
-        }
-      }
-
-      return 0;
-    }
   
     onSubmit(){
-      let departementData = this.departementForm.value;
+      //let departementData = this.departementForm.value;
+      let formData = this.departementForm.value;
+      let formioData = {};
       if(this.action === 'ajouter'){
-        //Si le departement existe
-        if(this.departements && this.existeDepartement(departementData.codeRegion)){
-          departementData = this.servicePouchdb.garderCreationTrace(departementData);
-          
-          var departementConcernee;
-          for(let d of this.departements){
-            if('fuma:departement:'+departementData.codeRegion == d._id){
-              departementConcernee = d;
-              break;
-            }
+        let departement: any = {
+          //id: formData.code,
+          type: 'departement',
+          pays: formData.idPays,
+          region: formData.idRegion,
+          formData: formData,
+          //pour le customisation
+          formioData: formioData,
+          //pour garder les traces
+          security: {
+            created_by: null,
+            created_at: null,
+            updated_by: null,
+            updated_at: null,
+            deleted: false,
+            deleted_by: null,
+            deleted_at: null,
           }
-          
-          departementConcernee.data.push(departementData);
-          //********************* */
-          //si changement code de departements, appliquer le changement aux localité
-          /*if(this.unDepartement.codeDepartement != departementData.codeDepartement){
-            //application des changements au localités
-          }*/
-          this.servicePouchdb.updateLocalite(departementConcernee).then((res) => {
-            departementConcernee._rev = res.rev;
-            for(let i = 0; i < this.departements.length; i++){
-              if(this.departements[i]._id == departementConcernee._id){
-                this.departements[i] = departementConcernee;
-                break;
-              }
-            }
+  
+        };
+
+        departement.security = this.servicePouchdb.garderCreationTrace(departement.security);
+        delete departement.security['archived'];
+  
+
+        let doc = this.clone(departement);
+        delete doc.formData.codePays;
+        delete doc.formData.idPays;
+        delete doc.formData.nomPays;
+        delete doc.formData.codeRegion;
+        delete doc.formData.nomRegion;
+        delete doc.formData.idRegion;
+
+        this.servicePouchdb.createRelationalDoc(doc).then((res) => {
+          //fusionner les différend objets
+          let departementData = {id: res.id, ...departement.formData, ...departement.formioData, ...departement.security};
+          //this.unions = union;
+          this.action = 'liste';
+
+          //this.rechargerListeMobile = true;
+          if (!this.mobile){
+            //mode tableau, ajout d'un autre union dans la liste
+            this.dataTableAddRow(departementData)
+          }else{
+            //mobile, cache la liste des union pour mettre à jour la base de données
             this.departementsData.push(departementData);
-            //this.departements._rev = res.rev;
-            this.action = 'liste';
-            /*if(this.mobile){
-              this.departementData = this.departements.data;
-            }*/
-            if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-              //this.htmlTableAction = 'recharger';
-              //this.actualiserTableau(this.departementsData);
-              this.dataTableAddRow(departementData);
-            }
-            //this.htmlTableAction = 'recharger';
+            this.departementsData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
 
-            //initialiser la liste des communes
-            //this.creerCommune(departementData.codeDepartement);
+            this.departementsData = [...this.departementsData];
 
-            //libérer la mémoire occupée par la liste des pays
-            this.paysData = [];
-            this.regionData = [];
-          }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
-          });
-        }else{
-          //créer un nouveau département
-          departementData = this.servicePouchdb.garderCreationTrace(departementData);
-          
-          
-          let departement: any = {
-            _id: 'fuma:departement:'+departementData.codeRegion,
-            type: 'departement',
-            data: [departementData]
-          };
-          //this.departements = departement;
-          this.departementsData.push(departementData);
-
-          this.servicePouchdb.createLocalite(departement).then((res) => {
-            departement._rev = res.rev;
-            this.departements.push(departement);
-            this.action = 'liste';
-            if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-              this.htmlTableAction = 'recharger';
-              this.actualiserTableau(this.departementsData);
-            }
-            //this.htmlTableAction = 'recharger';
-            
-
-            //initialiser la liste des communes
-            //this.creerCommune(departementData.codeDepartement);
-
-            //libérer la mémoire occupée par la liste des pays
-            this.paysData = [];
-            this.regionData = [];
-          }).catch((err) => {
-            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
-          });
-        }
-      }else{
-        //si modification
-        //var paysChanger: boolean = false
-        var regionChanger: boolean = false
-        
-        //virifier s'il ya eu un changement de pays pour le département
-        /*if(this.unDepartement.codePays != departementData.codePays){
-          paysChanger = true;
-        }*/
-
-        //virifier s'il ya eu un changement de région pour le département
-        if(this.unDepartement.codeRegion != departementData.codeRegion){
-          regionChanger = true;
-        }
-        
-        departementData = this.servicePouchdb.garderUpdateTrace(departementData);
-        //mise à jour de la liste des régions
-        this.departementsData[this.departementsData.indexOf(this.unDepartement)] = departementData;
-        
-        //récuper la région concernée, celle qui a été modifiée
-        //les région sont classées par pays, donc il suffit de récupérer la région corespondant au code de pays de la région elle même
-        var departementConcernee;
-        var ancientDepartementConcernee;
-        if(!regionChanger){
-          for(let d of this.departements){
-            if('fuma:departement:'+departementData.codeRegion == d._id){
-              departementConcernee = d;
-              break;
-            }
-          }
-          //mise à jour dans la région
-          departementConcernee.data[departementConcernee.data.indexOf(this.unDepartement)] = departementData;
-        }else{
-          //recuprer la nouvelle departement du pays et ajouter la région
-          for(let d of this.departements){
-            if('fuma:departement:'+departementData.codeRegion == d._id/*.substr(d._id.length - 2, 2)*/){
-              departementConcernee = d;
-              //ajouter la région
-              departementConcernee.data.push(departementData);
-              break;
-            }
+            this.allDepartementsData.push(departementData);
+            this.allDepartementsData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
           }
 
-          //recuprer l'ancienne departement du pays et supprimer la région
-          for(let d of this.departements){
-            if('fuma:departement:'+this.unDepartement.codeRegion == d._id/*.substr(d._id.length - 2, 2)*/){
-              ancientDepartementConcernee = d;
-              //ajouter la région
-              ancientDepartementConcernee.data.splice(ancientDepartementConcernee.data.indexOf(this.unDepartement), 1);
-              break;
-            }
-          }
-          
-        }
-      
-        //this.unDepartement = departementData;
-        this.servicePouchdb.updateLocalite(departementConcernee).then((res) => {
-          //this.departements._rev = res.rev;
-          departementConcernee._rev = res.rev;
-          //mise à jour de la liste des régions
-          for(let i = 0; i < this.departements.length; i++){
-            if(this.departements[i]._id == departementConcernee._id){
-              this.departements[i] = departementConcernee;
-              break;
-            }
-          }
-
-           //en cas de changement du code du département ou du nom du département, appliquer les changement dans la subdivision
-          if(this.unDepartement.codeDepartement != departementData.codeDepartement || this.unDepartement.nomDepartement != departementData.nomDepartement){
-            this.changerInfoDepartementDansCommune(this.unDepartement.codeDepartement, departementData);
-            this.changerInfoDepartementDansVillage(this.unDepartement.codeDepartement, departementData);
-          }
-
-          this.action = 'infos';
-          this.infos(departementData);
-          
-          /*if(this.mobile){
-            this.departementData = this.departements.data;
-          }*/
-          if((this.mobile && this.styleAffichage == 'tableau') || !this.mobile){
-            //this.htmlTableAction = 'recharger';
-            this.dataTableUpdateRow(departementData);
-          }
-          //this.actualiserTableau(this.departements.data);
           //libérer la mémoire occupée par la liste des pays
           this.paysData = [];
           this.regionData = [];
-
-          //si changement de pays, mettre ajouter l'ancienne departement du pays
-          if(regionChanger){
-            this.servicePouchdb.updateLocalite(ancientDepartementConcernee).then((res) => {
-              //this.departements._rev = res.rev;
-              ancientDepartementConcernee._rev = res.rev;
-              //mise à jour de la liste des régions
-              for(let i = 0; i < this.departements.length; i++){
-                if(this.departements[i]._id == ancientDepartementConcernee._id){
-                  this.departements[i] = ancientDepartementConcernee;
-                  break;
-                }
-              }
-            });
-          }
         }).catch((err) => {
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
         });
+      }else{
+        //si modification
+        this.uneDepartementDoc.pays = formData.idPays;
+          this.uneDepartementDoc.region = formData.idRegion
+          this.uneDepartementDoc.formData = formData;
+          this.uneDepartementDoc.formioData = formioData;
+
+          this.uneDepartementDoc.security = this.servicePouchdb.garderUpdateTrace(this.uneDepartementDoc.security);
+
+          let doc = this.clone(this.uneDepartementDoc);
+          delete doc.formData.idPays;
+          delete doc.formData.codePays;
+          delete doc.formData.nomPays;
+          delete doc.formData.idRegion;
+          delete doc.formData.codeRegion;
+          delete doc.formData.nomRegion;
+
+          this.servicePouchdb.updateRelationalDoc(doc).then((res) => {
+            //this.unions._rev = res.rev;
+            //this.uneUnionDoc._rev = res.rev;
+            let departementData = {id: this.uneDepartementDoc.id, ...this.uneDepartementDoc.formData, ...this.uneDepartementDoc.formioData, ...this.uneDepartementDoc.security};
+
+            this.action = 'infos';
+            this.infos(departementData);
+
+            if(this.mobile){
+              //mode liste
+              //cache la liste pour le changement dans virtual Scroll
+
+              for(let i = 0; i < this.departementsData.length; i++){
+                if(this.departementsData[i].id== departementData.id){
+                  this.departementsData[i] = departementData;
+                  break;
+                }
+              }
+
+              this.departementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              //mise à jour dans la liste cache
+              for(let i = 0; i < this.allDepartementsData.length; i++){
+                if(this.allDepartementsData[i].id == departementData.id){
+                  this.allDepartementsData[i] = departementData;
+                  break;
+                }
+              }
+
+              this.allDepartementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              this.rechargerListeMobile = true;
+            }else{
+              //mode tableau
+              //deselect multiple items selected
+              //this.datatableDeselectMultipleSelectedItemForModification();
+              this.dataTableUpdateRow(departementData);
+            }
+
+            this.paysData = [];
+            this.regionData = [];
+            this.uneDepartementDoc = null;
+
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
+          });
       }
     }
 
-    changerInfoDepartementDansCommune(ancienCodeDepartement, infoDepartement){
-      this.servicePouchdb.getLocalDocById('fuma:commune:'+ancienCodeDepartement).then((commune) => {
-        if(commune){
-          var oldCommune = {...commune}
-          commune.data.forEach((c, index) => {
-            if(ancienCodeDepartement != infoDepartement.codeDepartement){
-              c.codeDepartement = infoDepartement.codeDepartement;
-              c.codeCommune = infoDepartement.codeDepartement + c.numeroCommune;
-            }
-            c.nomDepartement = infoDepartement.nomDepartement;
-            c = this.servicePouchdb.garderCreationTrace(c);
-          });
-  
-  
-          //encas de changement de code
-          if(ancienCodeDepartement != infoDepartement.codeDepartement){
-            //créer un nouveau document
-            delete commune['_rev'];
-            commune._id = 'fuma:commune:'+infoDepartement.codeDepartement;
-            this.servicePouchdb.createLocalite(commune);
-            this.servicePouchdb.deleteLocaliteDefinitivement(oldCommune);
-          }else{
-            //changement de nom
-            this.servicePouchdb.updateLocalite(commune);
-          }
-        }
-      }).catch((err) => {
-        console.log(err);
-      });
-    }
-
-      
-    changerInfoDepartementDansVillage(ancienCodeDepartement, infoDepartement){
-      this.servicePouchdb.getLocalitePlageDocs('fuma:village:'+ancienCodeDepartement, 'fuma:village:'+ancienCodeDepartement+'\uffff').then((villages) => {
-        if(villages){
-          villages.forEach((village) => {
-            var oldVillage = {...village}
-            village.data.forEach((v, index) => {
-              if(ancienCodeDepartement != ancienCodeDepartement.codeRegion){
-                v.codeDepartement = infoDepartement.codeDepartement;
-                v.codeCommune = v.codeDepartement + v.codeCommune.substr(7,2);
-                v.codeVillage = v.codeCommune + v.numeroVillage;
-              }
-              v.nomDepartement = infoDepartement.nomDepartement;
-              v = this.servicePouchdb.garderCreationTrace(v);
-            });
-
-            //encas de changement de code
-            if(ancienCodeDepartement != infoDepartement.codeDepartement){
-              //créer un nouveau document
-              delete village['_rev'];
-              village._id = 'fuma:village:'+infoDepartement.codeDepartement + village._id.substr(village._id.indexOf('-') + 5, 2);
-              this.servicePouchdb.createLocalite(village);
-              this.servicePouchdb.deleteLocaliteDefinitivement(oldVillage);
-            }else{
-              //changement de nom
-              this.servicePouchdb.updateLocalite(village);
-            }
-          });
-          
-        }
-      }).catch((err) => {
-        console.log(err);
-      });
-    }
-  
-
-    creerCommune(codeDepartement){
-      //initialise les régions du pays
-      let region: any = {
-        _id: 'fuma:commune:'+codeDepartement,
-        type: 'commune',
-        data: []
-      };
-      this.servicePouchdb.createLocalite(region);
-    }
-  
-  
+ 
     actualiserTableau(data){
-      if(this.codePays && this.codePays != ''){
+      if(this.idPays && this.idPays != ''){
         if(data.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
           $('#departement-pays').ready(()=>{
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
+                this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -1194,18 +1339,18 @@ export class DepartementPage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = JSONToTHMLTable(data, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees)
+                this.departementHTMLTable = createDataTable("departement", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
               }else{
-                this.departementHTMLTable = reCreateTHMLTable(this.departementHTMLTable.table, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                this.departementHTMLTable = createDataTable("departement", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
               }
               this.htmlTableAction = null;
             }
@@ -1219,136 +1364,202 @@ export class DepartementPage implements OnInit {
   
     doRefresh(event) {
       //this.servicePouchdb.getLocalDocById('fuma:departement').then((departement)
-      if(this.codeRegion && this.codeRegion != ''){       
-        this.servicePouchdb.getLocalDocById('fuma:departement:'+this.codeRegion).then((departement) => {
-          if(departement){
-            this.departements = [];
-            this.departementsData = [];
-            this.departements.push({...departement});
-            this.departementsData = [...departement.data];
+      if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+        let type;
+        let idType;
+        if(this.idRegion){
+          type = 'region';
+          idType = this.idRegion;
+        }else{
+          type = 'pays';
+          idType = this.idPays;
+        }
+
+        this.servicePouchdb.findRelationalDocHasMany('departement', type, idType).then((res) => {
+          if(res && res.departements){
+            let departementsData = [];
+            this.allDepartementsData = [];
+            let paysIndex = [];
+            let regionIndex = [];
+            let idPays;
+            let idRegion;
+            for(let d of res.departements){
+              if(isDefined(paysIndex[d.pays])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                idPays = res.pays[paysIndex[d.pays]].id;
+              }else{
+                for(let i=0; i < res.pays.length; i++){
+                  if(res.pays[i].id == d.pays){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                    paysIndex[d.pays] = i;
+                    idPays = res.pays[i].id;
+                    break;
+                  }
+                }
+              }
+
+              if(isDefined(regionIndex[d.region])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                idRegion = res.regions[regionIndex[d.region]].id;
+              }else{
+                for(let i=0; i < res.regions.length; i++){
+                  if(res.regions[i].id == d.region){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                    regionIndex[d.region] = i;
+                    idRegion = res.regions[i].id;
+                    break;
+                  }
+                }
+              }
+              
+              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
+            }
 
             //si non mobile ou mobile + mode tableau et 
-            if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
+            if(!this.mobile){
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
+            }else if(this.mobile){
+              this.departementsData = departementsData;
+              this.departementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              this.allDepartementsData = [...this.allDepartementsData];
             }
-            this.seletedIndexes = [];
+
+            this.selectedIndexes = [];
             if(event)
               event.target.complete();
           }else{
-            this.departements = [];
             if(this.mobile){
               this.departementsData = [];
+              this.allDepartementsData = [];
             }
-            this.seletedIndexes = [];
+            this.selectedIndexes = [];
             if(event)
               event.target.complete();
           }
         }).catch((err) => {
-          console.log('Erreur acces au département ==> '+err)
-          this.departements = [];
+          console.log('Erreur acces au departement ==> '+err)
           if(this.mobile){
             this.departementsData = [];
+            this.allDepartementsData = [];
           }
-          this.seletedIndexes = [];
+          this.selectedIndexes = [];
           if(event)
             event.target.complete();
         });
     
-      }else if(this.codePays  && this.codePays != ''){
-        this.servicePouchdb.getLocalitePlageDocs('fuma:departement:'+this.codePays, 'fuma:departement:'+this.codePays+'\uffff').then((departements) => {
-          if(departements){
-            this.departements = [...departements];
-            var datas = [];
-            for(let d of departements){
-              datas = datas.concat(d.data);
-            }
-            this.departementsData = [...datas];
-  
-            //si non mobile ou mobile + mode tableau et 
-            if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
-              $('#departement-pays').ready(()=>{
-                if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
-                }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+      }else{
+        this.servicePouchdb.findAllRelationalDocByType('departement').then((res) => {
+          if(res && res.departements){
+            let departementsData = [];
+            this.allDepartementsData = [];
+            let paysIndex = [];
+            let regionIndex = [];
+            let idPays;
+            let idRegion;
+            for(let d of res.departements){
+              if(isDefined(paysIndex[d.pays])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                idPays = res.pays[paysIndex[d.pays]].id;
+              }else{
+                for(let i=0; i < res.pays.length; i++){
+                  if(res.pays[i].id == d.pays){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                    paysIndex[d.pays] = i;
+                    idPays = res.pays[i].id;
+                    break;
+                  }
                 }
-                this.attacheEventToDataTable(this.departementHTMLTable.datatable);
-              });
-            }
-            this.seletedIndexes = [];
-            if(event)
-              event.target.complete();
-          }else{
-            this.departements = [];
-            if(this.mobile){
-              this.departementsData = [];
-            }
-            this.seletedIndexes = [];
-            if(event)
-              event.target.complete();
-          }
-        }).catch((err) => {
-          console.log('Erreur acces au département ==> '+err)
-          this.departements = [];
-          if(this.mobile){
-            this.departementsData = [];
-          }
-          this.seletedIndexes = [];
-          if(event)
-            event.target.complete();
-        });
+              }
 
-      } else{
-        this.servicePouchdb.getLocalitePlageDocs('fuma:departement:', 'fuma:departement:\uffff').then((departements) => {
-          if(departements){
-            this.departements = [...departements];
-            var datas = [];
-            for(let d of departements){
-              datas = datas.concat(d.data);
+              if(isDefined(regionIndex[d.region])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                idRegion = res.regions[regionIndex[d.region]].id;
+              }else{
+                for(let i=0; i < res.regions.length; i++){
+                  if(res.regions[i].id == d.region){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                    regionIndex[d.region] = i;
+                    idRegion = res.regions[i].id;
+                    break;
+                  }
+                }
+              }
+
+
+              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
             }
-            this.departementsData = [...datas];
   
             //si non mobile ou mobile + mode tableau et 
-            if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
+            if(!this.mobile){
               $('#departement').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
+            }else if(this.mobile){
+              this.departementsData = departementsData;
+              this.departementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              this.allDepartementsData = [...this.departementsData]
             }
-            this.seletedIndexes = [];
+
+            this.selectedIndexes = [];
             if(event)
               event.target.complete();
           }else{
-            this.departements = [];
             if(this.mobile){
               this.departementsData = [];
+              this.allDepartementsData = [];
             }
-            this.seletedIndexes = [];
+            this.selectedIndexes = [];
             if(event)
               event.target.complete();
-            }
+          }
         }).catch((err) => {
-          console.log('Erreur acces au département ==> '+err)
-          this.departements = [];
+          console.log('Erreur acces au departement ==> '+err)
           if(this.mobile){
             this.departementsData = [];
+            this.allDepartementsData = [];
           }
-          this.seletedIndexes = [];
+          this.selectedIndexes = [];
           if(event)
             event.target.complete();
         });
-    
       }
 
       this.filterAjouter = false;
@@ -1359,98 +1570,218 @@ export class DepartementPage implements OnInit {
       }, 2000);*/
     }
   
-    getDepartement(){
-      if(this.codeRegion && this.codeRegion != ''){ 
-        //si charger la liste des départements d'une région
-        this.servicePouchdb.getLocalDocById('fuma:departement:'+this.codeRegion).then((departement) => {
-          if(departement){
-            if(this.codeDepartement && this.codeDepartement != ''){
-              for(let d of departement.data){
-                if(d.codeDepartement == this.codeDepartement){
-                  this.unDepartement = d;
-                  this.infos(d);
-                  break;
-                }
-              }
-            }else{
-              this.departements = [];
-              this.departementsData = [];
-              this.departements.push({...departement});//clone de l'objet departement
-              this.departementsData = [...departement.data]; //clone du tableau
+    addItemToObjectAtSpecificPosition (obj, key, value, index) {
+
+      // Create a temp object and index variable
+      let temp = {};
+      let i = 0;
   
-              //si non mobile ou mobile + mode tableau et 
-              if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
-                $('#departement-pays').ready(()=>{
-                  if(global.langue == 'en'){
-                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
-                  }else{
-                    this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
-                  }
-                  this.attacheEventToDataTable(this.departementHTMLTable.datatable);
-                });
-              }
-            }
+      // Loop through the original object
+      for (let prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+  
+          // If the indexes match, add the new item
+          if (i === index && key && value) {
+            temp[key] = value;
+          }
+  
+          // Add the current item in the loop to the temp obj
+          temp[prop] = obj[prop];
+  
+          // Increase the count
+          i++;
+  
+        }
+      }
+  
+      // If no index, add to the end
+      if (!index && key && value) {
+        temp[key] = value;
+      }
+  
+      return temp;
+  
+    }
+    
+    getDepartement(){
+      if(this.idDepartement && this.idDepartement != ''){
+        this.servicePouchdb.findRelationalDocByTypeAndID('departement', this.idDepartement).then((res) => {
+          if(res && res.departements){
+            res.departements[0].formData = this.addItemToObjectAtSpecificPosition(res.departements[0].formData, 'nomPays', res.pays[0].formData.nom, 0);    
+            res.departements[0].formData = this.addItemToObjectAtSpecificPosition(res.departements[0].formData, 'codePays', res.pays[0].formData.code, 1);
+            res.departements[0].formData = this.addItemToObjectAtSpecificPosition(res.departements[0].formData, 'nomRegion', res.regions[0].formData.nom, 2);    
+            res.departements[0].formData = this.addItemToObjectAtSpecificPosition(res.departements[0].formData, 'codeRegion', res.regions[0].formData.code, 3);
+            
+            this.unDepartement = {id: res.departements[0].id, idPays: res.pays[0].id, idRegion: res.regions[0].id, ...res.departements[0].formData, ...res.departements[0].formioData, ...res.departements[0].security};
+            this.infos(this.unDepartement);
           }
         }).catch((err) => {
-          this.departements = [];
           this.departementsData = [];
+          this.allDepartementsData = [];
           console.log(err)
         });
-      }else if(this.codePays && this.codePays != ''){
-        //si charger la liste des départements d'un pays
-        this.servicePouchdb.getLocalitePlageDocs('fuma:departement:'+this.codePays, 'fuma:departement:'+this.codePays+'\uffff').then((departements) => {
-          if(departements){
-            this.departements = [...departements];
-            var datas = [];
-            for(let d of departements){
-              datas = datas.concat(d.data);
+      }else if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+        let type;
+        let idType;
+        if(this.idRegion){
+          type = 'region';
+          idType = this.idRegion;
+        }else{
+          type = 'pays';
+          idType = this.idPays;
+        }
+
+        this.servicePouchdb.findRelationalDocHasMany('departement', type, idType).then((res) => {
+          if(res && res.departements){
+            let departementsData = [];
+            this.allDepartementsData = [];
+            let paysIndex = [];
+            let regionIndex = [];
+            let idPays;
+            let idRegion;
+            for(let d of res.departements){
+              if(isDefined(paysIndex[d.pays])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                idPays = res.pays[paysIndex[d.pays]].id;
+              }else{
+                for(let i=0; i < res.pays.length; i++){
+                  if(res.pays[i].id == d.pays){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                    paysIndex[d.pays] = i;
+                    idPays = res.pays[i].id;
+                    break;
+                  }
+                }
+              }
+
+              if(isDefined(regionIndex[d.region])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                idRegion = res.regions[regionIndex[d.region]].id;
+              }else{
+                for(let i=0; i < res.regions.length; i++){
+                  if(res.regions[i].id == d.region){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                    regionIndex[d.region] = i;
+                    idRegion = res.regions[i].id;
+                    break;
+                  }
+                }
+              }
+
+
+              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
             }
-            this.departementsData = [...datas];
 
             //si non mobile ou mobile + mode tableau et 
-            if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
+            if(!this.mobile){
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", null, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement-pays", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
+            }else if(this.mobile){
+              this.departementsData = departementsData;
+              this.departementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              this.allDepartementsData = [...this.allDepartementsData];
             }
+          
           }
         }).catch((err) => {
-          this.departements = [];
           this.departementsData = [];
+          this.allDepartementsData = [];
           console.log(err)
         });
 
-      }else{ 
-        //tous les departments
-        this.servicePouchdb.getLocalitePlageDocs('fuma:departement:', 'fuma:departement:\uffff').then((departements) => {
-          if(departements){
-            this.departements = [...departements];
-            var datas = [];
-            for(let d of departements){
-              datas = datas.concat(d.data);
+      }else{
+        this.servicePouchdb.findAllRelationalDocByType('departement').then((res) => {
+          if(res && res.departements){
+            let departementsData = [];
+            this.allDepartementsData = [];
+            let paysIndex = [];
+            let regionIndex = [];
+            let idPays;
+            let idRegion;
+            for(let d of res.departements){
+              if(isDefined(paysIndex[d.pays])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                idPays = res.pays[paysIndex[d.pays]].id;
+              }else{
+                for(let i=0; i < res.pays.length; i++){
+                  if(res.pays[i].id == d.pays){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                    paysIndex[d.pays] = i;
+                    idPays = res.pays[i].id;
+                    break;
+                  }
+                }
+              }
+
+              if(isDefined(regionIndex[d.region])){
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                idRegion = res.regions[regionIndex[d.region]].id;
+              }else{
+                for(let i=0; i < res.regions.length; i++){
+                  if(res.regions[i].id == d.region){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                    regionIndex[d.region] = i;
+                    idRegion = res.regions[i].id;
+                    break;
+                  }
+                }
+              }
+
+
+              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
             }
-            this.departementsData = [...datas];
 
             //si non mobile ou mobile + mode tableau et 
-            if(this.departementsData.length > 0 && ((this.mobile && this.styleAffichage == 'tableau') || !this.mobile)){
+            if(!this.mobile){
               $('#departement').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", null, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
                 }else{
-                  this.departementHTMLTable = JSONToTHMLTable(this.departementsData, "departement", global.dataTable_fr, this.mobile , this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
+            }else if(this.mobile){
+              this.departementsData = departementsData;
+              this.departementsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+
+              this.allDepartementsData = [...this.departementsData]
             }
           }
         }).catch((err) => {
-          this.departements = [];
           this.departementsData = [];
+          this.allDepartementsData = [];
           console.log(err)
         });
       }
@@ -1459,105 +1790,186 @@ export class DepartementPage implements OnInit {
     
   
     getPays(){
-      this.servicePouchdb.getLocalDocById('fuma:pays').then((pays) => {
-        if(pays){
+      if(this.idPays && this.idPays != ''){
+        this.servicePouchdb.findRelationalDocByTypeAndID('pays', this.idPays).then((res) => {
+          if(res && res.pays && res.pays[0]){
+            this.paysData.push({id: res.pays[0].id, ...res.pays[0].formData});
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPays', this.unDepartement.idPays);
+            } else {
+              this.setSelect2DefaultValue('idPays', this.idPays);
+
+              $('#idPays select').ready(()=>{
+                $('#idPays select').attr('disabled', true)
+              });
+            }
+
+            this.setIDCodeEtNomPays(res.pays[0].formData);
+            this.getRegionParPays(this.idPays);
+          }
+        }).catch((e) => {
+          console.log('pays erreur: '+e);
           this.paysData = [];
-          //si le code de pays est transmis, ne selection que le pays en question
-          if(this.codePays && this.codePays != ''){
-            for(let p of pays.data){
-              if(p.codePays == this.codePays){
-                this.paysData.push(p);
-                this.setCodeEtNomPays(p);
-                this.getRegionParPays(this.codePays);
-                break;
-              }
+        });
+      }else{
+        this.servicePouchdb.findAllRelationalDocByType('pays').then((res) => {
+          if(res && res.pays){
+            //this.pays = [...pays];
+            this.paysData = [];
+            //var datas = [];
+            for(let p of res.pays){
+              this.paysData.push({id: p.id, ...p.formData});
             }
-          }else{
-            this.paysData = pays.data;
+
+            this.paysData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPays', this.unDepartement.idPays);
+            }
           }
-          
-        }
-      }).catch((e) => {
-        console.log('pays erreur: '+e);
-        this.paysData = [];
-      });
+        }).catch((e) => {
+          console.log('pays erreur: '+e);
+          this.paysData = [];
+        });
+      }
+
     }
 
-    getRegionParPays(codePays){
-      this.servicePouchdb.getLocalDocById('fuma:region:'+codePays).then((region) => {
-        if(region){
+    getRegionParPays(idPays){
+      if(this.idRegion && this.idRegion != ''){
+        this.servicePouchdb.findRelationalDocByTypeAndID('region', this.idRegion).then((res) => {
+          if(res && res.regions){
+            this.regionData.push({id: res.regions[0].id, ...res.regions[0].formData});
+            if(this.doModification){
+              this.setSelect2DefaultValue('idRegion', this.unDepartement.idRegion);
+            } else {
+              this.setSelect2DefaultValue('idRegion', this.idRegion);
+              $('#idRegion select').ready(()=>{
+                $('#idRegion select').attr('disabled', true)
+              });
+            }
+
+            this.setIDCodeEtNomRegion(res.regions[0].formData);
+          }
+        }).catch((e) => {
+          console.log('region erreur: '+e);
           this.regionData = [];
-          if(this.codeRegion && this.codeRegion != ''){
-            for(let d of region.data){
-              if(d.codeRegion == this.codeRegion){
-                this.regionData.push(d);
-                this.setCodeEtNomRegion(d);
-                break;
-              }
+        });
+      }else{
+        this.servicePouchdb.findRelationalDocHasMany('region', 'pays', idPays).then((res) => {
+          if(res && res.regions){
+            this.regionData = [];
+            //var datas = [];
+            for(let r of res.regions){
+              this.regionData.push({id: r.id, ...r.formData});
             }
-          }else{
-            this.regionData = region.data;
-          }
-        }       
-      }).catch((e) => {
-        console.log('pays erreur: '+e);
-        this.regionData = [];
-      });
-    }
 
-    setNomPays(codePays){
-      if(codePays && codePays != ''){
-        for(let p of this.paysData){
-          if(codePays == p.codePays){
-            this.departementForm.controls.nomPays.setValue(p.nomPays);
-            this.departementForm.controls.codeRegion.setValue('');
-            this.departementForm.controls.nomRegion.setValue('');
+            this.regionData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
 
-            this.getRegionParPays(codePays)
-            break;
+            if(this.doModification){
+              this.setSelect2DefaultValue('idRegion', this.unDepartement.idRegion);
+            }
           }
-        }
+        }).catch((e) => {
+          console.log('region erreur: '+e);
+          this.regionData = [];
+        });
       }
     }
 
-    setNomRegion(codeRegion){
-      if(codeRegion && codeRegion != ''){
-        for(let r of this.regionData){
-          if(codeRegion == r.codeRegion){
-            this.departementForm.controls.nomRegion.setValue(r.nomRegion);
-            this.departementForm.controls.numeroDepartement.setValue('');
-            this.departementForm.controls.codeDepartement.setValue('');
+    setCodeAndNomPays(idPays){
+      if(idPays && idPays != ''){
+        for(let p of this.paysData){
+          if(idPays == p.id){
+            this.departementForm.controls.codePays.setValue(p.code);
+            this.departementForm.controls.nomPays.setValue(p.nom);
+            this.departementForm.controls.idRegion.setValue(null);
+            this.departementForm.controls.codeRegion.setValue(null);
+            this.departementForm.controls.nomRegion.setValue(null);
+            this.departementForm.controls.numero.setValue(null);
+            this.departementForm.controls.code.setValue(null);
+
+            this.getRegionParPays(idPays)
             break;
           }
         }
+      }else{
+        this.departementForm.controls.idRegion.setValue(null);
+        this.departementForm.controls.codeRegion.setValue(null);
+        this.departementForm.controls.nomRegion.setValue(null);
+        this.departementForm.controls.numero.setValue(null);
+        this.departementForm.controls.code.setValue(null);
+      }
+    }
+
+    setCodeAndNomRegion(idRegion){
+      if(idRegion && idRegion != ''){
+        for(let r of this.regionData){
+          if(idRegion == r.id){
+            this.departementForm.controls.codeRegion.setValue(r.code);
+            this.departementForm.controls.nomRegion.setValue(r.nom);
+            this.departementForm.controls.numero.setValue(null);
+            this.departementForm.controls.code.setValue(null);
+            break;
+          }
+        }
+      }else{
+        this.departementForm.controls.numero.setValue(null);
+        this.departementForm.controls.code.setValue(null);
       }
     }
   
-    setCodeEtNomPays(paysData){
-      this.departementForm.controls.codePays.setValue(paysData.codePays);
-      this.departementForm.controls.nomPays.setValue(paysData.nomPays);
+    setIDCodeEtNomPays(paysData){
+      this.departementForm.controls.idPays.setValue(paysData.id);
+      this.departementForm.controls.codePays.setValue(paysData.code);
+      this.departementForm.controls.nomPays.setValue(paysData.nom);
     }
 
-    setCodeEtNomRegion(regionData){
-      this.departementForm.controls.codeRegion.setValue(regionData.codeRegion);
-      this.departementForm.controls.nomRegion.setValue(regionData.nomRegion);
+    setIDCodeEtNomRegion(regionData){
+      this.departementForm.controls.idRegion.setValue(regionData.id);
+      this.departementForm.controls.codeRegion.setValue(regionData.code);
+      this.departementForm.controls.nomRegion.setValue(regionData.nom);
     }
 
-    setCodeDepartement(numeroDepartement){
-      if(numeroDepartement && numeroDepartement != ''){
-        this.departementForm.controls.codeDepartement.setValue(this.departementForm.controls.codeRegion.value + numeroDepartement);
+    setCodeDepartement(numero){
+      if(numero && numero != ''){
+        this.departementForm.controls.code.setValue(this.departementForm.controls.codeRegion.value + numero);
       }
     }
 
     attacheEventToDataTable(datatable){
       var self = this;
+      var id = '';
+      if(this.idPays && this.idPays != ''){
+        id = 'departement-pays-datatable';
+      }else{ 
+        id = 'departement-datatable';
+      }
       datatable.on( 'select', function ( e, dt, type, indexes ) {
         for(const i of indexes){
-          self.seletedIndexes.push(i)
+          if(self.selectedIndexes.indexOf(datatable.row(i).data().id) === -1){
+            self.selectedIndexes.push(datatable.row(i).data().id)
+          }
         }
 
         var info = datatable.page.info();
-        if(info.recordsDisplay == self.seletedIndexes.length){
+        if(info.recordsDisplay == self.selectedIndexes.length){
           self.allSelected = true;
         }else{
           self.allSelected = false;
@@ -1566,11 +1978,14 @@ export class DepartementPage implements OnInit {
       } )
       .on( 'deselect', function ( e, dt, type, indexes ) {
         for(const i of indexes){
-          self.seletedIndexes.splice(self.seletedIndexes.indexOf(i), 1)
+          //pour éviter les erreurs d'index
+          if(self.selectedIndexes.indexOf(datatable.row(i).data().id) === -1){
+            self.selectedIndexes.push(datatable.row(i).data().id)
+          }
         }
 
         var info = datatable.page.info();
-        if(info.recordsDisplay == self.seletedIndexes.length){
+        if(info.recordsDisplay == self.selectedIndexes.length){
           self.allSelected = true;
         }else{
           self.allSelected = false;
@@ -1578,35 +1993,44 @@ export class DepartementPage implements OnInit {
         
       } ).on( 'search.dt', function () {
         var info = datatable.page.info();
-        if(info.recordsDisplay == self.seletedIndexes.length){
+        if(info.recordsDisplay == self.selectedIndexes.length){
           self.allSelected = true;
         }else{
           self.allSelected = false;
         }
       });
 
+      $('#'+id+' tbody').on( 'dblclick', 'tr', function () {
+        //datatable.$('tr.selected').removeClass('selected');
+        //$(this).addClass('selected');
+        datatable.row('.selected').deselect();
+        datatable.row(this).select();
+        self.selectedItemInfo();
+        //console.log(datatable.row(this).data()[0]);
+      });
       //traduitre les collonnes de la table la table
       this.translateDataTableCollumn();
     }
   
     translateDataTableCollumn(){
       var id = '';
-      if(this.codePays && this.codePays != ''){
+      if(this.idPays && this.idPays != ''){
         id = 'departement-pays-datatable';
       }else{ 
         id = 'departement-datatable';
       }
 
 
-      $('#'+id+' thead tr:eq(0) th:eq(0)').html(this.translate.instant('PAYS_PAGE.CODEPAYS'));
-      $('#'+id+' thead tr:eq(0) th:eq(1)').html(this.translate.instant('PAYS_PAGE.NOM'));
-      $('#'+id+' thead tr:eq(0) th:eq(2)').html(this.translate.instant('REGION_PAGE.CODE'));
-      $('#'+id+' thead tr:eq(0) th:eq(3)').html(this.translate.instant('REGION_PAGE.NOM'));
-      $('#'+id+' thead tr:eq(0) th:eq(4)').html(this.translate.instant('DEPARTEMENT_PAGE.CODE'));
-      $('#'+id+' thead tr:eq(0) th:eq(5)').html(this.translate.instant('DEPARTEMENT_PAGE.NUMERO'));
-      $('#'+id+' thead tr:eq(0) th:eq(6)').html(this.translate.instant('DEPARTEMENT_PAGE.NOM'));      
-      $('#'+id+' thead tr:eq(0) th:eq(7)').html(this.translate.instant('GENERAL.LATITUDE'));
-      $('#'+id+' thead tr:eq(0) th:eq(8)').html(this.translate.instant('GENERAL.LONGITUDE'));
+      var self = this;
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[0].firstChild.nodeValue = this.translate.instant('PAYS_PAGE.NOM');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[1].firstChild.nodeValue = this.translate.instant('PAYS_PAGE.CODEPAYS');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[2].firstChild.nodeValue = this.translate.instant('REGION_PAGE.NOM');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[3].firstChild.nodeValue = this.translate.instant('REGION_PAGE.CODE');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[4].firstChild.nodeValue = this.translate.instant('DEPARTEMENT_PAGE.NOM');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[5].firstChild.nodeValue = this.translate.instant('DEPARTEMENT_PAGE.NUMERO');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[6].firstChild.nodeValue = this.translate.instant('DEPARTEMENT_PAGE.CODE');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[7].firstChild.nodeValue = this.translate.instant('GENERAL.LATITUDE');
+      $(self.departementHTMLTable.datatable.table().header()).children(1)[0].children[8].firstChild.nodeValue = this.translate.instant('GENERAL.LONGITUDE');
       
       //$('#pays-datatable thead tr:eq(1) th:eq(0) input').attr("placeholder", this.translate.instant('GENERAL.RECHERCHER'));
     }
@@ -1619,43 +2043,38 @@ export class DepartementPage implements OnInit {
     translateMessagesValidation(){
       //code departement
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.CODEDEPARTEMENT.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.codeDepartement[0].message = res;
+        this.messages_validation.code[0].message = res;
       });
 
       //numéro département
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[0].message = res;
+        this.messages_validation.numero[0].message = res;
       });
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.MINLENGTH').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[1].message = res;
+        this.messages_validation.numero[1].message = res;
       });
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.MAXLENGTH').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[2].message = res;
+        this.messages_validation.numero[2].message = res;
       });
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.PATTERN').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[3].message = res;
+        this.messages_validation.numero[3].message = res;
       });
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.VALIDNUMERODEPARTEMENT').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[4].message = res;
+        this.messages_validation.numero[4].message = res;
       });
 
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NUMERODEPARTEMENT.UNIQUENUMERODEPARTEMENT').subscribe((res: string) => {
-        this.messages_validation.numeroDepartement[5].message = res;
+        this.messages_validation.numero[5].message = res;
       });
   
       //nom departement
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NOMDEPARTEMENT.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.nomDepartement[0].message = res;
+        this.messages_validation.nom[0].message = res;
       });
 
-      //code pays
+      //pays
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.CODEPAYS.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.codePays[0].message = res;
-      });
-
-      //nom pays
-      this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NOMPAYS.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.nomPays[0].message = res;
+        this.messages_validation.idPays[0].message = res;
       });
 
        //pays loading
@@ -1665,12 +2084,7 @@ export class DepartementPage implements OnInit {
 
       //code région
       this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.CODEREGION.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.codeRegion[0].message = res;
-      });
-
-      //nom région
-      this.translate.get('DEPARTEMENT_PAGE.MESSAGES_VALIDATION.NOMREGION.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.nomRegion[0].message = res;
+        this.messages_validation.idRegion[0].message = res;
       });
 
        //region loading
@@ -1680,21 +2094,11 @@ export class DepartementPage implements OnInit {
     }
   
     dataTableAddRow(rowData){
-      let data = [];
-      Object.keys(rowData).forEach((key, index) => {
-        data.push(rowData[key]);
-      });
-  
-      this.departementHTMLTable.datatable.row.add(data).draw();
+      this.departementHTMLTable.datatable.row.add(rowData).draw();
     }
   
     dataTableUpdateRow(/*index, */rowData){
-      let data = [];
-      Object.keys(rowData).forEach((key, index) => {
-        data.push(rowData[key]);
-      });
-  
-      this.departementHTMLTable.datatable.row('.selected').data(data).draw();
+      this.departementHTMLTable.datatable.row('.selected').data(rowData).draw();
     }
   
     dataTableRemoveRows(){
@@ -1704,10 +2108,10 @@ export class DepartementPage implements OnInit {
   
     
   dataTableSelectAll(){
-    this.seletedIndexes = [];
+    this.selectedIndexes = [];
     this.departementHTMLTable.datatable.rows( { search: 'applied' } ).select();
     var info = this.departementHTMLTable.datatable.page.info();
-    if(info.recordsDisplay == this.seletedIndexes.length){
+    if(info.recordsDisplay == this.selectedIndexes.length){
       this.allSelected = true;
     }else{
       this.allSelected = false;
@@ -1716,162 +2120,134 @@ export class DepartementPage implements OnInit {
 
   dataTableSelectNon(){
     this.departementHTMLTable.datatable.rows().deselect();
-    this.seletedIndexes = [];
+    this.selectedIndexes = [];
     this.allSelected = false;
   }
 
   dataTableAddRechercheParColonne(){
-    var id = '';
+    /*var id = '';
     if(this.codePays && this.codePays != ''){
       id = 'departement-pays-datatable';
     }else{ 
       id = 'departement-datatable';
     }
 
-    $('#'+id+' thead tr:eq(1)').show();
+    $('#'+id+' thead tr:eq(1)').show();*/
+    var self = this;
+    $(self.departementHTMLTable.datatable.table().header()).children(1)[1].hidden = false;
     this.recherchePlus = true;
   }
 
   dataTableRemoveRechercheParColonne(){
-    var id = '';
+    /*var id = '';
     if(this.codePays && this.codePays != ''){
       id = 'departement-pays-datatable';
     }else{ 
       id = 'departement-datatable';
     }
 
-    $('#'+id+' thead tr:eq(1)').hide();
+    $('#'+id+' thead tr:eq(1)').hide();*/
+    
+    var self = this;
+    $(self.departementHTMLTable.datatable.table().header()).children(1)[1].hidden = true;
     this.recherchePlus = false;
   }
 
-  dataTableAddCustomFiltre(){
-    //.initComplete = function () {
-    var id = '';
-    if(this.codePays && this.codePays != ''){
-      id = 'departement-pays-datatable';
-    }else{ 
-      id = 'departement-datatable';
-    }
-
-    if(!this.filterAjouter && !this.filterInitialiser){
-      var i = -1;
+  
+    dataTableAddCustomFiltre(){
+      var id = '';
+      if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+        id = 'departement-pays-datatable';
+      }else{ 
+        id = 'departement-datatable';
+      }
+    
       var self = this;
-      $('#'+id+' tfoot').show();
-      this.departementHTMLTable.datatable.columns().every( function () {
-          i = i +1;
-          var column = this;
-          var select = $('<select multiple="multiple" id="'+id+i+'" placeholder="'+self.translate.instant('GENERAL.FILTRER')+'" class="form-control form-control-sm"></select>')
-              .appendTo( $(column.footer()).empty() )
-              .on( 'change', function () {
-                  /*var val = $.fn.dataTable.util.escapeRegex(
-                      $(this).val()
-                  );*/
-                  var val = $(this).val();
-                  var vide = false;
-                  if(val.indexOf('vide') !== -1){
-                      vide = true;
-                      val[val.indexOf('vide')] = '';
-                  }
-                  
-                  var mergedVal = val.join('|');
-                  column
-                      .search( mergedVal || vide ? '^'+mergedVal+'$' : '', true, false )
-                      .draw();
-                  
-                  var info = self.departementHTMLTable.datatable.page.info();
-                  if(info.recordsDisplay == self.seletedIndexes.length){
-                    self.allSelected = true;
-                  }else{
-                    self.allSelected = false;
-                  }
-
-              } );
-
-          column.data().unique().sort().each( function ( d, j ) {
-              if(!d){
-                  select.append( '<option value="vide">('+self.translate.instant('GENERAL.VIDE')+')</option>' )
-              }else{
-                  select.append( '<option value="'+d+'">'+d+'</option>' )
-              }
-              
-          } );
-
-          $('#'+id+i).multipleSelect({
-                filter: true,
-                //width: 150,
-                position: 'top',
-                formatSelectAll: function () {
-                  
-                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
-                },
-          
-                formatAllSelected: function () {
-                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
-                },
-          
-                formatCountSelected: function (count, total) {
-                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
-                },
-          
-                formatNoMatchesFound: function () {
-                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
+      var lang;
+      if(global.langue == 'fr'){
+        lang = 'fr_FR';
+      }else if(global.langue == 'ha'){
+        lang = 'ha_HA';
+      } else{
+        lang = 'en_US';
+      }
+  
+      if(!this.filterAjouter && !this.filterInitialiser){
+        var i = -1;
+        //$('#'+id+' tfoot').show();
+        $( self.departementHTMLTable.datatable.table().footer() ).show();
+        this.departementHTMLTable.datatable.columns().every( function () {
+            i = i +1;
+            var column = this;
+            var select = $('<select id="'+id+i+'" data-header="'+$(column.header())[0].firstChild.nodeValue+'" placeholder="'+self.translate.instant('GENERAL.FILTRER')+'" class="form-control form-control-sm" multiple data-language="'+lang+'" data-selected-text-format="count" data-width="100%" data-live-search="true" data-size="5" data-actions-box="true" data-container="body"></select>')
+                .appendTo( $(column.footer()).empty() )
+                .on( 'change', function () {
+                    var val = $(this).val();
+                    var vide = false;
+                    if(val.indexOf('vide') !== -1){ 
+                        vide = true;
+                        val[val.indexOf('vide')] = '';
+                    }
+                    
+                    var mergedVal = val.join('|');
+                    column
+                        .search( mergedVal || vide ? '^'+mergedVal+'$' : '', true, false )
+                        .draw();
+                    
+                    var info = self.departementHTMLTable.datatable.page.info();
+                    if(info.recordsDisplay == self.selectedIndexes.length){
+                      self.allSelected = true;
+                    }else{
+                      self.allSelected = false;
+                    }
+  
+                } );
+  
+            column.data().unique().sort().each( function ( d, j ) {
+                if(!d){
+                    select.append( '<option value="vide">('+self.translate.instant('GENERAL.VIDE')+')</option>' )
+                }else{
+                    select.append( '<option value="'+d+'">'+d+'</option>' )
                 }
                 
-              });
-
-              $('.ms-parent').removeAttr("style");
-      } );
-
-      this.departementHTMLTable.datatable.on('column-visibility', function ( e, settings, colIdx, visibility ){
-        if(!$('#'+id+colIdx).attr('style') && visibility){
-            $('#'+id+colIdx).multipleSelect({
-                filter: true,
-                //width: 150,
-                position: 'top',
-                formatSelectAll: function () {
-                  
-                  return '['+self.translate.instant('GENERAL.SELECTIONNER_TOUS')+']'
-                },
-          
-                formatAllSelected: function () {
-                  return self.translate.instant('GENERAL.TOUS_SELECTIONNES')
-                },
-          
-                formatCountSelected: function (count, total) {
-                  return count + ' '+self.translate.instant('GENERAL.SUR').toLocaleLowerCase()+' ' + total + ' '+self.translate.instant('GENERAL.SELECTIONNES').toLocaleLowerCase()+''
-                },
-          
-                formatNoMatchesFound: function () {
-                  return self.translate.instant('GENERAL.AUCTUN_RESULTAT')
-                }
-              });
-
-              $('.ms-parent').removeAttr("style");
-          }
-      });
-
-      this.filterAjouter = true;
-      this.filterInitialiser = true;
-
-    } else if(!this.filterAjouter && this.filterInitialiser){
-      $('#'+id+' tfoot').show();
-      //$('#'+id+' tfoot').removeAttr("style");
-      this.filterAjouter = true;
+            } );
+  
+            $('#'+id+i).selectpicker();
+                $('.ms-parent').removeAttr("style");
+        } );
+  
+        this.departementHTMLTable.datatable.on('column-visibility', function ( e, settings, colIdx, visibility ){
+          if(!$('#'+id+colIdx).attr('style') && visibility){
+              $('#'+id+colIdx).selectpicker();
+                $('.ms-parent').removeAttr("style");
+            }
+        });
+  
+        this.filterAjouter = true;
+        this.filterInitialiser = true;
+  
+      } else if(!this.filterAjouter && this.filterInitialiser){
+        //$('#'+id+' tfoot').show();
+        $( self.departementHTMLTable.datatable.table().footer() ).show();
+        //$('#'+id+' tfoot').removeAttr("style");
+        this.filterAjouter = true;
+      }
+     // }              
     }
-   // }              
-  }
-
-  dataTableRemoveCustomFiltre(){
-    var id = '';
-    if(this.codePays && this.codePays != ''){
-      id = 'departement-pays-datatable';
-    }else{ 
-      id = 'departement-datatable';
+  
+  
+    dataTableRemoveCustomFiltre(){
+      var id = '';
+      if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+        id = 'departement-pays-datatable';
+      }else{ 
+        id = 'departement-datatable';
+      }
+      var self = this;
+      $( self.departementHTMLTable.datatable.table().footer() ).hide();
+      this.filterAjouter = false;
     }
 
-    $('#'+id+' tfoot').hide();
-    this.filterAjouter = false;
-  }
 
   
     filter(event) {
@@ -1879,8 +2255,8 @@ export class DepartementPage implements OnInit {
     
       // filter our data
       //if(val && val.trim() != '' && val.trim().length > 1){
-        this.departementsData = this.departements.data.filter((item) => {
-          return item.codeDepartement.toLowerCase().indexOf(val) !== -1 || item.nomDepartement.toLowerCase().indexOf(val) !== -1 || item.referenceOpenStreetMap.toLowerCase().indexOf(val) !== -1 || !val;
+        this.departementsData = this.allDepartementsData.filter((item) => {
+          return item.numero.toLowerCase().indexOf(val) !== -1 || item.code.toLowerCase().indexOf(val) !== -1 || item.nom.toLowerCase().indexOf(val) !== -1 || item.codeRegion.toLowerCase().indexOf(val) !== -1 || item.nomRegion.toLowerCase().indexOf(val) !== -1 || item.codePays.toLowerCase().indexOf(val) !== -1 || item.nomPays.toLowerCase().indexOf(val) !== -1 || !val;
         });
       //}
       

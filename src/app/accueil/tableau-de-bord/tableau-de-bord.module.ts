@@ -5,6 +5,7 @@ import { Routes, RouterModule } from '@angular/router';
 import { IonicSelectableModule } from 'ionic-selectable';
 import { IonicModule } from '@ionic/angular';
 import { TableauDeBordPage } from './tableau-de-bord.page';
+import { LongPressModule } from 'ionic-long-press';
 
 const routes: Routes = [
   {
@@ -19,6 +20,7 @@ const routes: Routes = [
     FormsModule,
     IonicModule,
     IonicSelectableModule,
+    LongPressModule,
     RouterModule.forChild(routes)
   ],
   declarations: [TableauDeBordPage],

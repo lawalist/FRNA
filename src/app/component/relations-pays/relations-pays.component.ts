@@ -39,8 +39,8 @@ export class RelationsPaysComponent implements OnInit {
   async commune() {
     await this.popoverController.dismiss('commune');
   }
-  async village() {
-    await this.popoverController.dismiss('village');
+  async localite() {
+    await this.popoverController.dismiss('localite');
   }
 
 }

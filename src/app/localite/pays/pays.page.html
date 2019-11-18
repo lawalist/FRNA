@@ -1,19 +1,19 @@
 <ion-header>
   <ion-toolbar>
-    <ion-buttons *ngIf="!codePays" slot="start">
-      <ion-menu-button></ion-menu-button>
-      <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
+    <ion-buttons *ngIf="!idPays" slot="start">
+      <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
+      <ion-button *ngIf="mobile && action != 'liste'" ion-button icon-only (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
     </ion-buttons>
 
     <!--Si liste mobile-->
     <ion-buttons *ngIf="mobile && action == 'liste' && estModeCocherElemListe" slot="start">
-      <ion-button ion-button icon-only color="royal" (click)="changerModeCocherElemListe()">
+      <ion-button ion-button icon-only (click)="changerModeCocherElemListe()">
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
 
-      <ion-badge>{{seletedIndexes.length}}</ion-badge>
+      <ion-badge>{{selectedIndexes.length}}</ion-badge>
     </ion-buttons>
     
     <ion-title *ngIf="action == 'liste' && !estModeCocherElemListe">{{'PAYS_PAGE.TITRE_LISTE' | translate}}</ion-title>
@@ -23,16 +23,20 @@
 
 
 
-    <ion-buttons *ngIf="!codePays && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!idPays && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only (click)="openRelationPays($event)">
+        <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+      </ion-button>
+
+      <ion-button ion-button icon-only (click)="listActionPopover($event)">
         <ion-icon name="more"></ion-icon>
       </ion-button>
     </ion-buttons>
-
+ 
 
     <!--Si liste mobile-->
     <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
-      <ion-button *ngIf="seletedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
+      <ion-button *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
                 
@@ -42,11 +46,126 @@
     </ion-buttons>
 
      <!--Close-->
-    <ion-buttons *ngIf="codePays" slot="end">
-      <ion-button ion-button icon-only (click)="close()">
+    <ion-buttons *ngIf="idPays" slot="end">
+      <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
+  </ion-toolbar>
+
+  <ion-toolbar class="toolbar-border-top" *ngIf="!mobile && !idPays">
+    <ng-container *ngIf="action == 'liste'">
+
+      <ion-buttons style="padding-left: 5px !important" class="hid-boutons" slot="start">
+        <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
+          <ion-icon name="square-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && selectedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
+          <i style="font-size: 18px" class="fa fa-minus-square"></i>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
+          <ion-icon name="checkbox"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
+          <ion-icon name="refresh"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-plus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-minus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="!filterAjouter" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
+          <ion-icon name="ios-funnel"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+          <!--ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon-->
+          <i style="font-size: 18px" class="mdi mdi-filter-remove"></i>
+        </ion-button>
+      </ion-buttons>
+
+      
+      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
+          <ion-icon name="eye"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemModifier()">
+          <ion-icon  name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" (click)="openRelationPaysDepuisListe($event)">
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" (click)="suppressionMultiple()">
+          <ion-icon  name="trash"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-buttons class="hid-action" slot="end">
+        <!--div [class.barre-verticale]="selectedIndexes.length > 0">
+          <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
+            <ion-icon name="more"></ion-icon>
+          </ion-button>
+        </div-->
+        <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="selectedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+            <ion-icon name="construct"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+
+    <!--Infos-->
+    <ng-container *ngIf="action == 'infos'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(unPays)">
+          <ion-icon name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" (click)="openRelationPays($event)">
+          <!--ion-icon name="redo"></ion-icon-->
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(unPays)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+        
+      </ion-buttons>
+    </ng-container>
+
+    <!--Si ajout ou modification--> 
+    <ng-container *ngIf="action == 'modifier' || action == 'ajouter'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+        <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!paysForm.valid" color="success">
+          <ion-icon name="save"></ion-icon>
+        </ion-button>
+        <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
+            <ion-icon name="close"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ng-container>
   </ion-toolbar>
 </ion-header>
 
@@ -62,24 +181,22 @@
   </ion-refresher>
 
   <!--Mode liste-->
-  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
-    <ion-card-header>
+  <ion-card [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header class="remove-card-header-padding">
       <ion-item class="card-header-item">
-        <ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title>
-        <!--ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button-->
+        <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
       </ion-item>
     </ion-card-header>
     <ion-card-content>
-      <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
-      <ng-container *ngIf="pays && paysData && paysData.length > 0">
-        <ion-virtual-scroll [items]="paysData">
+      <ng-container *ngIf="paysData && paysData.length > 0">
+        <ion-virtual-scroll [items]="paysData">  
           <ion-item-sliding *virtualItem="let p">
-            <ion-item (click)="infos(p)">
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
               <ion-label> 
-                <h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong> {{p.codePays}}</h2>
-                <h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong> {{p.nomPays}}</h2>
+                <h2 text-capitalize><!--strong>{{'PAYS_PAGE.NOM' | translate}}:</strong--> {{p.nom}}</h2>
+                <p text-capitalize><!--strong>{{'PAYS_PAGE.CODE' | translate}}:</strong--> {{p.code}}</p>
               </ion-label>
-              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.codePays)" slot="end"></ion-checkbox>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
     
             <ion-item-options [hidden]="estModeCocherElemListe" side="start">
@@ -98,7 +215,7 @@
       </ng-container>
       
       <!--Si la liste est vide-->
-      <ion-list *ngIf="!pays || !pays.data || !pays.data.length > 0" lines="none">        
+      <ion-list *ngIf="!paysData || !paysData.length > 0" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
@@ -107,80 +224,7 @@
   </ion-card>
 
   <!--Mode tableau-->
-  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
-    <ion-card-header>
-      <!--ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title-->
-      <ion-item class="card-header-item">
-        <ion-card-title>{{'GENERAL.LISTE' | translate}} pays</ion-card-title>
-        
-        <ion-buttons class="hid-boutons" *ngIf="pays && pays.data && pays.data.length > 0" slot="end">
-
-          <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
-            <ion-icon name="square-outline"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && seletedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
-            <i style="font-size: 18px" class="fa fa-minus-square"></i>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
-            <ion-icon name="checkbox"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
-            <ion-icon name="refresh"></ion-icon>
-          </ion-button>
-
-          <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
-              <i style="font-size: 18px" class="fa fa-search-plus"></i>
-          </ion-button>
-
-          <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
-              <i style="font-size: 18px" class="fa fa-search-minus"></i>
-          </ion-button>
-
-          <div [class.barre-verticale]="seletedIndexes.length > 0">
-            <ion-button *ngIf="!filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
-              <ion-icon name="ios-funnel"></ion-icon>
-            </ion-button>
-
-            <ion-button *ngIf="filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
-                <ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon>
-              </ion-button>
-          </div>
-
-          <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemInfo()">
-            <ion-icon name="eye"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemModifier()">
-            <ion-icon  name="create"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="openRelationPaysDepuisListe($event)">
-            <ion-icon name="redo"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="seletedIndexes.length > 0" (click)="suppressionMultiple()">
-            <ion-icon  name="trash"></ion-icon>
-          </ion-button>
-        </ion-buttons>
-        
-        <ion-buttons class="hid-action" *ngIf="pays && pays.data && pays.data.length > 0" slot="end">
-          
-          <div [class.barre-verticale]="seletedIndexes.length > 0">
-            <ion-button [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
-              <ion-icon name="more"></ion-icon>
-            </ion-button>
-          </div>
-          <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="seletedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
-              <ion-icon name="construct"></ion-icon>
-          </ion-button>
-        </ion-buttons>
-
-        <!--ion-button fill="outline" *ngIf="mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button-->
-      </ion-item>
-    </ion-card-header>
+  <ion-card [hidden]="action != 'liste'" *ngIf="!mobile">
     <ion-card-content>
       <!--les boutton export pour mobile->
       <ng-container *ngIf="mobile && styleAffichage == 'tableau'">
@@ -189,29 +233,24 @@
         <br>    
       </ng-c ontainer-->
       <!--Le tabelau-->
-      <div *ngIf="pays && pays.data && pays.data.length > 0" class="table-responsive" id="pays"></div>
+      <div class="table-responsive" id="pays"></div>
       <!--Si le tableau est vide-->
-      <ion-list *ngIf="!pays || !pays.data || !pays.data.length > 0" lines="none">        
+      <!--ion-list *ngIf="!paysData || !paysData.length > 0" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
-      </ion-list>
+      </ion-list-->
     </ion-card-content>
 </ion-card>
 
 
 <!--Infos-->
-  <ion-card  mode="ios" *ngIf="action == 'infos'">
-    <ion-card-header>
-        <ion-item class="card-header-item">
-            <ion-card-title>{{'GENERAL.INFOS' | translate}} {{unPays.nomPays}}</ion-card-title>
-        </ion-item>
-    </ion-card-header>
-    <ion-card-content>
+  <ion-card *ngIf="action == 'infos'" (dblclick)="modifier(unPays)">
+    <ion-card-content >
       <ion-grid>
-        <ion-row><ion-col><h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.codePays}}</ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.nom}}</ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'PAYS_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.nomPays}}</ion-col></ion-row>
+        <ion-row><ion-col><h2><strong>{{'PAYS_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.code}}</ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'PAYS_PAGE.REFERENCE' | translate}}:</strong></h2></ion-col><ion-col>{{unPays.referenceOpenStreetMap}}</ion-col></ion-row>
       </ion-grid>
@@ -219,51 +258,46 @@
   </ion-card>
 
   <!--Formulaire-->
-  <ion-card  mode="ios" *ngIf="action == 'ajouter' || action == 'modifier'" padding>
-    <ion-card-header>
-      <ion-item class="card-header-item">
-        <ion-card-title *ngIf="action == 'ajouter'">{{'PAYS_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
-        <ion-card-title *ngIf="action == 'modifier'">{{'PAYS_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>      
-        
-          <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" slot="end" (click)="onSubmit()" type="submit" [disabled]="!paysForm.valid" color="success" block>
-            <ion-icon name="save"></ion-icon>
-          </ion-button>
-          <ion-button title="{{'GENERAL.ANNULER' | translate}}" slot="end" color="light" class="m-l-5" (click)="annuler()" block>
-              <ion-icon name="close"></ion-icon>
-          </ion-button>
-      </ion-item>
-    </ion-card-header>
+  <ion-card *ngIf="action == 'ajouter' || action == 'modifier'">
     <ion-card-content>
-      <form [formGroup]="paysForm" class="needs-validation" (ngSubmit)="onSubmit()" novalidate>
-        <ion-item>
-            <ion-label position="floating">{{'PAYS_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
-            <ion-input formControlName="codePays" type="text" required></ion-input>
-        </ion-item>
+      <form [formGroup]="paysForm" (ngSubmit)="onSubmit()" novalidate>
+        <ion-row>
+          <ion-col>
+              <div id="nom" class="form-group has-feedback">
+                  <label class="control-label field-required">{{'PAYS_PAGE.NOM' | translate}}</label>
+                  <input ion-input formControlName="nom" type="text" class="form-control" placeholder="{{'PAYS_PAGE.NOM' | translate}}" (keyup)="setInputRequredError('nom', 'nom')">
+              
+                  <div class="formio-errors invalid-feedback">
+                    <ng-container *ngFor="let validation of messages_validation.nom">
+                      <p class="help-block" *ngIf="paysForm.get('nom').hasError(validation.type) && (paysForm.get('nom').dirty || paysForm.get('nom').touched)">
+                        <!--ion-icon name="information-circle-outline"></ion-icon-->
+                        {{ validation.message }}
+                      </p>
+                    </ng-container>
+                  </div>
+              </div>
+          </ion-col>
+          <ion-col>
+            <div id="code" class="form-group has-feedback">
+                <label class="control-label field-required">{{'PAYS_PAGE.CODE' | translate}}</label>
+                <input ion-input formControlName="code" type="text" class="form-control" placeholder="{{'PAYS_PAGE.CODE' | translate}}" (keyup)="setInputRequredError('code', 'code')">
+                
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.code">
+                    <p class="help-block" *ngIf="paysForm.get('code').hasError(validation.type) && (paysForm.get('code').dirty || paysForm.get('code').touched)">
+                      <!--ion-icon name="information-circle-outline"></ion-icon-->
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+            </div>      
+          </ion-col>
+        </ion-row>
     
-        <div class="validation-errors">
-          <ng-container *ngFor="let validation of messages_validation.codePays">
-            <div class="error-message" *ngIf="paysForm.get('codePays').hasError(validation.type) && (paysForm.get('codePays').dirty || paysForm.get('codePays').touched)">
-              <ion-icon name="information-circle-outline"></ion-icon>
-              {{ validation.message }}
-            </div>
-          </ng-container>
+        <div class="form-group has-feedback">
+            <label class="control-label">{{'PAYS_PAGE.REFERENCE' | translate}}</label>
+            <input ion-input formControlName="referenceOpenStreetMap" type="text" class="form-control" placeholder="{{'PAYS_PAGE.REFERENCE' | translate}}">
         </div>
-        <ion-item>
-            <ion-label position="floating">{{'PAYS_PAGE.NOM' | translate}} <span class="required">*</span></ion-label>
-            <ion-input formControlName="nomPays" type="text"></ion-input>
-        </ion-item>
-        <div class="validation-errors">
-          <ng-container *ngFor="let validation of messages_validation.nomPays">
-            <div class="error-message" *ngIf="paysForm.get('nomPays').hasError(validation.type) && (paysForm.get('nomPays').dirty || paysForm.get('nomPays').touched)">
-              <ion-icon name="information-circle-outline"></ion-icon>
-              {{ validation.message }}
-            </div>
-          </ng-container>
-        </div>
-        <ion-item>
-            <ion-label position="floating">{{'PAYS_PAGE.REFERENCE' | translate}}</ion-label>
-            <ion-input formControlName="referenceOpenStreetMap" type="text"></ion-input>
-        </ion-item>
 
         <br>
         <div class="form-group text-right m-b-0">
@@ -281,21 +315,17 @@
     </ion-fab-button>
   </ion-fab>
 
-  <!--ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+  <!--ion-fab *ngIf="mobile && action == 'liste' && selectedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button color="success">
       <ion-icon name="options"></ion-icon>
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!codePays && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
-      <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
-      <ion-fab-list side="top">
-        <ion-fab-button (click)="supprimer(unPays)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>
-        <ion-fab-button (click)="modifier(unPays)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
-      </ion-fab-list>
-    </ion-fab>
+  <ion-fab *ngIf="!idPays && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="modifier(unPays)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+  </ion-fab>
 </ion-content>
-<!--ion-footer *ngIf="mobile && action == 'liste' && seletedIndexes.length > 0">
+<!--ion-footer *ngIf="mobile && action == 'liste' && selectedIndexes.length > 0">
   <ion-toolbar>
       <ion-buttons slot="end">
         <ion-button  color="danger" (click)="supprimerElemCocherListe()">

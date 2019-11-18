@@ -24,8 +24,18 @@ import { RegionPageModule } from './localite/region/region.module';
 import { PaysPageModule } from './localite/pays/pays.module';
 import { DepartementPageModule } from './localite/departement/departement.module';
 import { CommunePageModule } from './localite/commune/commune.module';
-import { VillagePageModule } from './localite/village/village.module';
-import { ListOptionsComponent } from './component/list-options/list-options.component';
+import { LocalitePageModule } from './localite/localite/localite.module';
+import { DatatableMoreComponent } from './component/datatable-more/datatable-more.component';
+import { DatatableConstructComponent } from './component/datatable-construct/datatable-construct.component';
+import { SelectionComponent } from './component/selection/selection.component';
+import { DerniereModificationComponent } from './component/derniere-modification/derniere-modification.component';
+import { ListeMoreComponent } from './component/liste-more/liste-more.component';
+import { ListeActionComponent } from './component/liste-action/liste-action.component';
+import { PartenairePageModule } from './institution/partenaire/partenaire.module';
+import { UnionPageModule } from './institution/union/union.module';
+import { OpPageModule } from './institution/op/op.module';
+import { RelationsPartenaireComponent } from './component/relations-partenaire/relations-partenaire.component';
+import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
 
 
 //Activé angular en mode production
@@ -35,8 +45,8 @@ export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, "./assets/i18n/", ".json");
 }
 @NgModule({
-  declarations: [AppComponent, PopoverComponent, ActionComponent, ListOptionsComponent, ActionDatatableComponent],
-  entryComponents: [PopoverComponent, ActionComponent, ListOptionsComponent, ActionDatatableComponent],
+  declarations: [AppComponent, PopoverComponent, ActionComponent, RelationsPartenaireComponent, ListeMoreComponent, ListeActionComponent, ActionDatatableComponent, SelectionComponent, DatatableMoreComponent, DatatableConstructComponent, DerniereModificationComponent],
+  entryComponents: [PopoverComponent, ActionComponent, RelationsPartenaireComponent, ListeMoreComponent, ListeActionComponent, ActionDatatableComponent, SelectionComponent, DatatableMoreComponent, DatatableConstructComponent, DerniereModificationComponent],
   imports: [
     BrowserModule,
     HttpClientModule, 
@@ -55,11 +65,15 @@ export function HttpLoaderFactory(http: HttpClient) {
     RegionPageModule,
     DepartementPageModule,
     CommunePageModule,
-    VillagePageModule
+    LocalitePageModule,
+    PartenairePageModule,
+    UnionPageModule,
+    OpPageModule
   ],
   providers: [
     StatusBar,
     SplashScreen,
+    PhotoViewer,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]

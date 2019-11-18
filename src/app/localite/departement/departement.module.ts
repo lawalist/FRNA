@@ -9,6 +9,7 @@ import { File } from '@ionic-native/file/ngx';
 import { HttpClientModule, HttpClient } from '@angular/common/http';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
+import { LongPressModule } from 'ionic-long-press';
 
 export function HttpLoaderFactory(http: HttpClient) {
   return new TranslateHttpLoader(http, "./assets/i18n/", ".json");
@@ -33,6 +34,7 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     HttpClientModule,
+    LongPressModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,

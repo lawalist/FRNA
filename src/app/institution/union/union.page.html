@@ -1,12 +1,614 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar> 
     <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+      <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
+      <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Unions</ion-title>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action != 'infos' && action != 'modifier' && action != 'ajouter' && estModeCocherElemListe" slot="start">
+      <ion-button ion-button icon-only  (click)="changerModeCocherElemListe()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+
+      <ion-badge>{{selectedIndexes.length}}</ion-badge>
+    </ion-buttons>
+      
+    
+    <ion-title *ngIf="action == 'liste' && !estModeCocherElemListe">{{'UNION_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'UNION_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'UNION_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'UNION_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'corbeille' && !estModeCocherElemListe">{{'GENERAL.CORBEILLE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'archives' && !estModeCocherElemListe">{{'GENERAL.ARCHIVES' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="mobile && action == 'infos'" slot="end">
+      <ion-button ion-button icon-only  (click)="openRelationUnion($event)">
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+      <ion-button ion-button icon-only (click)="listActionPopover($event)">
+        <ion-icon name="ios-build"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action != 'infos' && action != 'modifier' && action != 'ajouter'" slot="end">
+      <ion-button [class.color-blue]="unionsData.length == selectedIndexes.length" *ngIf="estModeCocherElemListe" (click)="cacherAction()">
+        <ion-icon name="done-all"></ion-icon>
+      </ion-button>
+
+      <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="openRelationUnionDepuisListe($event)">
+        <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+      </ion-button>
+                
+      <ion-button ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+
+      <ion-button ion-button icon-only [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
+        <ion-icon name="ios-build"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-buttons *ngIf="(idUnion || idPartenaire)" slot="end">
+      <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
+
+
+  
+  <!--Les bouton si mot mobile-->
+  <ion-toolbar class="toolbar-border-top" *ngIf="!mobile && !idUnion">
+    <!--Si tableau-->
+    <ng-container *ngIf="action != 'infos' && action != 'modifier' && action != 'ajouter'">
+      <ion-buttons style="padding-left: 5px !important" slot="start">
+        <ion-button class="button-no-padding" title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" [hidden]="allSelected || selectedIndexes.length > 0" (click)="dataTableSelectAll()">
+          <ion-icon name="square-outline"></ion-icon>
+        </ion-button>
+        
+        <ion-button class="button-no-padding" style="margin: 2px !important" title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" [hidden]="allSelected || selectedIndexes.length == 0" (click)="dataTableSelectNon()">
+          <i style="font-size: 17px" class="fa fa-minus-square"></i>
+        </ion-button>
+
+        <ion-button class="button-no-padding" title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" [hidden]="!allSelected" (click)="dataTableSelectNon()">
+          <ion-icon name="checkbox"></ion-icon>
+        </ion-button>
+
+        <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
+          <i style="font-size: 18px" class="fa fa-caret-down"></i>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
+          <ion-icon name="refresh"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-trop-petit-ecran" *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" (click)="dataTableAddRechercheParColonne()">
+          <i style="font-size: 18px" class="fa fa-search-plus"></i>
+        </ion-button>
+
+        <ion-button class="hid-boutons-trop-petit-ecran" *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" (click)="dataTableRemoveRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-minus"></i>
+        </ion-button>
+
+        <div class="hid-boutons-petit-ecran barre-verticale">
+          <ion-button *ngIf="!filterAjouter"  title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" (click)="dataTableAddCustomFiltre()">
+            <!--ion-icon name="ios-funnel"></ion-icon-->
+            <i style="font-size: 18px" class="mdi mdi-filter"></i>
+          </ion-button>
+
+          <ion-button *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+            <!--ion-icon style="font-size: 18px" src='./../../../assets/svgs/remove-filter-2.svg'></ion-icon-->
+            <i style="font-size: 18px" class="mdi mdi-filter-remove"></i>
+          </ion-button>
+        </div>
+
+        <!--div [class.barre-verticale]="selectedIndexes.length > 0"-->
+        <!--/div-->
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getUnionsByType('liste')">
+          <ion-icon name="ios-undo"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getUnionsByType('archives')">
+          <ion-icon name="archive"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getUnionsByType('corbeille')">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableMorePopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS ' | translate}}" (click)="actionDatatablePopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+        
+      </ion-buttons>
+
+      <!--Action pour selection-->
+      <ion-buttons slot="end" style="padding-right: 5px !important">
+        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
+          <ion-icon name="eye"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
+          <ion-icon  name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="openRelationUnionDepuisTableau($event)">
+          <!--ion-icon name="redo"></ion-icon-->
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.ACTION' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="datatableConstructPopover($event)">
+          <ion-icon name="ios-build"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.ACTION' | translate}}" color="primary" *ngIf="selectedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+          <ion-icon name="ios-build"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+    
+    <!--Si infos-->
+    <ng-container *ngIf="action == 'infos'">
+        <ion-buttons slot="start" style="padding-left: 5px !important">
+          <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+            <ion-icon name="arrow-back"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneUnion.archived && !uneUnion.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
+            <ion-icon name="create"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" (click)="openRelationUnionDepuisListe($event)">
+            <!--ion-icon name="redo"></ion-icon-->
+            <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneUnion.archived && !uneUnion.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
+            <ion-icon name="md-archive"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="uneUnion.archived && !uneUnion.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
+            <ion-icon name="ios-archive"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneUnion.archived && uneUnion.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
+            <!--ion-icon name="trash"></ion-icon-->
+            <i style="font-size: 22px" class="mdi mdi-backup-restore"></i>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!uneUnion.archived && !uneUnion.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!uneUnion.archived && uneUnion.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+          
+          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+            <ion-icon name="more"></ion-icon>
+          </ion-button>
+
+        </ion-buttons>      
+ 
+        <!--Button vers la droite-->
+        <ion-buttons slot="end" style="padding-right: 5px !important">
+          {{unionHTMLTable.datatable.row('.selected').index() + 1}} {{'GENERAL.sur' | translate}} {{unionHTMLTable.datatable.page.info().recordsTotal}}
+
+          <ion-button [disabled]="!prev" title="{{'GENERAL.PRECEDENT' | translate}}" slot="end" (click)="doPrev()">
+            <ion-icon name="ios-arrow-back"></ion-icon>
+          </ion-button>
+
+          <ion-button [disabled]="!next" title="{{'GENERAL.SUIVANT' | translate}}" slot="end" (click)="doNext()">
+            <ion-icon name="ios-arrow-forward"></ion-icon>
+          </ion-button>
+        </ion-buttons>      
+      </ng-container>
+
+      <!--Si ajout ou modification--> 
+      <ng-container *ngIf="action == 'modifier' || action == 'ajouter'">
+        <ion-buttons slot="start" style="padding-left: 5px !important">
+          <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+            <ion-icon name="arrow-back"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+
+        <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+          <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!unionForm.valid" color="success">
+            <ion-icon name="save"></ion-icon>
+          </ion-button>
+          <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
+              <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ng-container>
+  </ion-toolbar>
+
 </ion-header>
 
-<ion-content>
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="mobile && (action == 'liste' || action == 'corbeille' || action == 'archives' || action == 'partages' || action == 'conflits')" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
 
+  <!--Mode liste-->
+  <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header class="remove-card-header-padding">
+      <ion-item class="card-header-item">
+        <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <!--ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar-->
+      <ng-container *ngIf="unionsData && unionsData.length > 0">
+        <ion-virtual-scroll [items]="unionsData">
+          <ion-item-sliding *virtualItem="let p; let i =index">
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
+              <ion-label>
+                <h2 text-capitalize><!--strong>{{'UNION_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                <h3 text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomFederation}}</h3>
+                <!--h2 text-capitalize>{{p.numero}}</h2-->
+                <p text-capitalize>{{p.nomSiege}}</p>
+              </ion-label>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
+            </ion-item>
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+              <ion-item-option (click)="modifier(p)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+              <ion-item-option color="danger" (click)="supprimer(p)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!unionsData || !unionsData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
+    <ion-card-content>
+
+      <div *ngIf="!idPartenaire" class="table-responsive" id="union"></div>
+
+      <div *ngIf="idPartenaire" class="table-responsive" id="union-partenaire"></div>
+
+      <!--Si le tableau est vide-->
+      <ion-list *ngIf="!unionHTMLTable || !unionHTMLTable.datatable" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card *ngIf="action == 'infos'">
+    <ion-card-content>
+      <ion-grid  (dblclick)="modifier(uneUnion)">
+        <ion-row ><ion-col><h2><strong>{{'UNION_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.nom}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'UNION_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.numero}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'UNION_PAGE.NIVEAU' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.niveau}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row *ngIf="uneUnion.idFederation && uneUnion.idFederation != ''"><ion-col><h2><strong>{{'GENERAL.FEDERATION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFederation(uneUnion.idFederation)">{{uneUnion.nomFederation}}</a></ion-col></ion-row>
+        <div *ngIf="uneUnion.idFederation && uneUnion.idFederation != ''" class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'UNION_PAGE.DATECREATION' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.dateCreation}}</ion-col></ion-row>
+        <div class="hr"></div>
+
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(uneUnion.idPays)">{{uneUnion.nomPays}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(uneUnion.idRegion)">{{uneUnion.nomRegion}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentDepartement(uneUnion.idDepartement)">{{uneUnion.nomDepartement}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(uneUnion.idCommune)">{{uneUnion.nomCommune}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.SIEGE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentLocalite(uneUnion.idSiege)">{{uneUnion.nomSiege}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.latitude}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LONGITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneUnion.longitude}}</ion-col></ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="action == 'ajouter' || action == 'modifier'">
+    <ion-card-content>
+      <form [formGroup]="unionForm" (ngSubmit)="onSubmit()">
+        
+      
+        <ion-row>
+          <ion-col>
+            <div id="nom" class="form-group has-feedback">
+                <label class="control-label field-required">{{'UNION_PAGE.NOM' | translate}}</label>
+                <input ion-input formControlName="nom" type="text" class="form-control" placeholder="{{'UNION_PAGE.NOM' | translate}}" (keyup)="setInputRequredError('nom', 'nom')" required>
+              
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.nom">
+                    <p class="help-block" *ngIf="unionForm.get('nom').hasError(validation.type) && (unionForm.get('nom').dirty || unionForm.get('nom').touched)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+              </div>
+            </ion-col>
+          <ion-col>
+            <div id="numero" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.NUMERO' | translate}}</label>
+              <input ion-input formControlName="numero" type="text"  class="form-control" placeholder="{{'UNION_PAGE.NUMERO' | translate}}" (keyup)="setInputRequredError('numero', 'numero')">
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.numero">
+                  <p class="help-block" *ngIf="unionForm.get('numero').hasError(validation.type) && (unionForm.get('numero').dirty || unionForm.get('numero').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>  
+
+        <ion-row>
+          <!--niveau-->
+          <ion-col>
+            <div id="niveau" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.NIVEAU' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let i of niveauChoix" [value]=i.id >{{i.val}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.niveau">
+                  <p class="help-block" *ngIf="unionForm.get('niveau').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <!--Federation-->
+          <ion-col [hidden]="!unionForm.controls.niveau.value || unionForm.controls.niveau.value != '1'">
+            <div id="idFederation" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.SELECTIONFEDERATION' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let f of federationData" [value]=f.id >{{f.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idFederation">
+                  <p class="help-block" *ngIf="unionForm.get('idFederation').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <!--domaine->
+          <ion-col>
+            <div id="domaine" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.DOMAINE' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let d of domaines" [value]=d >{{d}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.domaine">
+                  <p class="help-block" *ngIf="unionForm.get('domaine').hasError(validation.type) && (unionForm.get('domaine').dirty || unionForm.get('domaine').touched)">
+                    <ion-icon name="information-circle-outline"></ion-icon>
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col-->
+        </ion-row>
+
+        <ion-row>
+          <ion-col>
+            <div id="dateCreation" class="form-group has-feedback">
+              <label>{{'UNION_PAGE.DATECREATION' | translate}}</label>
+              <input ion-input formControlName="dateCreation" placeholder="{{'UNION_PAGE.DATECREATION' | translate}}" class="form-control" type="date">
+            </div>
+          </ion-col>
+        </ion-row>
+        
+        <!--Info pays et région-->
+        <ion-row>
+          <!--Pays-->
+          <ion-col>
+            <div id="idPays" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.SELECTIONPAYS' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let p of paysData" [value]=p.id >{{p.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idPays">
+                  <p class="help-block" *ngIf="unionForm.get('idPays').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <!--Région-->
+          <ion-col>
+            <div id="idRegion" class="form-group has-feedback">
+                <label class="control-label field-required">{{'UNION_PAGE.SELECTIONREGION' | translate}}</label>
+                <select class="select2 form-control" data-allow-clear="1">
+                  <option></option>
+                  <option *ngFor="let r of regionData" [value]=r.id >{{r.nom}}</option>
+                </select>
+
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.idRegion">
+                    <p class="help-block" *ngIf="unionForm.get('idRegion').hasError(validation.type)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+            </div>
+          </ion-col>
+        </ion-row>
+
+        <!--Département et commune-->
+        <ion-row>
+          <ion-col>
+            <!--Département-->
+            <div id="idDepartement" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.SELECTIONDEPARTEMENT' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let d of departementData" [value]=d.id >{{d.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idDepartement">
+                  <p class="help-block" *ngIf="unionForm.get('idDepartement').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>      
+          </ion-col>
+          <ion-col>
+            <!--Commune-->
+            <div id="idCommune" class="form-group has-feedback">
+              <label class="control-label field-required">{{'UNION_PAGE.SELECTIONCOMMUNE' | translate}}</label>
+              <select  class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let c of communeData" [value]=c.id >{{c.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idCommune">
+                  <p class="help-block" *ngIf="unionForm.get('idCommune').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <ion-col>
+            <!--Localite-->
+            <div id="idSiege" class="form-group has-feedback">
+                <label class="control-label field-required">{{'UNION_PAGE.SELECTIONSIEGE' | translate}}</label>
+                <select class="select2 form-control" data-allow-clear="1">
+                  <option></option>
+                  <option *ngFor="let p of localiteData" [value]=p.id >{{p.nom}}</option>
+                </select>
+
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.idSiege">
+                    <p class="help-block" *ngIf="unionForm.get('idSiege').hasError(validation.type)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+              </div>
+          </ion-col>
+        </ion-row>
+        
+        
+        <!--Coordonnées géographiques-->
+        <ion-row>
+          <ion-col>
+            <div class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.LATITUDE' | translate}}</label>
+              <input ion-input formControlName="latitude" type="number" class="form-control" placeholder="{{'GENERAL.LATITUDE' | translate}}">
+            </div>
+          </ion-col>
+          <ion-col>
+            <div class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.LONGITUDE' | translate}}</label>
+              <input ion-input formControlName="longitude" type="number" class="form-control" placeholder="{{'GENERAL.LONGITUDE' | translate}}">
+            </div>
+          </ion-col>
+        </ion-row>
+        
+        <br>
+        <ion-row>
+          <ion-col>
+            <div class="form-group text-right m-b-0">
+              <ion-button type="submit" [disabled]="!unionForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+              <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+            </div>
+          </ion-col>
+        </ion-row> 
+      </form>
+
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="!mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+
+  <!--ion-fab *ngIf="mobile && action == 'liste' && selectedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success">
+      <ion-icon name="options"></ion-icon>
+    </ion-fab-button>
+  </ion-fab-->
+
+  <ion-fab *ngIf="mobile && !idUnion && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="modifier(uneUnion)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+  </ion-fab>
+
+  
+  <ion-fab *ngIf="!mobile && !idUnion && action == 'infos' && cacheAction == 'liste'" (click)="modifier(uneUnion)" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="create"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="pin"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

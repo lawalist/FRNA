@@ -4,7 +4,7 @@ import { Routes, RouterModule } from '@angular/router';
 
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { RelationsPartenaireComponent } from '../../component/relations-partenaire/relations-partenaire.component';
+//import { RelationsPartenaireComponent } from '../../component/relations-partenaire/relations-partenaire.component';
 import { File } from '@ionic-native/file/ngx';
 import { HttpClientModule, HttpClient } from '@angular/common/http';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
@@ -18,6 +18,7 @@ export function HttpLoaderFactory(http: HttpClient) {
 import { IonicModule } from '@ionic/angular';
 
 import { PartenairePage } from './partenaire.page';
+import { LongPressModule } from 'ionic-long-press';
 
 const routes: Routes = [
   {
@@ -33,6 +34,7 @@ const routes: Routes = [
     ReactiveFormsModule,
     IonicModule,
     HttpClientModule,
+    LongPressModule,
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,
@@ -40,10 +42,10 @@ const routes: Routes = [
         deps: [HttpClient]
       }
     }),
-    RouterModule.forChild(routes)
+    RouterModule.forChild(routes),
   ],
-  declarations: [PartenairePage, RelationsPartenaireComponent],
-  entryComponents: [RelationsPartenaireComponent],
+  declarations: [PartenairePage/*, RelationsPartenaireComponent*/],
+  //entryComponents: [RelationsPartenaireComponent],
   providers: [File, Geolocation]
 })
 export class PartenairePageModule {}

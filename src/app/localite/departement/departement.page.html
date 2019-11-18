@@ -1,19 +1,19 @@
 <ion-header>
   <ion-toolbar> 
-    <ion-buttons *ngIf="!codeDepartement" slot="start">
-      <ion-menu-button></ion-menu-button>
-      <ion-button *ngIf="action != 'liste'" ion-button icon-only color="royal" (click)="retour()">
+    <ion-buttons *ngIf="!idDepartement" slot="start">
+      <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
+      <ion-button *ngIf="mobile && action != 'liste'" ion-button icon-only (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
     </ion-buttons>
 
     <!--Si liste mobile-->
     <ion-buttons *ngIf="mobile && action == 'liste' && estModeCocherElemListe" slot="start">
-      <ion-button ion-button icon-only color="royal" (click)="changerModeCocherElemListe()">
+      <ion-button ion-button icon-only (click)="changerModeCocherElemListe()">
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
 
-      <ion-badge>{{seletedIndexes.length}}</ion-badge>
+      <ion-badge>{{selectedIndexes.length}}</ion-badge>
     </ion-buttons>
     
     <ion-title *ngIf="action == 'liste' && !estModeCocherElemListe">{{'DEPARTEMENT_PAGE.TITRE_LISTE' | translate}}</ion-title>
@@ -21,15 +21,19 @@
     <ion-title *ngIf="action == 'infos'">{{'DEPARTEMENT_PAGE.TITRE_INFO' | translate}}</ion-title>
     <ion-title *ngIf="action == 'modifier'">{{'DEPARTEMENT_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="!codeDepartement && action == 'infos'" slot="end">
-      <ion-button ion-button icon-only color="royal" (click)="openRelationDepartement($event)">
+    <ion-buttons *ngIf="!idDepartement && mobile && action == 'infos'" slot="end">
+      <ion-button ion-button icon-only (click)="openRelationDepartement($event)">
+        <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+      </ion-button>
+
+      <ion-button ion-button icon-only (click)="listActionPopover($event)">
         <ion-icon name="more"></ion-icon>
       </ion-button>
     </ion-buttons>
 
     <!--Si liste mobile-->
     <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
-      <ion-button *ngIf="seletedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
+      <ion-button *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
                 
@@ -39,12 +43,128 @@
     </ion-buttons>
 
     <!--Close-->
-    <ion-buttons *ngIf="codeDepartement || (codePays && action == 'liste')" slot="end">
-      <ion-button ion-button icon-only color="royal" (click)="close()">
+    <ion-buttons *ngIf="idDepartement || ((idPays || idRegion) && action == 'liste')" slot="end">
+      <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
+
+  
+  <ion-toolbar class="toolbar-border-top" *ngIf="!mobile && !idDepartement">
+    <ng-container *ngIf="action == 'liste'">
+
+      <ion-buttons style="padding-left: 5px !important" class="hid-boutons" slot="start">
+        <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
+          <ion-icon name="square-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && selectedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
+          <i style="font-size: 18px" class="fa fa-minus-square"></i>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
+          <ion-icon name="checkbox"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
+          <ion-icon name="refresh"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-plus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-minus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="!filterAjouter" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
+          <ion-icon name="ios-funnel"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+          <!--ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon-->
+          <i style="font-size: 18px" class="mdi mdi-filter-remove"></i>
+        </ion-button>
+      </ion-buttons>
+
+      
+      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
+          <ion-icon name="eye"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemModifier()">
+          <ion-icon  name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" (click)="openRelationDepartementDepuisListe($event)">
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger"  (click)="suppressionMultiple()">
+          <ion-icon  name="trash"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-buttons class="hid-action" slot="end">
+        <!--div [class.barre-verticale]="selectedIndexes.length > 0">
+          <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
+            <ion-icon name="more"></ion-icon>
+          </ion-button>
+        </div-->
+        <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="selectedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+            <ion-icon name="construct"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+
+    <!--Infos-->
+    <ng-container *ngIf="action == 'infos'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(unDepartement)">
+          <ion-icon name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" (click)="openRelationDepartement($event)">
+          <!--ion-icon name="redo"></ion-icon-->
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(unDepartement)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+
+    <!--Si ajout ou modification--> 
+    <ng-container *ngIf="action == 'modifier' || action == 'ajouter'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+        <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!departementForm.valid" color="success">
+          <ion-icon name="save"></ion-icon>
+        </ion-button>
+        <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
+            <ion-icon name="close"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ng-container>
+  </ion-toolbar>
+
 </ion-header>
 
 <ion-content class="content">
@@ -59,25 +179,23 @@
   </ion-refresher>
 
   <!--Mode liste-->
-  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
-    <ion-card-header>
+  <ion-card [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header class="remove-card-header-padding">
       <ion-item class="card-header-item">
-        <ion-card-title>{{'GENERAL.LISTE' | translate}} départements</ion-card-title>
-        <!--ion-button fill="outline" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_TABLEAU' | translate}}</ion-button-->
+        <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
       </ion-item>
     </ion-card-header>
     <ion-card-content>
-      <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
-      <ng-container *ngIf="departements && departementsData && departementsData.length > 0">
+      <ng-container *ngIf="departementsData && departementsData.length > 0">
         <ion-virtual-scroll [items]="departementsData">
           <ion-item-sliding *virtualItem="let d">
-            <ion-item (click)="infos(d)">
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(d)">
               <ion-label>
-                <h2><strong>{{'DEPARTEMENT_PAGE.CODE' | translate}}:</strong> {{d.codeDepartement}}</h2>
-                <h2><strong>{{'DEPARTEMENT_PAGE.NUMERO' | translate}}:</strong> {{d.numeroDepartement}}</h2>
-                <h2><strong>{{'DEPARTEMENT_PAGE.NOM' | translate}}:</strong> {{d.nomDepartement}}</h2>
+                <h2 text-capitalize><!--strong>{{'DEPARTEMENT_PAGE.NOM' | translate}}:</strong-->{{d.nom}}</h2>
+                <h3 text-capitalize><!--strong>{{'DEPARTEMENT_PAGE.CODE' | translate}}:</strong-->{{d.code}}</h3>
+                <p text-capitalize><!--strong>{{'DEPARTEMENT_PAGE.NUMERO' | translate}}:</strong--> {{d.nomRegion}}</p>
               </ion-label>
-              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(d.codeDepartement)" slot="end"></ion-checkbox>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(d.id)" slot="end"></ion-checkbox>
             </ion-item>
     
             <ion-item-options [hidden]="estModeCocherElemListe" side="start">
@@ -96,7 +214,7 @@
       </ng-container>
       
       <!--Si la liste est vide-->
-      <ion-list *ngIf="!departements || !departementsData || !departementsData.length > 0" lines="none">        
+      <ion-list *ngIf="!departementsData || !departementsData.length > 0" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
@@ -105,126 +223,43 @@
   </ion-card>
 
   <!--Mode tableau-->
-  <ion-card mode="ios" [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
-    <ion-card-header>
-      <!--ion-card-title>{{'GENERAL.LISTE' | translate}} région</ion-card-title-->
-      <ion-item class="card-header-item">
-        <ion-card-title>{{'GENERAL.LISTE' | translate}} départements</ion-card-title>
-        <!--ion-button *ngIf="!mobile && action == 'liste' && seletedIndexes.length" slot="end" (click)="actionPopover($event)">
-          {{'GENERAL.ACTION' | translate}}
-          <ion-icon slot="start" name="ios-arrow-down"></ion-icon>
-        </ion-button-->
-
-        <ion-buttons class="hid-boutons" *ngIf="departements && departementsData && departementsData.length > 0" slot="end">
-
-            <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
-              <ion-icon name="square-outline"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && seletedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
-              <i style="font-size: 18px" class="fa fa-minus-square"></i>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
-              <ion-icon name="checkbox"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
-              <ion-icon name="refresh"></ion-icon>
-            </ion-button>
-  
-            <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
-                <i style="font-size: 18px" class="fa fa-search-plus"></i>
-            </ion-button>
-  
-            <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
-                <i style="font-size: 18px" class="fa fa-search-minus"></i>
-            </ion-button>
-  
-            <div [class.barre-verticale]="seletedIndexes.length > 0">
-              <ion-button *ngIf="!filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
-                <ion-icon name="ios-funnel"></ion-icon>
-              </ion-button>
-  
-              <ion-button *ngIf="filterAjouter" [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
-                  <ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon>
-                </ion-button>
-            </div>
-  
-            <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemInfo()">
-              <ion-icon name="eye"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="selectedItemModifier()">
-              <ion-icon  name="create"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" *ngIf="seletedIndexes.length == 1" (click)="openRelationDepartementDepuisListe($event)">
-              <ion-icon name="redo"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="seletedIndexes.length > 0" (click)="suppressionMultiple()">
-              <ion-icon  name="trash"></ion-icon>
-            </ion-button>
-          </ion-buttons>
-          
-          <ion-buttons class="hid-action" *ngIf="departements && departementsData && departementsData.length > 0" slot="end">
-            
-            <div [class.barre-verticale]="seletedIndexes.length > 0">
-              <ion-button [class.marge-pour-barre-verticale]="seletedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
-                <ion-icon name="more"></ion-icon>
-              </ion-button>
-            </div>
-            <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="seletedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
-                <ion-icon name="construct"></ion-icon>
-            </ion-button>
-          </ion-buttons>
-
-
-        <!--ion-button fill="outline" *ngIf="departements && departementsData && departementsData.length > 0 && mobile && styleAffichage == 'tableau'" (click)="changeStyle()" slot="end">{{'GENERAL.MODE_LISTE' | translate}}</ion-button-->
-      </ion-item>
-    </ion-card-header>
+  <ion-card [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
     <ion-card-content>
       <!--les boutton export pour mobile-->
       <!--ng-container *ngIf="mobile && styleAffichage == 'tableau'">
         <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
         <--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button->
-        <br>    
+        <br>     
       </ng-container-->
       <!--Le tabelau-->
       <!--Toutes les departements-->
-      <div *ngIf="(!codePays || !codeRegion) && departements && departementsData && departementsData.length > 0" class="table-responsive" id="departement"></div>
+      <div *ngIf="!idPays || !idRegion" class="table-responsive" id="departement"></div>
       
       <!--les région du pays sélectionnée-->
-      <div *ngIf="(codePays || codeRegion) && departements && departementsData && departementsData.length > 0" class="table-responsive" id="departement-pays"></div>
-      <!--Si le tableau est vide-->
-      <ion-list *ngIf="!departements || !departementsData || !departementsData.length > 0" lines="none">        
+      <div *ngIf="idPays || idRegion" class="table-responsive" id="departement-pays"></div>
+      <!--Si le tableau est vide>
+      <ion-list *ngIf="!departementsData || !departementsData.length > 0" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
-      </ion-list>
+      </ion-list-->
     </ion-card-content>
 </ion-card>
 
 
 <!--Infos-->
-  <ion-card  mode="ios" *ngIf="action == 'infos'">
-    <ion-card-header>
-        <ion-item class="card-header-item">
-          <ion-card-title>{{'GENERAL.INFOS' | translate}} {{unDepartement.nomDepartement}}</ion-card-title>
-      </ion-item>
-    </ion-card-header>
+  <ion-card *ngIf="action == 'infos'" (dblclick)="modifier(unDepartement)">
     <ion-card-content>
       <ion-grid>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unDepartement.codePays)">{{unDepartement.nomPays}}</a> </ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unDepartement.idPays)">{{unDepartement.nomPays}}</a> </ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unDepartement.codeRegion)">{{unDepartement.nomRegion}}</a> </ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unDepartement.idRegion)">{{unDepartement.nomRegion}}</a> </ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.codeDepartement}}</ion-col></ion-row>
+        <ion-row><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.code}}</ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.numeroDepartement}}</ion-col></ion-row>
+        <ion-row><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.numero}}</ion-col></ion-row>
         <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.nomDepartement}}</ion-col></ion-row>
+        <ion-row ><ion-col><h2><strong>{{'DEPARTEMENT_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.nom}}</ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unDepartement.latitude}}</ion-col></ion-row>
         <div class="hr"></div>
@@ -233,117 +268,105 @@
     </ion-card-content>
   </ion-card>
 
-  <ion-card  mode="ios" *ngIf="action == 'ajouter' || action == 'modifier'" padding>
-    <ion-card-header>
-      <ion-item class="card-header-item">
-        <ion-card-title *ngIf="action == 'ajouter'">{{'DEPARTEMENT_PAGE.FORMULAIRE_AJOUT' | translate}}</ion-card-title>
-        <ion-card-title *ngIf="action == 'modifier'">{{'DEPARTEMENT_PAGE.FORMULAIRE_MODIFICATION' | translate}}</ion-card-title>
-      
-        
-        <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" slot="end" (click)="onSubmit()" type="submit" [disabled]="!departementForm.valid" color="success" block>
-          <ion-icon name="save"></ion-icon>
-        </ion-button>
-        <ion-button title="{{'GENERAL.ANNULER' | translate}}" slot="end" color="light" class="m-l-5" (click)="annuler()" block>
-            <ion-icon name="close"></ion-icon>
-        </ion-button>
-      </ion-item>
-    </ion-card-header>
+  <ion-card *ngIf="action == 'ajouter' || action == 'modifier'">
     <ion-card-content>
-      <form [formGroup]="departementForm" (ngSubmit)="onSubmit()">
+      <form [formGroup]="departementForm" (ngSubmit)="onSubmit()" novalidate>
         <!--Info pays et région-->
         <ion-row>
           <!--Pays-->
           <ion-col>
-            <ion-item>
-              <ion-label position="floating">{{'DEPARTEMENT_PAGE.SELECTIONPAYS' | translate}} <span class="required">*</span></ion-label>
-              <ion-select formControlName="codePays" (ionChange)="setNomPays(departementForm.value.codePays)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
-                <ion-select-option *ngFor="let p of paysData" [value]=p.codePays >{{p.codePays}} - {{p.nomPays}}</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <div class="validation-errors">
-              <ng-container *ngFor="let validation of messages_validation.codePays">
-                <div class="error-message" *ngIf="departementForm.get('codePays').hasError(validation.type) && (departementForm.get('codePays').dirty || departementForm.get('codePays').touched)">
-                  <ion-icon name="information-circle-outline"></ion-icon>
-                  {{ validation.message }}
-                </div>
-              </ng-container>
+            <div id="idPays" class="form-group has-feedback">
+              <label class="control-label field-required">{{'DEPARTEMENT_PAGE.SELECTIONPAYS' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let p of paysData" [value]=p.id >{{p.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idPays">
+                  <p class="help-block" *ngIf="departementForm.get('idPays').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
             </div>
           </ion-col>
           <!--Région-->
           <ion-col>
-            <ion-item>
-                <ion-label position="floating">{{'DEPARTEMENT_PAGE.SELECTIONREGION' | translate}} <span class="required">*</span></ion-label>
-                <ion-select formControlName="codeRegion" (ionChange)="setNomRegion(departementForm.value.codeRegion)" cancelText="{{'GENERAL.ANNULER' | translate}}" okText="{{'GENERAL.OK' | translate}}" >
-                  <ion-select-option *ngFor="let r of regionData" [value]=r.codeRegion >{{r.codeRegion}} - {{r.nomRegion}}</ion-select-option>
-                </ion-select>
-            </ion-item>
-            <div class="validation-errors">
-              <ng-container *ngFor="let validation of messages_validation.codeRegion">
-                <div class="error-message" *ngIf="departementForm.get('codeRegion').hasError(validation.type) && (departementForm.get('codeRegion').dirty || departementForm.get('codeRegion').touched)">
-                  <ion-icon name="information-circle-outline"></ion-icon>
-                  {{ validation.message }}
+            <div id="idRegion" class="form-group has-feedback">
+                <label class="control-label field-required">{{'DEPARTEMENT_PAGE.SELECTIONREGION' | translate}}</label>
+                <select class="select2 form-control" data-allow-clear="1">
+                  <option></option>
+                  <option *ngFor="let r of regionData" [value]=r.id >{{r.nom}}</option>
+                </select>
+
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.idRegion">
+                    <p class="help-block" *ngIf="departementForm.get('idRegion').hasError(validation.type)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
                 </div>
-              </ng-container>
             </div>
           </ion-col>
         </ion-row>
         
         <ion-row>
           <ion-col>
-            <ion-item>
-              <ion-label position="floating">{{'DEPARTEMENT_PAGE.NUMERO' | translate}} <span class="required">*</span></ion-label>
-              <ion-input formControlName="numeroDepartement" type="text" class="form-controll" (ionBlur)="setCodeDepartement(departementForm.value.numeroDepartement)" required></ion-input>
-            </ion-item>
-            <div class="validation-errors">
-              <ng-container *ngFor="let validation of messages_validation.numeroDepartement">
-                <div class="error-message" *ngIf="departementForm.get('numeroDepartement').hasError(validation.type) && (departementForm.get('numeroDepartement').dirty || departementForm.get('numeroDepartement').touched)">
-                  <ion-icon name="information-circle-outline"></ion-icon>
-                  {{ validation.message }}
-                </div>
-              </ng-container>
+            <div id="numero" class="form-group has-feedback">
+              <label class="control-label field-required">{{'DEPARTEMENT_PAGE.NUMERO' | translate}}</label>
+              <input ion-input formControlName="numero" type="text" placeholder="{{'DEPARTEMENT_PAGE.NUMERO' | translate}}" class="form-control" (keyup)="setInputRequredError('numero', 'numero')" (blur)="setCodeDepartement(departementForm.value.numero)">
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.numero">
+                  <p class="help-block" *ngIf="departementForm.get('numero').hasError(validation.type) && (departementForm.get('numero').dirty || departementForm.get('numero').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
             </div>
           </ion-col>
           <ion-col>
-            <ion-item>
-              <ion-label position="floating">{{'DEPARTEMENT_PAGE.CODE' | translate}} <span class="required">*</span></ion-label>
-              <ion-input formControlName="codeDepartement" type="text" class="form-controll" required readonly></ion-input>
-            </ion-item>
-            <div class="validation-errors">
-              <ng-container *ngFor="let validation of messages_validation.codeDepartement">
-                <div class="error-message" *ngIf="departementForm.get('codeDepartement').hasError(validation.type) && (departementForm.get('codeDepartement').dirty || departementForm.get('codeDepartement').touched)">
-                  <ion-icon name="information-circle-outline"></ion-icon>
-                  {{ validation.message }}
-                </div>
-              </ng-container>
+            <div id="code" class="form-group has-feedback">
+              <label class="control-label field-required">{{'DEPARTEMENT_PAGE.CODE' | translate}}</label>
+              <input ion-input formControlName="code" type="text" class="form-control" (keyup)="setInputRequredError('code', 'code')" placeholder="{{'DEPARTEMENT_PAGE.CODE' | translate}}" required readonly>
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.code">
+                  <p class="help-block" *ngIf="departementForm.get('code').hasError(validation.type) && (departementForm.get('code').dirty || departementForm.get('code').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
             </div>
           </ion-col>
         </ion-row>  
 
-        <ion-item>
-            <ion-label position="floating">{{'DEPARTEMENT_PAGE.NOM' | translate}} <span class="required">*</span></ion-label>
-            <ion-input formControlName="nomDepartement" type="text"></ion-input>
-        </ion-item>
-        <div class="validation-errors">
-          <ng-container *ngFor="let validation of messages_validation.nomDepartement">
-            <div class="error-message" *ngIf="departementForm.get('nomDepartement').hasError(validation.type) && (departementForm.get('nomDepartement').dirty || departementForm.get('nomDepartement').touched)">
-              <ion-icon name="information-circle-outline"></ion-icon>
-              {{ validation.message }}
-            </div>
-          </ng-container>
+        <div id="nom" class="form-group has-feedback">
+          <label class="control-label field-required">{{'DEPARTEMENT_PAGE.NOM' | translate}}</label>
+          <input ion-input formControlName="nom" type="text" class="form-control" placeholder="{{'DEPARTEMENT_PAGE.NOM' | translate}}" (keyup)="setInputRequredError('nom', 'nom')">
+        
+          <div class="formio-errors invalid-feedback">
+            <ng-container *ngFor="let validation of messages_validation.nom">
+              <p class="help-block" *ngIf="departementForm.get('nom').hasError(validation.type) && (departementForm.get('nom').dirty || departementForm.get('nom').touched)">
+                {{ validation.message }}
+              </p>
+            </ng-container>
+          </div>
         </div>
 
         <ion-row>
           <ion-col>
-            <ion-item>
-              <ion-label position="floating">{{'GENERAL.LATITUDE' | translate}}</ion-label>
-              <ion-input formControlName="latitude" type="number"></ion-input>
-            </ion-item>
+            <div class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.LATITUDE' | translate}}</label>
+              <input ion-input formControlName="latitude" type="number" class="form-control" placeholder="{{'GENERAL.LATITUDE' | translate}}">
+            </div>
           </ion-col>
           <ion-col>
-            <ion-item>
-              <ion-label position="floating">{{'GENERAL.LONGITUDE' | translate}}</ion-label>
-              <ion-input formControlName="longitude" type="number"></ion-input>
-            </ion-item>
+            <div class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.LONGITUDE' | translate}}</label>
+              <input ion-input formControlName="longitude" type="number" class="form-control" placeholder="{{'GENERAL.LONGITUDE' | translate}}">
+            </div>
           </ion-col>
         </ion-row>
 
@@ -363,18 +386,14 @@
     </ion-fab-button>
   </ion-fab>
 
-  <!--ion-fab *ngIf="mobile && action == 'liste' && seletedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+  <!--ion-fab *ngIf="mobile && action == 'liste' && selectedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button color="success">
       <ion-icon name="options"></ion-icon>
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!codeDepartement && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button color="success"><ion-icon name="arrow-dropup"></ion-icon></ion-fab-button>
-    <ion-fab-list side="top">
-      <ion-fab-button (click)="supprimer(unDepartement)" color="danger"><ion-icon name="trash"></ion-icon></ion-fab-button>
-      <ion-fab-button (click)="modifier(unDepartement)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
-    </ion-fab-list>
+  <ion-fab *ngIf="!idDepartement && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="modifier(unDepartement)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
   <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">

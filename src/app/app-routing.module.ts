@@ -8,10 +8,11 @@ const routes: Routes = [
     pathMatch: 'full'
   },
   { path: 'tableau-de-bord', loadChildren: './accueil/tableau-de-bord/tableau-de-bord.module#TableauDeBordPageModule' },
+  { path: 'institution/mon-institution', loadChildren: './institution/mon-institution/mon-institution.module#MonInstitutionPageModule' },
   { path: 'institution/partenaires', loadChildren: './institution/partenaire/partenaire.module#PartenairePageModule' },
   { path: 'institution/unions', loadChildren: './institution/union/union.module#UnionPageModule' },
   { path: 'institution/ops', loadChildren: './institution/op/op.module#OpPageModule' },
-  { path: 'institution/membres', loadChildren: './institution/membre/membre.module#MembrePageModule' },
+  { path: /*'institution/*/'membres', loadChildren: './institution/membre/membre.module#MembrePageModule' },
   
   { path: 'recherche/projets', loadChildren: './recherche/projet/projet.module#ProjetPageModule' },
   { path: 'recherche/protocoles', loadChildren: './recherche/protocole/protocole.module#ProtocolePageModule' },
@@ -29,7 +30,7 @@ const routes: Routes = [
   { path: 'localite/regions/pays/:codePays', loadChildren: './localite/region/region.module#RegionPageModule' },
   { path: 'localite/communes', loadChildren: './localite/commune/commune.module#CommunePageModule' },
   { path: 'localite/departements', loadChildren: './localite/departement/departement.module#DepartementPageModule' },
-  { path: 'localite/villages', loadChildren: './localite/village/village.module#VillagePageModule' },
+  { path: 'localite/localites', loadChildren: './localite/localite/localite.module#LocalitePageModule' },
   
   { path: 'configuration/membre', loadChildren: './configuration/membre/membre.module#MembrePageModule' },
   { path: 'configuration/op', loadChildren: './configuration/op/op.module#OpPageModule' },
