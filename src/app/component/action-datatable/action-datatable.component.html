@@ -1,0 +1,63 @@
+<ion-list>  
+
+  <ion-item *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" button (click)="dataTableAddRechercheParColonne()">
+    <ion-label>{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" button (click)="dataTableAddRechercheParColonne()">
+    <ion-label>{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="!filterAjouter" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" button (click)="dataTableAddCustomFiltre()">
+    <ion-label>{{'GENERAL.AJOUTER_FILTRE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" button (click)="dataTableAddCustomFiltre()">
+    <ion-label>{{'GENERAL.SUPPRIMER_FILTRE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="action != 'liste'" title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" button (click)="choix1('liste')">
+    <ion-label>{{'GENERAL.LISTE_PRINCIPALE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="action != 'archives'" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix1('archives')">
+    <ion-label>{{'GENERAL.ARCHIVES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="action != 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix1('corbeille')">
+    <ion-label>{{'GENERAL.CORBEILLE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="action != 'partages'" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix1('partages')">
+    <ion-label>{{'GENERAL.PARTAGES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="action != 'conflits'" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix1('conflits')">
+    <ion-label>{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-label>
+  </ion-item>
+
+  <!--ion-item title="{{'GENERAL.MODE_LISTE' | translate}}" button *ngIf="mobile" (click)="changeStyle()">
+    <ion-label>{{'GENERAL.MODE_LISTE' | translate}}</ion-label>
+  </ion-item-->
+  
+  <ion-item button *ngIf="mobile && peutExporterDonnees" (click)="exportExcel()">
+    <ion-label>Excel</ion-label>
+  </ion-item>
+
+  <!--ion-item title="{{'GENERAL.MODE_LISTE' | translate}}" button *ngIf="mobile" (click)="changeStyle()">
+    <--ion-icon name="liste"></ion-icon->
+    <ion-label>{{'GENERAL.MODE_LISTE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" button (click)="dataTableSelectAll()">
+      <ion-label>{{'GENERAL.SELECTIONNER_TOUS' | translate}}</ion-label>
+    </ion-item>
+    
+    <ion-item title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" button (click)="dataTableSelectNon()">
+      <ion-label>{{'GENERAL.DESELECTIONNER_TOUS' | translate}}</ion-label>
+    </ion-item>
+  
+    <ion-item title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" button (click)="doRefresh()">
+      <ion-label>{{'GENERAL.RECHERGER_ANNULER' | translate}}</ion-label>
+    </ion-item-->
+</ion-list>

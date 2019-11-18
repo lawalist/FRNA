@@ -1,0 +1,59 @@
+<ion-header>
+    <ion-toolbar>  
+      <ion-title>Crop the image</ion-title> 
+      <ion-buttons slot="end">
+        <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
+          <ion-icon name="close"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
+  
+  <ion-content class="content">
+   <div class="modal-body">
+      <div class="img-container">
+        <img id="crop-image" src="./../../../assets/img/avatar_2x.png">
+      </div>
+
+      <div class="docs-toolbar">
+          <div class="btn-group">
+            <button class="btn btn-primary" data-method="zoom" data-option="0.1" type="button" title="Zoom In">
+              <span class="glyphicon glyphicon-zoom-in"></span>
+            </button>
+            <button class="btn btn-primary" data-method="zoom" data-option="-0.1" type="button" title="Zoom Out">
+              <span class="glyphicon glyphicon-zoom-out"></span>
+            </button>
+            <button class="btn btn-primary" data-method="rotate" data-option="-90" type="button" title="Rotate Left">
+              <span class="glyphicon glyphicon-share-alt docs-flip-horizontal"></span>
+            </button>
+            <button class="btn btn-primary" data-method="rotate" data-option="90" type="button" title="Rotate Right">
+              <span class="glyphicon glyphicon-share-alt"></span>
+            </button>
+            <button class="btn btn-primary" data-method="setDragMode" data-option="move" type="button" title="Move">
+              <span class="glyphicon glyphicon-move"></span>
+            </button>
+            <button class="btn btn-primary" data-method="setDragMode" data-option="crop" type="button" title="Crop">
+              <span class="glyphicon glyphicon-plus"></span>
+            </button>
+            <button class="btn btn-primary" data-method="clear" type="button" title="Clear">
+                <span class="glyphicon glyphicon-remove"></span>
+            </button>
+            
+            <!-- <button class="btn btn-primary" id="download" type="button" title="Download cropped image">
+              <span class="docs-tooltip" data-toggle="tooltip" title="Export image with &quot;getDataURL&quot;">
+                <span class="glyphicon glyphicon-download"></span>
+              </span>
+            </button> -->
+          </div>
+        </div>
+    </div>
+  </ion-content>
+    
+  <ion-footer>
+    <ion-toolbar>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+        <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="crop()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+      </div>
+    </ion-toolbar>
+  </ion-footer>

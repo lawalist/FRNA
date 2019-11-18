@@ -1,0 +1,57 @@
+/* =============
+   Buttons
+============= */
+/*.btn {
+  border-radius: 2px;
+  font-size: 16px;
+  padding: 7px 14px;
+  outline: none !important;
+  font-family: 'Source Sans Pro', sans-serif;
+}*/
+.btn-sm {
+  padding: 5px 10px !important;
+  font-size: 14px;
+}
+
+
+thead input {
+    width: 100%;
+}
+
+/* Data table editable */
+
+.dt-buttons {
+  float: left;
+}
+
+.dataTables_length {
+  float: left;
+}
+
+th {
+  min-width: 50px !important;
+}
+
+tfoot {
+  background-color: #e9ecef;
+  /*color: #dddddd;
+  font-size: 80%;*/
+}
+
+
+/*tfoot td {
+  border-bottom: 0;
+  border-right: 0;
+}
+*/
+/*====================
+    Majuscule au bébut du mot
+======================*
+th::first-letter, td::first-letter { 
+    text-transform: capitalize !important;
+}*/
+
+th, td { 
+    text-transform: capitalize !important;
+}
+  

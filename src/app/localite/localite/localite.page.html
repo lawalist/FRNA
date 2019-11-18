@@ -1,0 +1,491 @@
+<ion-header>
+  <ion-toolbar> 
+    <ion-buttons *ngIf="!idLocalite" slot="start">
+      <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
+      <ion-button *ngIf="mobile && action != 'liste'" ion-button icon-only (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+     
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action == 'liste' && estModeCocherElemListe" slot="start">
+      <ion-button ion-button icon-only (click)="changerModeCocherElemListe()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+
+      <ion-badge>{{selectedIndexes.length}}</ion-badge>
+    </ion-buttons>
+
+    <ion-title *ngIf="action == 'liste'  && !estModeCocherElemListe">{{'LOCALITE_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'LOCALITE_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'LOCALITE_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'LOCALITE_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="!idLocalite && mobile && action == 'infos'" slot="end">
+      <!--ion-button ion-button icon-only (click)="openRelationLocalite($event)">
+        <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+      </ion-button-->
+
+      <ion-button ion-button icon-only (click)="listActionPopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
+      <ion-button *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
+        <ion-icon name="trash"></ion-icon>
+      </ion-button>
+                
+      <ion-button ion-button icon-only (click)="listOptionsPopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Close-->
+    <ion-buttons *ngIf="idLocalite || ((idPays || idRegion || idDepartement|| idCommune) && action == 'liste')" slot="end">
+      <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  
+  <ion-toolbar class="toolbar-border-top" *ngIf="!mobile && !idLocalite">
+    <ng-container *ngIf="action == 'liste'">
+
+      <ion-buttons style="padding-left: 5px !important" class="hid-boutons" slot="start">
+        <ion-button title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected" slot="end" (click)="dataTableSelectAll()">
+          <ion-icon name="square-outline"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="!allSelected && selectedIndexes.length > 0" slot="end" (click)="dataTableSelectNon()">
+          <i style="font-size: 18px" class="fa fa-minus-square"></i>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" *ngIf="allSelected" slot="end" (click)="dataTableSelectNon()">
+          <ion-icon name="checkbox"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
+          <ion-icon name="refresh"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableAddRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-plus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" slot="end" (click)="dataTableRemoveRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-minus"></i>
+        </ion-button>
+
+        <ion-button *ngIf="!filterAjouter" title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" slot="end" (click)="dataTableAddCustomFiltre()">
+          <ion-icon name="ios-funnel"></ion-icon>
+        </ion-button>
+
+        <ion-button *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+          <!--ion-icon style="font-size: 18px" src='../../../assets/svgs/remove-filter-2.svg'></ion-icon-->
+          <i style="font-size: 18px" class="mdi mdi-filter-remove"></i>
+        </ion-button>
+      </ion-buttons>
+
+      
+      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
+          <ion-icon name="eye"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemModifier()">
+          <ion-icon  name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" (click)="openRelationLocaliteDepuisListe($event)">
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="selectedIndexes.length > 0" (click)="suppressionMultiple()">
+          <ion-icon  name="trash"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-buttons class="hid-action" slot="end">
+        <!--div [class.barre-verticale]="selectedIndexes.length > 0">
+          <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
+            <ion-icon name="more"></ion-icon>
+          </ion-button>
+        </div-->
+        <ion-button title="{{'GENERAL.ACTION' | translate}}" fill="solid" color="primary" *ngIf="selectedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+            <ion-icon name="construct"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+
+    <!--Infos-->
+    <ng-container *ngIf="action == 'infos'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(unLocalite)">
+          <ion-icon name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button disabled title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" (click)="openRelationLocalite($event)">
+          <!--ion-icon name="redo"></ion-icon-->
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(unLocalite)">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+
+    <!--Si ajout ou modification--> 
+    <ng-container *ngIf="action == 'modifier' || action == 'ajouter'">
+      <ion-buttons slot="start" style="padding-left: 5px !important">
+        <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+          <ion-icon name="arrow-back"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+
+      <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+        <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!localiteForm.valid" color="success">
+          <ion-icon name="save"></ion-icon>
+        </ion-button>
+        <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
+            <ion-icon name="close"></ion-icon>
+        </ion-button>
+      </ion-item>
+    </ng-container>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="action == 'liste'" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!--Mode liste-->
+  <ion-card [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header class="remove-card-header-padding">
+      <ion-item class="card-header-item">
+        <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <ng-container *ngIf="localitesData && localitesData.length > 0">
+        <ion-virtual-scroll [items]="localitesData">
+          <ion-item-sliding *virtualItem="let l">
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(l)">
+              <ion-label>
+                <h2 text-capitalize><!--strong>{{'LOCALITE_PAGE.NOM' | translate}}:</strong-->{{l.nom}}</h2>
+                <h3 text-capitalize><!--strong>{{'LOCALITE_PAGE.CODE' | translate}}:</strong-->{{l.code}}</h3>
+                <p text-capitalize><!--strong>{{'LOCALITE_PAGE.NUMERO' | translate}}:</strong-->{{l.nomCommune}}</p>
+              </ion-label>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(l.id)" slot="end"></ion-checkbox>
+            </ion-item>
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+              <ion-item-option (click)="modifier(l)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+              <ion-item-option color="danger" (click)="supprimer(l)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!localitesData || !localitesData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card [hidden]="action != 'liste'" *ngIf="(mobile && styleAffichage == 'tableau') || !mobile">
+    <ion-card-content>
+      <!--les boutton export pour mobile-->
+      <!--ng-container *ngIf="mobile && styleAffichage == 'tableau'">
+        <ion-button size="small" (click)="exportExcel()" block>Excel</ion-button>
+        <--ion-button size="small" color="light" class="m-l-5" (click)="exportPDF()" block>PDF</ion-button->
+        <br>    
+      </ng-container-->
+      <!--Le tabelau-->
+      <!--Toutes les localites-->
+      <div *ngIf="!idPays && !idRegion && !idDepartement && !idCommune" class="table-responsive" id="localite"></div>
+      
+      <!--les région du pays sélectionnée-->
+      <div *ngIf="idPays || idRegion || idDepartement || idCommune" class="table-responsive" id="localite-pays"></div>
+      <!--Si le tableau est vide>
+      <ion-list *ngIf="!localitesData || !localitesData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list-->
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card *ngIf="action == 'infos'" (dblclick)="modifier(unLocalite)">
+    <ion-card-content>
+      <ion-grid>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unLocalite.idPays)">{{unLocalite.nomPays}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unLocalite.idRegion)">{{unLocalite.nomRegion}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentDepartement(unLocalite.idDepartement)">{{unLocalite.nomDepartement}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(unLocalite.idCommune)">{{unLocalite.nomCommune}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'LOCALITE_PAGE.CODE' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.code}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row><ion-col><h2><strong>{{'LOCALITE_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.numero}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'LOCALITE_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.nom}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'LOCALITE_PAGE.TYPE' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.type}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'LOCALITE_PAGE.AUTRETYPE' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.autreType}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.latitude}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.LONGITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unLocalite.longitude}}</ion-col></ion-row>
+      </ion-grid>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="action == 'ajouter' || action == 'modifier'" padding>
+    <ion-card-content>
+      <form [formGroup]="localiteForm" (ngSubmit)="onSubmit()">
+        <!--Info pays et région-->
+        <ion-row>
+          <!--Pays-->
+          <ion-col>
+            <div id="idPays" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.SELECTIONPAYS' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let p of paysData" [value]=p.id >{{p.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idPays">
+                  <p class="help-block" *ngIf="localiteForm.get('idPays').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <!--Région-->
+          <ion-col>
+            <div id="idRegion" class="form-group has-feedback">
+                <label class="control-label field-required">{{'LOCALITE_PAGE.SELECTIONREGION' | translate}}</label>
+                <select class="select2 form-control" data-allow-clear="1">
+                  <option></option>
+                  <option *ngFor="let r of regionData" [value]=r.id >{{r.nom}}</option>
+                </select>
+
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.idRegion">
+                    <p class="help-block" *ngIf="localiteForm.get('idRegion').hasError(validation.type)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+            </div>
+          </ion-col>
+        </ion-row>
+
+        <!--Département et commune-->
+        <ion-row>
+          <ion-col>
+            <!--Département-->
+            <div id="idDepartement" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.SELECTIONDEPARTEMENT' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let d of departementData" [value]=d.id >{{d.nom}}</option>
+              </select>
+    
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idDepartement">
+                  <p class="help-block" *ngIf="localiteForm.get('idDepartement').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>      
+          </ion-col>
+          <ion-col>
+            <!--Commune-->
+            <div id="idCommune" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.SELECTIONCOMMUNE' | translate}}</label>
+              <select  class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let c of communeData"  [value]=c.id >{{c.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idCommune">
+                  <p class="help-block" *ngIf="localiteForm.get('idCommune').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+        
+        <ion-row>
+          <ion-col>
+            <div id="numero" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.NUMERO' | translate}}</label>
+              <input ion-input formControlName="numero" type="text" class="form-control" placeholder="{{'LOCALITE_PAGE.NUMERO' | translate}}" (keyup)="setInputRequredError('numero', 'numero')" (blur)="setCodeLocalite(localiteForm.value.numero)" required>
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.numero">
+                  <p class="help-block" *ngIf="localiteForm.get('numero').hasError(validation.type) && (localiteForm.get('numero').dirty || localiteForm.get('numero').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <ion-col>
+            <div id="code" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.CODE' | translate}}</label>
+              <input ion-input formControlName="code" type="text" class="form-control" placeholder="{{'LOCALITE_PAGE.CODE' | translate}}" (keyup)="setInputRequredError('code', 'code')" required readonly>
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.code">
+                  <p class="help-block" *ngIf="localiteForm.get('code').hasError(validation.type) && (localiteForm.get('code').dirty || localiteForm.get('code').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>  
+
+        <ion-row>
+          <ion-col>
+            <div id="nom" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.NOM' | translate}}</label>
+              <input ion-input formControlName="nom" type="text" class="form-control" placeholder="{{'LOCALITE_PAGE.NOM' | translate}}" (keyup)="setInputRequredError('nom', 'nom')">
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.nom">
+                  <p class="help-block" *ngIf="localiteForm.get('nom').hasError(validation.type) && (localiteForm.get('nom').dirty || localiteForm.get('nom').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+          <ion-col>
+            <div id="type" class="form-group has-feedback">
+              <label class="control-label field-required">{{'LOCALITE_PAGE.TYPE' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let t of typesLocalite" [value]=t.id >{{t.val}}</option>
+              </select>
+    
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.type">
+                  <p class="help-block" *ngIf="localiteForm.get('type').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+
+        <ng-container *ngIf="localiteForm.value.type == '6'">
+          <ion-row>
+            <ion-col>
+              <div id="autreType" class="form-group has-feedback">
+                  <label class="control-label">{{'LOCALITE_PAGE.AUTRETYPE' | translate}}</label>
+                  <input ion-input formControlName="autreType" type="text" class="form-control" placeholder="{{'LOCALITE_PAGE.AUTRETYPE' | translate}}" (keyup)="setInputRequredError('autreType', 'autreType')">
+                
+                  <div class="formio-errors invalid-feedback">
+                    <ng-container *ngFor="let validation of messages_validation.autreType">
+                      <p class="help-block" *ngIf="localiteForm.get('autreType').hasError(validation.type) && (localiteForm.get('autreType').dirty || localiteForm.get('autreType').touched)">
+                        {{ validation.message }}
+                      </p>
+                    </ng-container>
+                  </div>
+                </div>
+            </ion-col>
+          </ion-row>
+        </ng-container>
+
+      <ion-row>
+        <ion-col>
+          <div class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.LATITUDE' | translate}}</label>
+            <input ion-input formControlName="latitude" type="number" class="form-control" placeholder="{{'GENERAL.LATITUDE' | translate}}">
+          </div>
+        </ion-col>
+        <ion-col>
+          <div class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.LONGITUDE' | translate}}</label>
+            <input ion-input formControlName="longitude" type="number" class="form-control" placeholder="{{'GENERAL.LONGITUDE' | translate}}">
+          </div>
+        </ion-col>
+      </ion-row>
+
+        <br>
+        <div class="form-group text-right m-b-0">
+            <ion-button type="submit" [disabled]="!localiteForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+            <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+        </div> 
+      </form>
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <!--ion-fab *ngIf="mobile && action == 'liste' && selectedIndexes.length" (click)="actionActionSheet()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button color="success">
+      <ion-icon name="options"></ion-icon>
+    </ion-fab-button>
+  </ion-fab-->
+
+  <ion-fab *ngIf="!idLocalite && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="modifier(unLocalite)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="pin"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+</ion-content>

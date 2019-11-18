@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>FRNA V2</title>
+
+  <base href="./" />
+
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="msapplication-tap-highlight" content="no" />
+
+  <link rel="icon" type="image/png" href="./assets/icon/favicon.png" />
+
+  <!-- add to homescreen for ios -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+  <!--Bootstrap-->
+  <link href="./assets/external/datatable/css/b4/bootstrap.css" rel="stylesheet" type="text/css"/>
+  
+  <!--formio css-->
+  <link rel='stylesheet' href='./assets/external/formiojs/css/font-awesome-4.7.0.min.css'>
+  <!--link href="./assets/external/datatable/css/bootstrap.min.css" rel="stylesheet" type="text/css" /->
+  <link rel='stylesheet' href='./assets/external/formiojs/css/bootstrap-4.3.1.min.css'-->
+  <link rel='stylesheet' href='./assets/external/formiojs/css/formio3.20.16.full.min.css'>
+
+
+  <!-- DataTables css -->
+  
+  <link href="./assets/external/datatable/css/b4/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css"/>
+  <link href="./assets/external/datatable/css/b4/select.bootstrap4.min.css" rel="stylesheet" type="text/css"/>  
+  <link href="./assets/external/datatable/css/b4/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css"/>  
+  <link href="./assets/external/datatable/css/b4/fixedHeader.bootstrap4.min.css" rel="stylesheet" type="text/css"/>  
+  <link href="./assets/external/datatable/css/b4/components.css" rel="stylesheet" type="text/css" />
+  <link href="./assets/external/datatable/css/core.css" rel="stylesheet" type="text/css" />
+
+  <link href="./assets/external/datatable/css/b4/multiple-select.min.css" rel="stylesheet">
+  
+ 
+
+  
+</head>
+
+<body>
+  <app-root></app-root>
+
+  <!--For electron compatibilité-->
+  <script>
+    if (typeof module === 'object') {
+      window.module = module; 
+      module = undefined;
+    }
+  </script>
+
+  <script src="./assets/external/JSONToTHMLTable/jquery-3.4.1.min.js"></script>
+
+  <!-- Latest compiled and minified JavaScript -->
+
+  <!--formio-->
+  <script src='./assets/external/formiojs/js/formio3.20.16.full.min.js'></script>
+
+  <!--Convert JSOn To HTML Table-->
+  <script src="./assets/external/JSONToTHMLTable/strsup.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/localread.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/csvparse.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/csvsup.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/jQuery-csv.js"></script>
+  <script src="./assets/external/JSONToTHMLTable/convert.js"></script>
+
+
+  <!--Datatable-->
+  <script src="./assets/external/datatable/js/b4/multiple-select.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/jquery.dataTables.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/dataTables.bootstrap4.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/dataTables.select.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/dataTables.buttons.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/buttons.bootstrap4.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/jszip.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/pdfmake.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/vfs_fonts.js"></script>
+  <script src="./assets/external/datatable/js/b4/buttons.html5.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/buttons.print.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/buttons.colVis.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/dataTables.fixedHeader.min.js"></script>
+  <script src="./assets/external/datatable/js/jquery.datatables.init.js"></script>
+  
+
+  <!--script src="./assets/external/datatable/js/jquery.dataTables.min.js"></script>
+  <!--script src="./assets/external/datatable/js/dataTables.bootstrap.js"></script->
+  <script src="./assets/external/datatable/js/dataTables.bootstrap.min.js"></script>
+  <script src="./assets/external/datatable/js/dataTables.buttons.min.js"></script>
+  <script src="./assets/external/datatable/js/buttons.bootstrap.min.js"></script>
+  <script src="./assets/external/datatable/js/dataTables.select.min.js"></script>
+  <script src="./assets/external/datatable/js/jszip.min.js"></script>
+  <script src="./assets/external/datatable/js/pdfmake.min.js"></script>
+  <script src="./assets/external/datatable/js/vfs_fonts.js"></script>
+  <script src="./assets/external/datatable/js/buttons.html5.min.js"></script>
+  <script src="./assets/external/datatable/js/buttons.print.min.js"></script>
+  <script src="./assets/external/datatable/js/jquery.datatables.init.js"></script>
+  <script src="./assets/external/datatable/js/buttons.colVis.min.js"></script-->
+
+  <!--En for electron compatibilité-->
+  <script>if (window.module) module = window.module;</script>
+</body>
+
+</html>

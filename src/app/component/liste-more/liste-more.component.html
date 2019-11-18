@@ -1,0 +1,38 @@
+<ion-list>
+  <ion-item *ngIf="!options.estModeCocherElemListe && options.styleAffichage == 'liste'" title="{{'GENERAL.SELECTION_MULTIPLE' | translate}}" button (click)="choix('listSelectionMultiple')">
+    <ion-label>{{'GENERAL.SELECTION_MULTIPLE' | translate}}</ion-label>
+  </ion-item>
+  
+  <ion-item *ngIf='options.estModeCocherElemListe && (options.dataLength !== options.seletedIndexesLength)' title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectAll')">
+    <ion-label>{{'GENERAL.SELECTIONNER_TOUS' | translate}}</ion-label>
+  </ion-item>
+  
+  <ion-item *ngIf='options.estModeCocherElemListe &&  options.seletedIndexesLength > 0' title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectNon')">
+    <ion-label>{{'GENERAL.DESELECTIONNER_TOUS' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="options.action && options.action != 'liste'" title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" button (click)="choix('liste')">
+    <ion-label>{{'GENERAL.LISTE_PRINCIPALE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="options.action && options.action != 'archives'" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix('archives')">
+    <ion-label>{{'GENERAL.ARCHIVES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="options.action && options.action != 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix('corbeille')">
+    <ion-label>{{'GENERAL.CORBEILLE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="options.action && options.action != 'partages'" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix('partages')">
+    <ion-label>{{'GENERAL.PARTAGES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="options.action && options.action != 'conflits'" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix('conflits')">
+    <ion-label>{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="peutExporterDonnees" title="{{'GENERAL.EXPORTER' | translate}}" button (click)="choix('exporter')">
+    <ion-label>{{'GENERAL.EXPORTER' | translate}}</ion-label>
+  </ion-item>
+
+</ion-list>

@@ -1,0 +1,18 @@
+<ion-list>
+  <ion-item *ngIf="retournedAction != 'liste'" title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" button (click)="choix('listePrincipale')">
+    <ion-label>{{'GENERAL.LISTE_PRINCIPALE' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix('partages')">
+    <ion-label>{{'GENERAL.PARTAGES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix('conflits')">
+    <ion-label>{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item title="{{'GENERAL.MODE_LISTE' | translate}}" button *ngIf="mobile" (click)="choix('styleAffichage')">
+    <ion-label>{{'GENERAL.MODE_LISTE' | translate}}</ion-label>
+  </ion-item>
+
+</ion-list>

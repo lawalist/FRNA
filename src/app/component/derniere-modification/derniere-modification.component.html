@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar> 
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    
+    <ion-title>{{'GENERAL.INFORMATION' | translate}}</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button ion-button icon-only color="royal" (click)="close()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="content">
+<ion-card>
+  <ion-card-content>
+      <ion-grid>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{security.created_by}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{security.created_at | date: 'dd-MM-yyyy'}} {{security.created_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{security.updated_by}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{security.updated_at | date: 'dd-MM-yyyy'}} {{security.updated_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.NOMBRE_DE_MISE_A_JOUR' | translate}}:</strong></h2></ion-col><ion-col>{{rev}}</ion-col></ion-row>
+        
+        <ng-container *ngIf="archived_at && archived_at != ''">
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{security.archived_by}}</ion-col></ion-row>
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{security.archived_at | date: 'dd-MM-yyyy'}} {{security.archived_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+        </ng-container>
+        
+        <ng-container *ngIf="shared">
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.SHARED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{security.shared_by}}</ion-col></ion-row>
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.SHARED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{security.shared_at | date: 'dd-MM-yyyy'}} {{security.shared_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>  
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.NOMBRE_DE_PARTAGE' | translate}}:</strong></h2></ion-col><ion-col>{{security.shared_history.length}}</ion-col></ion-row>  
+          
+          <!--Historique partage-->
+          <ng-container *ngIf="security.shared_history.length > 0">
+            <div class="hr"></div>
+            <ion-card>
+              <ion-card-header>
+                  <ion-card-title>{{'GENERAL.SHARED_HISTORY' | translate}}</ion-card-title>
+              </ion-card-header>
+              <ion-card-content>
+                <table class="table table-hover table-bordered"  cellspacing="0" width="100%">
+                  <thead>
+                    <tr class='thead-light'>
+                        <th>{{'GENERAL.SHARED_BY' | translate}}</th>
+                        <th>{{'GENERAL.SHARED_AT' | translate}}</th>
+                        <th>{{'GENERAL.TARGET' | translate}}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of security.shared_history">
+                      <td>
+                        {{p.shared_by}}
+                      </td>
+                      <td>
+                        {{security.shared_at | date: 'dd-MM-yyyy'}} {{security.shared_at | date: 'HH:mm:ss:ms'}}
+                      </td>
+                      <td>
+                        {{p.url}}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </ion-card-content>
+            </ion-card>
+          </ng-container> 
+        </ng-container>
+        
+        <ng-container *ngIf="deleted_at && deleted_at != ''">
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{security.deleted_by}}</ion-col></ion-row>
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{security.deleted_at | date: 'dd-MM-yyyy'}} {{security.deleted_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>  
+        </ng-container>
+    </ion-grid>  
+  </ion-card-content>
+</ion-card>
+</ion-content>
