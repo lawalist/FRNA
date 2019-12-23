@@ -265,7 +265,7 @@
                 <h2 text-capitalize><!--strong>{{'MEMBRE_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
                 <h3 text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomUnion}}</h3>
 
-                <!--h2 text-capitalize>{{p.numero}}</h2-->
+                <!--h2 text-capitalize>{{p.matricule}}</h2-->
                 <p text-capitalize><!--strong>{{'MEMBRE_PAGE.NUMERO' | translate}}:</strong-->{{p.nomLieuHabitation}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
@@ -315,53 +315,112 @@
 <!--Infos-->
   <ion-card *ngIf="action == 'infos'">
     <ion-card-content>
-      <ion-grid  (dblclick)="modifier(unMembre)">
-        <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.nom}}</ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.numero}}</ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.NIVEAU' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.niveau}}</ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row *ngIf="unMembre.idFederation && unMembre.idFederation != ''"><ion-col><h2><strong>{{'GENERAL.FEDERATION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFederation(unMembre.idFederation)">{{unMembre.nomFederation}}</a></ion-col></ion-row>
-        <div *ngIf="unMembre.idFederation && unMembre.idFederation != ''" class="hr"></div>
-        <ion-row  *ngIf="unMembre.idUnion && unMembre.idUnion != ''" ><ion-col><h2><strong>{{'GENERAL.UNION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentUnion(unMembre.idUnion)">{{unMembre.nomUnion}}</a></ion-col></ion-row>
-        <div  *ngIf="unMembre.idUnion && unMembre.idUnion != ''" class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.DATECREATION' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.dateCreation}}</ion-col></ion-row>
-        <div class="hr"></div>
+      <div class="row">
+        <div class="col-sm-3">
+          <ion-row>
+            <ion-col>
+              <div id="image-profile-infos" class="img-container">
+                <img id="avatar-infos" src="./assets/img/avatar_2x.png"  data-src="./assets/img/avatar_2x.png" (click)="viewPhoto('avatar-infos')" class="avatar img-circle img-thumbnail" alt="avatar"/>
+              </div>
+              
+              <div id="image-barcode-infos" class="img-container">
+                <img id="barcode-infos" alt="codebar">
+              </div>
 
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unMembre.idPays)">{{unMembre.nomPays}}</a> </ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unMembre.idRegion)">{{unMembre.nomRegion}}</a> </ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentDepartement(unMembre.idDepartement)">{{unMembre.nomDepartement}}</a> </ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(unMembre.idCommune)">{{unMembre.nomCommune}}</a> </ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.LIEUHABITATION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentLocalite(unMembre.idLieuHabitation)">{{unMembre.nomLieuHabitation}}</a> </ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.latitude}}</ion-col></ion-row>
-        <div class="hr"></div>
-        <ion-row ><ion-col><h2><strong>{{'GENERAL.LONGITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.longitude}}</ion-col></ion-row>
-      </ion-grid>
+              <br>
+              <ul class="list-group">
+                <li class="list-group-item text-muted panel-heading"><h2>Rapport sommaire <i style="font-size: 18px; float: right;" class="fa fa-dashboard fa-1x"></i></h2></li>
+                <li class="list-group-item text-right"><span class="pull-left"><strong>Age</strong></span> {{age}} <span *ngIf="!age || age == ''">N/A</span><span *ngIf="age && age != ''">ans</span></li>
+                <li class="list-group-item text-right"><span class="pull-left"><strong>Essais</strong></span> 125</li>
+                <li class="list-group-item text-right"><span class="pull-left"><strong>Typologie</strong></span> 13</li>
+                <li class="list-group-item text-right"><span class="pull-left"><strong>Emquête</strong></span> 78</li>
+              </ul>
+            </ion-col>
+          </ion-row>
+        </div>
+        <div class="col-sm-9">
+          <ion-grid  (dblclick)="modifier(unMembre)">
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.nom}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.PRENOM' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.prenom}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.SURNOM' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.surnom}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.DATENAISSANCE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.dateNaissance | date: 'dd-MM-yyyy'}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.SEXE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.sexe}}</ion-col></ion-row>
+            <div class="hr"></div>
+
+            <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unMembre.idPays)">{{unMembre.nomPays}}</a> </ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unMembre.idRegion)">{{unMembre.nomRegion}}</a> </ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENT' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentDepartement(unMembre.idDepartement)">{{unMembre.nomDepartement}}</a> </ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(unMembre.idCommune)">{{unMembre.nomCommune}}</a> </ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'GENERAL.LIEUHABITATION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentLocalite(unMembre.idLieuHabitation)">{{unMembre.nomLieuHabitation}}</a> </ion-col></ion-row>
+            <div class="hr"></div>
+
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.ETATCIVIL' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.etatCivil}} </ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.ETHNIE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.ethnie}} </ion-col></ion-row>
+            <div class="hr"></div>
+
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.NIVEAU' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.niveau}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row *ngIf="unMembre.idFederation && unMembre.idFederation != ''"><ion-col><h2><strong>{{'GENERAL.FEDERATION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFederation(unMembre.idFederation)">{{unMembre.nomFederation}}</a></ion-col></ion-row>
+            <div *ngIf="unMembre.idFederation && unMembre.idFederation != ''" class="hr"></div>
+            <ion-row  *ngIf="unMembre.idUnion && unMembre.idUnion != ''" ><ion-col><h2><strong>{{'GENERAL.UNION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentUnion(unMembre.idUnion)">{{unMembre.nomUnion}}</a></ion-col></ion-row>
+            <div  *ngIf="unMembre.idUnion && unMembre.idUnion != ''" class="hr"></div>
+            <ion-row  *ngIf="unMembre.idOp && unMembre.idOp != ''" ><ion-col><h2><strong>{{'GENERAL.OP' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentOp(unMembre.idOp)">{{unMembre.nomOp}}</a></ion-col></ion-row>
+            <div  *ngIf="unMembre.idOp && unMembre.idOp != ''" class="hr"></div>
+            
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.PROFESSION' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.profession}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.EDUCATION' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.education}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.TELEPHONE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.telephone}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.EMAIL' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.email}}</ion-col></ion-row>
+            <div class="hr"></div>
+            <ion-row ><ion-col><h2><strong>{{'MEMBRE_PAGE.ADRESSE' | translate}}:</strong></h2></ion-col><ion-col>{{unMembre.adresse}}</ion-col></ion-row>
+          </ion-grid>
+        </div>
+      </div>
     </ion-card-content>
   </ion-card>
+
   <ion-card *ngIf="action == 'ajouter' || action == 'modifier'">
     <ion-card-content>
       <div class="row">
         <div class="col-sm-3">
           <ion-row>
             <ion-col>
-              <div id="image-profile" class="text-center">
-                <img id="crop-avatar" src="./assets/img/avatar_2x.png"  data-src="./assets/img/avatar_2x.png" (click)="viewPhoto('crop-avatar')" class="avatar img-circle img-thumbnail" alt="avatar"/>
-                <h6>Upload a different photo...</h6>
+              <!--div id="image-profile" class="text-center">
+                <img id="crop-avatar" src="./assets/img/avatar_2x.png" (click)="selectImage()"  data-src="./assets/img/avatar_2x.png" class="avatar img-circle img-thumbnail" alt="avatar"/>
+
                 <input type="file" type="file" id="fileInput" (change)="onFileChange($event)" class="text-center center-block file-upload" #fileInput1 accept="image/*" data-type="image">
-                
               </div>
-              <br>
-              <div id="image-barcode" class="text-center">
-                <h6>Matricule</h6>
-                <img id="barcode" alt="codebar">
-              </div>
+              <br-->
+              <div class="avatar-upload">
+                <div class="avatar-edit">
+                  <ion-button fill="clear" icon-only  (click)="avatarAction($event)">
+                    <!--ion-icon name="create"></!--ion-icon-->
+                  </ion-button>
+                    <!--input id="fileInput" type="button" (click)="avatarAction($event)" (change)="onFileChange($event)" accept="image/*" data-type="image"/>
+                    <!--input type='file' id="fileInput" (change)="onFileChange($event)" accept=".png, .jpg, .jpeg" /->
+                    <label for="fileInput"></label-->
+                </div>
+                <div id="image-profile" class="text-center">
+                  <img id="crop-avatar" src="./assets/img/avatar_2x.png"  data-src="./assets/img/avatar_2x.png" class="avatar img-circle img-thumbnail" alt="avatar"/>
+                  </div>
+
+                  <div id="image-barcode" class="text-center">
+                    <img id="barcode" alt="codebar">
+                  </div>
+            </div>
+            <input type='file' id="fileInput" (change)="onFileChange($event)" style="opacity: 0;" accept="image/*" data-type="image"/>
             </ion-col>
           </ion-row>
         </div>
@@ -561,11 +620,11 @@
               </ion-col>
 
               <ion-col>
-                <div id="origineEthnique" class="form-group has-feedback">
-                  <label class="control-label">{{'MEMBRE_PAGE.ORIGINEETHNIQUE' | translate}}</label>
+                <div id="idEthnie" class="form-group has-feedback">
+                  <label class="control-label">{{'MEMBRE_PAGE.ETHNIE' | translate}}</label>
                   <select class="select2 form-control" data-allow-clear="1">
                     <option></option>
-                    <option *ngFor="let i of origineEthniques" [value]=i.id >{{i.val}}</option>
+                    <option *ngFor="let i of ethniesData" [value]=i.id >{{i.nom}}</option>
                   </select> 
                 </div>
               </ion-col>
@@ -592,11 +651,11 @@
               </ion-col>
             </ion-row>
             
-            <ion-row [hidden]="!membreForm.controls.niveau.value || membreForm.controls.niveau.value == '3'">
+            <ion-row [hidden]="!membreForm.controls.niveau.value || membreForm.controls.niveau.value == '2'">
               <!--Fédération-->
               <ion-col [hidden]="membreForm.controls.niveau.value != '1'">
                 <div id="idFederation" class="form-group has-feedback">
-                  <label class="control-label field-required">{{'UNION_PAGE.SELECTIONFEDERATION' | translate}}</label>
+                  <label class="control-label field-required">{{'MEMBRE_PAGE.SELECTIONFEDERATION' | translate}}</label>
                   <select class="select2 form-control" data-allow-clear="1">
                     <option></option>
                     <option *ngFor="let u of federationData" [value]=u.id >{{u.nom}}</option>
@@ -611,6 +670,9 @@
                   </div>
                 </div>
               </ion-col>
+            </ion-row>
+
+            <ion-row [hidden]="!membreForm.controls.niveau.value || membreForm.controls.niveau.value == '2'">
               <!--Union-->
               <ion-col>
                 <div id="idUnion" class="form-group has-feedback">
@@ -629,17 +691,36 @@
                   </div>
                 </div>
               </ion-col>
+              <!--Op-->
+              <ion-col [hidden]="membreForm.controls.niveau.value != '1'">
+                <div id="idOp" class="form-group has-feedback">
+                  <label class="control-label field-required">{{'MEMBRE_PAGE.SELECTIONOP' | translate}}</label>
+                  <select class="select2 form-control" data-allow-clear="1">
+                    <option></option>
+                    <option *ngFor="let o of opData" [value]=o.id >{{o.nom}}</option>
+                  </select>
+    
+                  <div class="formio-errors invalid-feedback">
+                    <ng-container *ngFor="let validation of messages_validation.idOp">
+                      <p class="help-block" *ngIf="membreForm.get('idOp').hasError(validation.type)">
+                        {{ validation.message }}
+                      </p>
+                    </ng-container>
+                  </div>
+                </div>
+              </ion-col>
+              
             </ion-row>
 
             <!--Profession et éducation-->
             <ion-row>
               <!--Profession-->
               <ion-col>
-                <div id="profession" class="form-group has-feedback">
+                <div id="idProfession" class="form-group has-feedback">
                   <label class="control-label">{{'MEMBRE_PAGE.PROFESSION' | translate}}</label>
                   <select class="select2 form-control" data-allow-clear="1">
                     <option></option>
-                    <option *ngFor="let p of professions" [value]=p.id >{{p.nom}}</option>
+                    <option *ngFor="let p of professionsData" [value]=p.id >{{p.nom}}</option>
                   </select>
                 </div>
               </ion-col>
@@ -658,9 +739,9 @@
             <!--Tel et email-->
             <ion-row>
               <ion-col>
-                <div id="tel" class="form-group has-feedback">
-                  <label class="control-label">{{'MEMBRE_PAGE.TEL' | translate}}</label>
-                  <input ion-input formControlName="tel" type="text"  class="form-control" placeholder="{{'MEMBRE_PAGE.TEL' | translate}}">
+                <div id="telephone" class="form-group has-feedback">
+                  <label class="control-label">{{'MEMBRE_PAGE.TELEPHONE' | translate}}</label>
+                  <input ion-input formControlName="telephone" type="text"  class="form-control" placeholder="{{'MEMBRE_PAGE.TELEPHONE' | translate}}">
                 </div>
               </ion-col>
               <ion-col>

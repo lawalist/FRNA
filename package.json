@@ -1,6 +1,6 @@
 {
   "name": "FRNA2",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "author": {
     "name": "Mahaman Lawali Inoussa / FUMA Gaskiya Maradi - Niger",
     "email": "mahamanlawali09@gmail.com",
@@ -58,9 +58,9 @@
     "@angular/platform-browser": "^7.2.2",
     "@angular/platform-browser-dynamic": "^7.2.2",
     "@angular/router": "^7.2.2",
-    "@ionic-native/camera": "^5.16.0",
+    "@ionic-native/camera": "^5.18.0",
     "@ionic-native/core": "^5.16.0",
-    "@ionic-native/crop": "^5.16.0",
+    "@ionic-native/crop": "^5.18.0",
     "@ionic-native/file": "^5.16.0",
     "@ionic-native/geolocation": "^5.16.0",
     "@ionic-native/globalization": "^5.16.0",

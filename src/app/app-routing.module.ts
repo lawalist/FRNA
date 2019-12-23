@@ -37,13 +37,16 @@ const routes: Routes = [
   { path: 'configuration/union', loadChildren: './configuration/union/union.module#UnionPageModule' },
   { path: 'configuration/partenaire', loadChildren: './configuration/partenaire/partenaire.module#PartenairePageModule' },
   { path: 'configuration/champ', loadChildren: './configuration/champ/champ.module#ChampPageModule' },
+  { path: 'profession', loadChildren: './configuration/profession/profession.module#ProfessionPageModule' },
+  { path: 'ethnie', loadChildren: './configuration/ethnie/ethnie.module#EthniePageModule' },
+
   
   { path: 'administration/modules', loadChildren: './administration/modules/modules.module#ModulesPageModule' },
   { path: 'administration/utilisateurs', loadChildren: './administration/utilisateurs/utilisateurs.module#UtilisateursPageModule' },
   { path: 'administration/localites', loadChildren: './administration/localites/localites.module#LocalitesPageModule' },
   { path: 'administration/serveur', loadChildren: './administration/serveur/serveur.module#ServeurPageModule' },
   { path: 'administration/bd-locale', loadChildren: './administration/bd-locale/bd-locale.module#BDLocalePageModule' },
-
+   
 ];
 
 @NgModule({

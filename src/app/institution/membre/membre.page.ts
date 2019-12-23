@@ -5,7 +5,7 @@ import { Geolocation } from '@ionic-native/geolocation/ngx';
 //import { opValidator } from '../../validators/membre.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
-import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
+import { AlertController, Platform, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
 import { ActionComponent } from '../../component/action/action.component';
 import { RelationsMembreComponent } from '../../component/relations-membre/relations-membre.component';
 import { global } from '../../../app/globale/variable';
@@ -28,7 +28,13 @@ import { PartenairePage } from '../partenaire/partenaire.page';
 import { CorpImageComponent } from 'src/app/component/corp-image/corp-image.component';
 import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
 import JsBarcode from 'jsbarcode';
-import shortid from 'shortid'
+import shortid from 'shortid';
+import { Crop } from '@ionic-native/crop/ngx';
+import { Camera, CameraOptions } from '@ionic-native/camera/ngx';
+
+import { OpPage } from '../op/op.page';
+import { ActionAvatarComponent } from 'src/app/component/action-avatar/action-avatar.component';
+import { CameraComponent } from 'src/app/component/camera/camera.component';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -46,13 +52,18 @@ export class MembrePage implements OnInit {
   @Input() idMembre: string;
   @Input() idPartenaire: string;
   @Input() idUnion: string;
+  @Input() idOp: string;
 
   membreForm: FormGroup;
+  base64Image: any;
+  imageProfile: any;
   action: string = 'liste';
   cacheAction: string = 'liste';
   membres: any = [];
   membresData: any = [];
   allMembresData: any = [];
+  professionsData: any = [];
+  ethniesData: any = [];
   paysData: any = [];
   regionData: any = [];
   departementData: any = [];
@@ -60,13 +71,12 @@ export class MembrePage implements OnInit {
   localiteData: any = [];
   federationData: any = [];
   unionData: any = [];
+  opData: any = [];
   niveauChoix: any = [];
 
   /**A completer */
   sexes: any = [];
   etatCivils: any = [];
-  origineEthniques: any = [];  
-  professions: any = []; 
   educations: any = [];
 
   unMembre: any;
@@ -85,10 +95,12 @@ export class MembrePage implements OnInit {
   doModification: boolean = false;
   estModeCocherElemListe: boolean = false;
   rechargerListeMobile: boolean = false;
-  colonnes = ['nom', 'numero', 'niveau','nomFederation', 'numeroFederation', 'nomUnion', 'numeroUnion', 'dateCreation', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomLieuHabitation', 'codeLieuHabitation']
+  age: any;
+
+  colonnes = ['nom', 'prenom', 'matricule', 'surnom', 'dateNaissance', 'sexe', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomLieuHabitation', 'codeLieuHabitation', 'etatCivil', 'ethnie', 'niveau','nomFederation', 'numeroFederation', 'nomUnion', 'numeroUnion', 'nomOp', 'numeroOp', 'profession', 'education', 'telephone', 'email']
 
   messages_validation = {
-    'numero': [
+    'matricule': [
       { type: 'required', message: '' },
       { type: 'uniqueNumeroMembre', message: '' }
     ],
@@ -113,6 +125,9 @@ export class MembrePage implements OnInit {
     'idUnion': [
       { type: 'required', message: '' }
     ],
+    'idOp': [
+      { type: 'required', message: '' }
+    ],
     'idPays': [
       { type: 'required', message: '' }
     ],
@@ -132,7 +147,7 @@ export class MembrePage implements OnInit {
   }
 
   
-    constructor(private formBuilder: FormBuilder, private photoViewer: PhotoViewer, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+    constructor(private formBuilder: FormBuilder, private platform: Platform, private crop: Crop, private camera: Camera, private photoViewer: PhotoViewer, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
       this.translate.setDefaultLang(global.langue);
 
     }
@@ -171,17 +186,295 @@ export class MembrePage implements OnInit {
       avatar.src = './assets/img/avatar_2x.png';
       $('#crop-avatar').attr('data-src', './assets/img/avatar_2x.png')
       fileInput.value = '';
+      this.base64Image = null;
+    }
+
+    
+    async avatarAction(ev: any/*, numeroMembre*/) {
+      const popover = await this.popoverController.create({
+        component: ActionAvatarComponent,
+        event: ev,
+        translucent: true,
+        componentProps: {"exist": true},
+        animated: true,
+        showBackdrop: true,
+        mode: "ios"
+      });
+  
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'camera') {
+          if(global.mobile){
+            this.pickImage(this.camera.PictureSourceType.CAMERA);
+          }else{
+            this.getCamera();
+          } 
+        }else if(dataReturned !== null && dataReturned.data == 'gellerie') {
+          if(global.mobile){
+            this.pickImage(this.camera.PictureSourceType.PHOTOLIBRARY);
+          }else{
+            $("#fileInput").ready(() => {
+              $("#fileInput").click();
+            })
+          }
+        }else if(dataReturned !== null && dataReturned.data == 'supprimer') {
+          this.supprimerAvatar();
+        }
+  
+      });
+      return await popover.present();
+    }
+
+    async supprimerAvatar(){
+      const alert = await this.alertCtl.create({
+        header: this.translate.instant('GENERAL.ALERT_CONFIERMER'),
+        message: this.translate.instant('GENERAL.ALERT_MESSAGE_PROFILE'),
+        //cssClass: 'aler-confirm',
+        mode: 'ios',
+        buttons: [
+          {
+            text: this.translate.instant('GENERAL.ALERT_ANNULER'),
+            role: 'cancel',
+            cssClass: 'secondary',
+            handler: () => {
+              console.log('Confirmation annulée');
+            }
+          }, {
+            text: this.translate.instant('GENERAL.ALERT_OUI'),
+            role: 'destructive',
+            cssClass: 'alert-danger',
+            handler: () => {
+              this.clearFile();
+            }
+          }
+        ]
+      });
+  
+      await alert.present();
+    }
+
+    async getCamera(){
+      const modal = await this.modalController.create({
+        component: CameraComponent,
+        mode: 'ios',
+        backdropDismiss: false
+        //cssClass: 'costom-modal',
+      });
+
+      modal.onWillDismiss().then((res : any) => {
+        if(res.data && res.data != 'close'){
+          var avatar = document.getElementById('crop-avatar') as any;
+          avatar.src = res.data.imageBase64;
+          $('#crop-avatar').attr('data-src', res.data.imageBase64);
+          //this.base64Image = res.data.imageBase64;
+          this.getCrop(res.data.imageBase64)
+        }else{
+          this.clearFile();
+        }
+      });
+
+      return await modal.present();
+    }
+
+    photo(){
+      var width = 320;    // We will scale the photo width to this
+      var height = 0;     // This will be computed based on the input stream
+
+      var streaming = false;
+
+      var video = null;
+      var canvas = null;
+      //var photo = null;
+      var startbutton = null;
+      var self = this;
+      video = document.getElementById('video');
+      canvas = document.getElementById('canvas');
+      //photo = document.getElementById('photo');
+      startbutton = document.getElementById('startbutton');
+
+      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(function(stream) {
+          video.srcObject = stream;
+          video.play();
+      })
+      .catch(function(err) {
+          console.log("An error occurred: " + err);
+      });
+
+      video.addEventListener('canplay', function(ev){
+        if (!streaming) {
+          height = video.videoHeight / (video.videoWidth/width);
+        
+          video.setAttribute('width', width);
+          video.setAttribute('height', height);
+          canvas.setAttribute('width', width);
+          canvas.setAttribute('height', height);
+          streaming = true;
+        }
+      }, false);
+      
+      startbutton.addEventListener('click', function(ev){
+        var context = canvas.getContext('2d');
+        if (width && height) {
+          canvas.width = width;
+          canvas.height = height;
+          context.drawImage(video, 0, 0, width, height);
+        
+          var data = canvas.toDataURL(/*'image/png'*/);
+          var avatar = document.getElementById('crop-avatar') as any;
+          avatar.src = data;
+          $('#crop-avatar').attr('data-src', data)
+          self.getCrop(data)
+
+          //photo.setAttribute('src', data);
+          video.pause();
+          video.src = "";
+          video.srcObject.getTracks()[0].stop();
+          canvas.src = "";
+        } else {
+          var context = canvas.getContext('2d');
+          context.fillStyle = "#AAA";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+      
+          var data = canvas.toDataURL(/*'image/png'*/);
+
+          var avatar = document.getElementById('crop-avatar') as any;
+          avatar.src = data;
+          $('#crop-avatar').attr('data-src', data)
+          self.getCrop(data)
+
+          //photo.setAttribute('src', data);
+          video.pause();
+          video.src = "";
+          video.srcObject.getTracks()[0].stop();
+          canvas.src = "";
+        }
+        ev.preventDefault();
+      }, false);
+      /*var video = document.getElementById('video');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('autoplay', '');
+      video.setAttribute('muted', '');
+      video.style.width = '200px';
+      video.style.height = '200px';
+
+      var facingMode = "user"; // Can be 'user' or 'environment' to access back or front camera (NEAT!)
+      var constraints = {
+        audio: false,
+        video: {
+        facingMode: facingMode
+        }
+      };
+
+      navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+        video.srcObject = stream;
+      });*/
+    }
+
+
+    pickImage(sourceType) {
+      //sourceType =
+      //this.camera.PictureSourceType.PHOTOLIBRARY
+      //this.camera.PictureSourceType.CAMERA
+      const options: CameraOptions = {
+        quality: 100,
+        sourceType: sourceType,
+        destinationType: this.camera.DestinationType.FILE_URI,
+        encodingType: this.camera.EncodingType.JPEG,
+        mediaType: this.camera.MediaType.PICTURE
+      }
+
+      this.camera.getPicture(options).then((imageData) => {
+        // imageData is either a base64 encoded string or a file URI
+        // If it's base64 (DATA_URL):
+        // let base64Image = 'data:image/jpeg;base64,' + imageData;
+        this.cropMobleImage(imageData).then(
+          newImage => {
+            console.log('new image path is: ' + newImage);
+            this.showCroppedImage(newImage.split('?')[0]);
+          },
+          error => console.error('Erreur croppage image', error)
+        )
+      }, (err) => {
+        console.error('Erreur caméra', err)
+      });
+    }
+
+    showCroppedImage(ImagePath) {
+      //this.isLoading = true;
+      var copyPath = ImagePath;
+      var splitPath = copyPath.split('/');
+      var imageName = splitPath[splitPath.length - 1];
+      var filePath = ImagePath.split(imageName)[0];
+  
+      this.file.readAsDataURL(filePath, imageName).then(base64 => {
+        var avatar = document.getElementById('crop-avatar') as any;
+        avatar.src = base64;
+        $('#crop-avatar').attr('data-src', base64);
+        this.base64Image = base64;
+        //this.isLoading = false;
+      }, error => {
+        alert('Erreur affichage image' + error);
+        //this.isLoading = false;
+      });
+    }
+  
+
+    tackImage(){
+      const options: CameraOptions = {
+        quality: 100,
+        destinationType: this.camera.DestinationType.FILE_URI,
+        encodingType: this.camera.EncodingType.JPEG,
+        mediaType: this.camera.MediaType.PICTURE
+      }
+      
+      this.camera.getPicture(options).then((imageData) => {
+       let base64Image = 'data:image/jpeg;base64,' + imageData;
+      }, (err) => {
+       console.log(err);
+      });
     }
 
     viewPhoto(id){
-      if(!this.mobile){
+      //if(!this.mobile){
         $('#'+id).lightGallery({selector: 'this'});
-      }else{
+      /*}else{
+        //'data:image/jpeg;base64,'
+        var url;
         var avatar = document.getElementById(id) as HTMLImageElement;
-        this.photoViewer.show(avatar.src, this.translate.instant('GENERAL.MESSAGE_PARTAGER_IMAGE'), {share: true});
-      }
+        if(avatar.src.indexOf('blob:') !== -1){
+          url = avatar.src.substring(avatar.src.indexOf(':') +1, avatar.src.length)
+        }else{
+          url = avatar.src
+        }
+
+        this.photoViewer.show(url, this.translate.instant('GENERAL.MESSAGE_PARTAGER_IMAGE'), {share: true, copyToReference: this.platform.is('ios')});
+      }*/
     }
 
+    async selectImage() {
+      const actionSheet = await this.actionSheetCtl.create({
+        header: "Select Image source",
+        buttons: [{
+          text: 'Load from Library',
+          handler: () => {
+            this.pickImage(this.camera.PictureSourceType.PHOTOLIBRARY);
+          }
+        },
+        {
+          text: 'Use Camera',
+          handler: () => {
+            this.pickImage(this.camera.PictureSourceType.CAMERA);
+          }
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        }
+        ]
+      });
+      await actionSheet.present();
+    }
+  
 
     async getCrop(base64Image) {
       
@@ -197,16 +490,23 @@ export class MembrePage implements OnInit {
           var avatar = document.getElementById('crop-avatar') as any;
           avatar.src = res.data.cropURL;
           $('#crop-avatar').attr('data-src', res.data.cropURL);
+          this.base64Image = res.data.cropURL;
+          //console.log(this.base64Image)
           //avatar.attr ['data-src'] = res.data.cropURL;
         }else{
           this.clearFile();
         }
-      })
+      });
       return await modal.present();
     }
 
+    cropMobleImage(url){
+      return this.crop.crop(url, { quality: 100});
+    }
+
+    
     translateChoixNiveau(){
-      for(let i = 1; i <= 3; i++){
+      for(let i = 1; i <= 2; i++){
         this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+i).subscribe((res: string) => {
           this.niveauChoix.push({id: i, val: res});
         });
@@ -286,13 +586,18 @@ export class MembrePage implements OnInit {
   
     }
 
-    initSelect2(id, placeholder){
+    initSelect2(id, placeholder, search = false){
       var self = this;
+      var infinity = null;
+      if(search){
+        infinity = Infinity;
+      }
       $(function () {
         $('#'+id+' select').select2({
           theme: 'bootstrap4',
           width: 'style',
           placeholder: placeholder,
+          minimumResultsForSearch: infinity,
           allowClear: Boolean($('#'+id+' select').data('allow-clear')),
         });
 
@@ -300,7 +605,11 @@ export class MembrePage implements OnInit {
           //console.log('sele')
           //var data = e.params.data;
           self.membreForm.controls[id].setValue(e.params.data.id)
-          if(id == 'idPays'){
+          if(id == 'idProfession'){
+            self.setNomProfession(self.membreForm.value[id]);
+          }else if(id == 'idEthnie'){
+            self.setNomEthnie(self.membreForm.value[id]);
+          }else if(id == 'idPays'){
             self.regionData = [];
             self.departementData = [];
             self.communeData = [];
@@ -322,7 +631,7 @@ export class MembrePage implements OnInit {
             self.localiteData = [];
             self.setCodeAndNomCommune(self.membreForm.value[id]);
             self.setSelectRequredError(id, id)
-          }else if(id == 'idLieuHabitation'){
+          }else if(id == 'idLieuHabitation'){  
             self.setCodeAndNomLocalite(self.membreForm.value[id]);
             self.setSelectRequredError(id, id)
           }else if(id == 'idFederation'){
@@ -330,6 +639,9 @@ export class MembrePage implements OnInit {
             self.setSelectRequredError(id, id)
           }else if(id == 'idUnion'){
             self.setNumeroAndNomUnion(self.membreForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idOp'){
+            self.setNumeroAndNomOp(self.membreForm.value[id]);
             self.setSelectRequredError(id, id)
           }else if(id == 'niveau'){
             //self.setSelect2DefaultValue('numeroFederation', null);
@@ -340,6 +652,9 @@ export class MembrePage implements OnInit {
             self.membreForm.controls.idUnion.setValue(null);
             self.membreForm.controls.numeroUnion.setValue(null);
             self.membreForm.controls.nomUnion.setValue(null);
+            self.membreForm.controls.idOp.setValue(null);
+            self.membreForm.controls.numeroOp.setValue(null);
+            self.membreForm.controls.nomOp.setValue(null);
             if(self.membreForm.value[id] == 1 && !self.federationData.length){
               self.getFederation();
               //self.getUnion();
@@ -369,13 +684,21 @@ export class MembrePage implements OnInit {
 
         $('#'+id+' select').on("select2:unselect", function (e) { 
           self.membreForm.controls[id].setValue(null); 
-          if(id == 'idPays'){
+          if(id == 'idEthnie'){
+            self.membreForm.controls.idEthnie.setValue(null);
+            self.membreForm.controls.ethnie.setValue(null);
+          }else if(id == 'idProfession'){
+            self.membreForm.controls.idProfession.setValue(null);
+            self.membreForm.controls.profession.setValue(null);
+          }else if(id == 'idPays'){
             self.regionData = [];
             self.departementData = [];
             self.communeData = [];
             self.localiteData = [];
             self.setCodeAndNomPays(self.membreForm.value[id]);
             self.setSelectRequredError(id, id)
+            self.membreForm.controls.idEthnie.setValue(null);
+            self.membreForm.controls.ethnie.setValue(null);
           }else if(id == 'idRegion'){
             self.departementData = [];
             self.communeData = [];
@@ -402,6 +725,10 @@ export class MembrePage implements OnInit {
             self.membreForm.controls.idUnion.setValue(null);
             self.membreForm.controls.numeroUnion.setValue(null);
             self.membreForm.controls.nomUnion.setValue(null);
+
+            self.membreForm.controls.idOp.setValue(null);
+            self.membreForm.controls.numeroOp.setValue(null);
+            self.membreForm.controls.nomOp.setValue(null);
             //self.setSelect2DefaultValue('numeroUnion', null);
             self.unionData = [];
             self.setSelectRequredError(id, id);
@@ -409,6 +736,15 @@ export class MembrePage implements OnInit {
             self.membreForm.controls.idUnion.setValue(null);
             self.membreForm.controls.numeroUnion.setValue(null);
             self.membreForm.controls.nomUnion.setValue(null);
+
+            self.membreForm.controls.idOp.setValue(null);
+            self.membreForm.controls.numeroOp.setValue(null);
+            self.membreForm.controls.nomOp.setValue(null);
+            self.setSelectRequredError(id, id);
+          }else if(id == 'idOp'){
+            self.membreForm.controls.idOp.setValue(null);
+            self.membreForm.controls.numeroOp.setValue(null);
+            self.membreForm.controls.nomOp.setValue(null);
             self.setSelectRequredError(id, id);
           }else if(id == 'niveau'){
             self.setSelect2DefaultValue('idFederation', null);
@@ -422,6 +758,12 @@ export class MembrePage implements OnInit {
             self.membreForm.controls.numeroUnion.setValue(null);
             self.membreForm.controls.nomUnion.setValue(null);
             self.unionData = [];
+
+            self.setSelect2DefaultValue('idOp', null);
+            self.membreForm.controls.idOp.setValue(null);
+            self.membreForm.controls.numeroOp.setValue(null);
+            self.membreForm.controls.nomOp.setValue(null);
+            self.opData = [];
             self.setSelectRequredError(id, id);
           }else if(id == 'sexe'){
             self.setSelectRequredError(id, id);
@@ -458,7 +800,7 @@ export class MembrePage implements OnInit {
     initForm(){
       //this.membreForm = null;
       this.membreForm = this.formBuilder.group({
-        numero: [null, Validators.required],
+        matricule: [null, Validators.required],
         nom: [null, Validators.required],
         prenom: [null, Validators.required],
         surnom: [null],
@@ -484,7 +826,8 @@ export class MembrePage implements OnInit {
         idLieuHabitation: [null, Validators.required],
 
         etatCivil: [null, Validators.required],
-        origineEthnique: [null],
+        ethnie: [null],
+        idEthnie: [null],
 
         niveau: ['1', Validators.required],
         nomFederation: [null, Validators.required],
@@ -498,8 +841,9 @@ export class MembrePage implements OnInit {
         idOp: [null, Validators.required],
         
         profession: [null],
+        idProfession: [null],
         education: [null],
-        tel: [null],
+        telephone: [null],
         email: [null],
         adresse: [null],
       });
@@ -508,16 +852,17 @@ export class MembrePage implements OnInit {
       //console.log(uniqid.time().toString())
       
       do{
-        this.membreForm.controls.numero.setValue(shortid.generate());
-      }while(this.membreForm.controls.numero.value.indexOf('_') !== -1 || this.membreForm.controls.numero.value.indexOf('-') !== -1)
+        //exclure le _ et -
+        this.membreForm.controls.matricule.setValue(shortid.generate());
+      }while(this.membreForm.controls.matricule.value.indexOf('_') !== -1 || this.membreForm.controls.matricule.value.indexOf('-') !== -1)
 
 
       $('#barcode').ready(() => {
-        JsBarcode('#barcode', this.membreForm.controls.numero.value/*, {height: 40}*/);
+        JsBarcode('#barcode', this.membreForm.controls.matricule.value, {height: 50});
       });
 
       /*this.membreForm.valueChanges.subscribe(change => {
-        this.membreForm.get('numero').setValidators([opValidator.uniqueNumeroMembre(this.membresData, 'ajouter'), Validators.required]);
+        this.membreForm.get('matricule').setValidators([opValidator.uniqueNumeroMembre(this.membresData, 'ajouter'), Validators.required]);
       });
 
       this.membreForm.valueChanges.subscribe(change => {
@@ -549,6 +894,10 @@ export class MembrePage implements OnInit {
       let codeCommune;
       let nomCommune;
       let idLieuHabitation;
+      let idProfession;
+      let profession;
+      let idEthnie;
+      let ethnie;
       let codeLieuHabitation;
       let nomLieuHabitation;
       let age;
@@ -559,13 +908,13 @@ export class MembrePage implements OnInit {
         nomFederation = oDoc.partenaires[0].formData.nom;
       }
 
-      if(oDoc.unions[0]){
+      if(oDoc.unions && oDoc.unions[0]){
         idUnion = oDoc.unions[0].id;
         numeroUnion = oDoc.unions[0].formData.numero;
         nomUnion = oDoc.unions[0].formData.nom;
       }
 
-      if(oDoc.ops[0]){
+      if(oDoc.ops && oDoc.ops[0]){
         idOp = oDoc.ops[0].id;
         numeroOp = oDoc.ops[0].formData.numero;
         nomOp = oDoc.ops[0].formData.nom;
@@ -590,15 +939,26 @@ export class MembrePage implements OnInit {
       }
 
       if(oDoc.communes[0]){
-        idCommune = oDoc.communes[0].formData.id;
+        idCommune = oDoc.communes[0].id;
         codeCommune = oDoc.communes[0].formData.code;
         nomCommune = oDoc.communes[0].formData.nom;
+        
       }
 
       if(oDoc.localites[0]){
         idLieuHabitation = oDoc.localites[0].id;
         codeLieuHabitation = oDoc.localites[0].formData.code;
         nomLieuHabitation = oDoc.localites[0].formData.nom;
+      }
+
+      if(oDoc.professions && oDoc.professions[0]){
+        idProfession = oDoc.professions[0].id;
+        profession = oDoc.professions[0].formData.nom;
+      }
+
+      if(oDoc.ethnies && oDoc.ethnies[0]){
+        idEthnie = oDoc.ethnies[0].id;
+        ethnie = oDoc.ethnies[0].formData.nom;
       }
 
       if(membre.formData.dateNaissance && membre.formData.dateNaissance != ''){
@@ -610,7 +970,7 @@ export class MembrePage implements OnInit {
       //this.membreForm = null;
       let u = membre.formData
       this.membreForm = this.formBuilder.group({
-        numero: [u.numero, Validators.required],
+        matricule: [u.matricule, Validators.required],
         nom: [u.nom, Validators.required],
         prenom: [u.prenom, Validators.required],
         surnom: [u.surnom],
@@ -635,7 +995,8 @@ export class MembrePage implements OnInit {
         idLieuHabitation: [idLieuHabitation, Validators.required],
 
         etatCivil: [u.etatCivil, Validators.required],
-        origineEthnique: [u.origineEthnique],
+        ethnie: [ethnie],
+        idEthnie: [idEthnie],
         
         niveau: [u.niveau, Validators.required],
         nomFederation: [nomFederation],
@@ -648,9 +1009,10 @@ export class MembrePage implements OnInit {
         numeroOp: [numeroOp],
         idOp: [idOp],  
 
-        profession: [u.profession],
+        profession: [profession],
+        idProfession: [idProfession],
         education: [u.education],
-        tel: [u.tel],
+        telephone: [u.telephone],
         email: [u.email],
         adresse: [u.adresse],
         
@@ -658,8 +1020,18 @@ export class MembrePage implements OnInit {
       });
 
       this.validerNumero();
+      $('#barcode').ready(() => {
+        JsBarcode('#barcode', this.membreForm.controls.matricule.value, {height: 50});
+      });
+
+      if(this.imageProfile && this.imageProfile != ''){
+        $('#crop-avatar').ready(() => {
+          $('#crop-avatar').attr('src', this.imageProfile);
+          $('#crop-avatar').attr('data-src', this.imageProfile);
+        });
+      }
       /*this.membreForm.valueChanges.subscribe(change => {
-        this.membreForm.get('numero').setValidators([opValidator.uniqueNumeroMembre(this.membresData, 'ajouter'), Validators.required]);
+        this.membreForm.get('matricule').setValidators([opValidator.uniqueNumeroMembre(this.membresData, 'ajouter'), Validators.required]);
       });
 
       this.membreForm.valueChanges.subscribe(change => {
@@ -669,10 +1041,10 @@ export class MembrePage implements OnInit {
     }
 
     validerNumero(){
-      let numeroControl = this.membreForm.controls['numero'];
+      let numeroControl = this.membreForm.controls['matricule'];
       numeroControl.valueChanges.subscribe((value) => {
         this.servicePouchdb.findRelationalDocByTypeAndNumero('membre', value).then((res) => {
-          if(res && res.membres && res.membres[0] && (this.action != 'modifier' || (this.action == 'modifier' && value != this.unMembre.numero))){
+          if(res && res.membres && res.membres[0] && (this.action != 'modifier' || (this.action == 'modifier' && value != this.unMembre.matricule))){
             numeroControl.setErrors({uniqueNumeroMembre: true});
           }
         });
@@ -696,9 +1068,10 @@ export class MembrePage implements OnInit {
 */
       let idFederationControl = this.membreForm.controls['idFederation'];
       let idUnionControl = this.membreForm.controls['idUnion'];
+      let idOpControl = this.membreForm.controls['idOp'];
       let niveauControl = this.membreForm.controls['niveau'];
       niveauControl.valueChanges.subscribe((value) => {
-        if(value == 1 && ((!idFederationControl.value || idFederationControl.value == '') || (!idUnionControl.value || idUnionControl.value == ''))){
+        if(value == 1 && ((!idFederationControl.value || idFederationControl.value == '') || (!idUnionControl.value || idUnionControl.value == '') || (!idOpControl.value || idOpControl.value == ''))){
           idFederationControl.setValidators(Validators.required);
           this.membreForm.controls['nomFederation'].setValidators(Validators.required);
           this.membreForm.controls['numeroFederation'].setValidators(Validators.required);
@@ -706,15 +1079,11 @@ export class MembrePage implements OnInit {
           idUnionControl.setValidators(Validators.required);
           this.membreForm.controls['nomUnion'].setValidators(Validators.required);
           this.membreForm.controls['numeroUnion'].setValidators(Validators.required);
-        }else if(value == 2 && (!idUnionControl.value || idUnionControl.value == '')){
-          idFederationControl.clearValidators();
-          this.membreForm.controls['nomFederation'].clearValidators();
-          this.membreForm.controls['numeroFederation'].clearValidators();
-
-          idUnionControl.setValidators(Validators.required);
-          this.membreForm.controls['nomUnion'].setValidators(Validators.required);
-          this.membreForm.controls['numeroUnion'].setValidators(Validators.required);
-        } else {
+          
+          idOpControl.setValidators(Validators.required);
+          this.membreForm.controls['nomOp'].setValidators(Validators.required);
+          this.membreForm.controls['numeroOp'].setValidators(Validators.required);
+        }else {
           idFederationControl.clearValidators();
           this.membreForm.controls['nomFederation'].clearValidators();
           this.membreForm.controls['numeroFederation'].clearValidators();
@@ -722,7 +1091,10 @@ export class MembrePage implements OnInit {
           idUnionControl.clearValidators();
           this.membreForm.controls['nomUnion'].clearValidators();
           this.membreForm.controls['numeroUnion'].clearValidators();
-          //idFederationControl.reset(null);
+
+          idOpControl.clearValidators();
+          this.membreForm.controls['nomOp'].clearValidators();
+          this.membreForm.controls['numeroOp'].clearValidators();
         }
       });  
     }
@@ -753,32 +1125,46 @@ export class MembrePage implements OnInit {
     ajouter(){
       
       this.doModification = false;
-      if(this.idUnion && this.idUnion != ''){
+      this.base64Image = null;
+      if(this.idOp && this.idOp != ''){
         if(this.membreHTMLTable && this.membreHTMLTable.datatable && this.membreHTMLTable.datatable.row(0) && this.membreHTMLTable.datatable.row(0).data()){
           this.idPartenaire = this.membreHTMLTable.datatable.row(0).data().numeroFederation;
-          //this.getPays();
+          this.idUnion = this.membreHTMLTable.datatable.row(0).data().numeroUnion;
+        }else{
+          this.servicePouchdb.findRelationalDocByTypeAndID('op', this.idOp).then((res) => {
+            if(res && res.ops){
+              this.idPartenaire = res.ops[0].partenaire;
+              this.idUnion = res.ops[0].union;
+            }
+          })
+        }
+      } else if(this.idUnion && this.idUnion != ''){
+        if(this.membreHTMLTable && this.membreHTMLTable.datatable && this.membreHTMLTable.datatable.row(0) && this.membreHTMLTable.datatable.row(0).data()){
+          this.idPartenaire = this.membreHTMLTable.datatable.row(0).data().numeroFederation;
         }else{
           this.servicePouchdb.findRelationalDocByTypeAndID('union', this.idUnion).then((res) => {
             if(res && res.unions){
               this.idPartenaire = res.unions[0].partenaire;
-              //this.getPays();
             }
           })
         }
       }
       this.getPays();
+      this.getProfession();
+      //this.getEthnie();
       //this.getFederation();
       //this.getUnion();
       this.initForm();
-      this.initSelect2('sexe', this.translate.instant('MEMBRE_PAGE.SEXE'));
-      this.initSelect2('etatCivil', this.translate.instant('MEMBRE_PAGE.ETATCIVIL'));
-      this.initSelect2('origineEthnique', this.translate.instant('MEMBRE_PAGE.ORIGINEETHNIQUE'));
-      this.initSelect2('profession', this.translate.instant('MEMBRE_PAGE.PROFESSION'));
-      this.initSelect2('education', this.translate.instant('MEMBRE_PAGE.EDUCATION'));
+      this.initSelect2('sexe', this.translate.instant('MEMBRE_PAGE.SEXE'), true);
+      this.initSelect2('etatCivil', this.translate.instant('MEMBRE_PAGE.ETATCIVIL'), true);
+      this.initSelect2('idEthnie', this.translate.instant('MEMBRE_PAGE.ETHNIE'), true);
+      this.initSelect2('idProfession', this.translate.instant('MEMBRE_PAGE.PROFESSION'), true);
+      this.initSelect2('education', this.translate.instant('MEMBRE_PAGE.EDUCATION'), true);
 
-      this.initSelect2('niveau', this.translate.instant('MEMBRE_PAGE.NIVEAU'));
+      this.initSelect2('niveau', this.translate.instant('MEMBRE_PAGE.NIVEAU'), true);
       this.initSelect2('idFederation', this.translate.instant('UNION_PAGE.SELECTIONFEDERATION'));
       this.initSelect2('idUnion', this.translate.instant('MEMBRE_PAGE.SELECTIONUNION'));
+      this.initSelect2('idOp', this.translate.instant('MEMBRE_PAGE.SELECTIONOP'));
       //this.initSelect2('domaine', this.translate.instant('MEMBRE_PAGE.DOMAINE'));
       this.initSelect2('idPays', this.translate.instant('MEMBRE_PAGE.SELECTIONPAYS'));
       this.initSelect2('idRegion', this.translate.instant('MEMBRE_PAGE.SELECTIONREGION'));
@@ -793,6 +1179,54 @@ export class MembrePage implements OnInit {
     infos(u){
       if(!this.estModeCocherElemListe){
         this.unMembre = u;
+        if(this.unMembre.dateNaissance && this.unMembre.dateNaissance != ''){
+          let now: Date = new Date();
+          let date = new Date(this.unMembre.dateNaissance);
+          this.age = now.getFullYear() - date.getFullYear();
+        }else{
+          this.age = '';
+        }
+        
+        $('#barcode-infos').ready(() => {
+          JsBarcode('#barcode-infos', u.matricule, {height: 50});
+        });
+
+        //si on vient de modofoer le membre le membre et modifier la photo
+        if(this.imageProfile && this.imageProfile != ''){
+          var self = this;
+          $('#avatar-infos').ready(() => {
+            //$('#avatar-infos').attr('src', '');
+            //$('#avatar-infos').attr('data-src', '');
+            $('#avatar-infos').attr('src', self.imageProfile);
+            $('#avatar-infos').attr('data-src', self.imageProfile);
+          });
+        }else{
+          this.servicePouchdb.getRelationalDocAttachment('membre', u.id, 'avatar').then((res) => {
+            if(res && res != ''){
+              $('#avatar-infos').ready(() => {
+                //$('#avatar-infos').attr('src', '');
+                //$('#avatar-infos').attr('data-src', '');
+                $('#avatar-infos').attr('src', res);
+                $('#avatar-infos').attr('data-src', res);
+              });
+              this.imageProfile = res;
+            }else{
+              $('#avatar-infos').ready(() => {
+                $('#avatar-infos').attr('src', './assets/img/avatar_2x.png');
+                $('#avatar-infos').attr('data-src', './assets/img/avatar_2x.png');
+              });
+  
+              this.imageProfile = null;
+            }
+          }).catch((err) => {
+            $('#avatar-infos').ready(() => {
+              $('#avatar-infos').attr('src', './assets/img/avatar_2x.png');
+              $('#avatar-infos').attr('data-src', './assets/img/avatar_2x.png');
+            });
+            this.imageProfile = null;
+            console.log(err)
+          })
+        }
         this.action = 'infos';
       }
     }
@@ -808,12 +1242,18 @@ export class MembrePage implements OnInit {
       }
 
       this.doModification = true;
+      this.base64Image = null;
       this.servicePouchdb.findRelationalDocByID('membre', id).then((res) => {
         if(res && res.membres[0]){
           let oDoc = res.membres[0];
           this.getPays();
-          if(oDoc.pays)
+          this.getProfession();
+          //this.getEthnie();
+          if(oDoc.pays){
             this.getRegionParPays(oDoc.pays);
+            this.getEthnie(oDoc.pays);
+          }
+    
           if(oDoc.region)
             this.getDepartementParRegion(oDoc.region);
           if(oDoc.departement)
@@ -831,12 +1271,13 @@ export class MembrePage implements OnInit {
 
           this.initSelect2('sexe', this.translate.instant('MEMBRE_PAGE.SEXE'));
           this.initSelect2('etatCivil', this.translate.instant('MEMBRE_PAGE.ETATCIVIL'));
-          this.initSelect2('origineEthnique', this.translate.instant('MEMBRE_PAGE.ORIGINEETHNIQUE'));
-          this.initSelect2('profession', this.translate.instant('MEMBRE_PAGE.PROFESSION'));
+          this.initSelect2('idEthnie', this.translate.instant('MEMBRE_PAGE.ETHNIE'));
+          this.initSelect2('idProfession', this.translate.instant('MEMBRE_PAGE.PROFESSION'));
           this.initSelect2('education', this.translate.instant('MEMBRE_PAGE.EDUCATION'));
           this.initSelect2('niveau', this.translate.instant('MEMBRE_PAGE.NIVEAU'));
           this.initSelect2('idFederation', this.translate.instant('UNION_PAGE.SELECTIONFEDERATION'));
           this.initSelect2('idUnion', this.translate.instant('MEMBRE_PAGE.SELECTIONUNION'));
+          this.initSelect2('idOp', this.translate.instant('MEMBRE_PAGE.SELECTIONOP'));
           //this.initSelect2('domaine', this.translate.instant('MEMBRE_PAGE.DOMAINE'));
           this.initSelect2('idPays', this.translate.instant('MEMBRE_PAGE.SELECTIONPAYS'));
           this.initSelect2('idRegion', this.translate.instant('MEMBRE_PAGE.SELECTIONREGION'));
@@ -848,8 +1289,8 @@ export class MembrePage implements OnInit {
           this.setSelect2DefaultValue('etatCivil', oDoc.formData.etatCivil);
           this.setSelect2DefaultValue('sexe', oDoc.formData.sexe);
           this.setSelect2DefaultValue('education', oDoc.formData.education);
-          /*$('#numero input').ready(()=>{
-            $('#numero input').attr('disabled', true)
+          /*$('#matricule input').ready(()=>{
+            $('#matricule input').attr('disabled', true)
           });*/
 
 
@@ -1137,6 +1578,16 @@ export class MembrePage implements OnInit {
       const modal = await this.modalController.create({
         component: LocalitePage,
         componentProps: { idLocalite: idLocalite },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    async presentOp(idOp) {
+      const modal = await this.modalController.create({
+        component: OpPage,
+        componentProps: { idOp: idOp },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1847,8 +2298,23 @@ export class MembrePage implements OnInit {
     retour(){
       if(this.action === 'modifier'){
         this.action = "infos";
+
+        //créer code bar et charger image profile
+        $('#barcode-infos').ready(() => {
+          JsBarcode('#barcode-infos', this.unMembre.matricule, {height: 50});
+        });
+        
+
+        if(this.imageProfile && this.imageProfile != ''){
+          $('#avatar-infos').ready(() => {
+            $('#avatar-infos').attr('src', this.imageProfile);
+            $('#avatar-infos').attr('data-src', this.imageProfile);
+          });    
+        }
+
       }else{
         //this.action = 'liste';
+        this.imageProfile = null;
         this.action = this.cacheAction; 
         //recharger la liste
         if(this.rechargerListeMobile){
@@ -2066,12 +2532,15 @@ export class MembrePage implements OnInit {
           let membresData = [];
           let federationIndex = [];
           let unionIndex = [];
+          let opIndex = [];
+          let professionIndex = [];
+          let ethnieIndex = [];
           let paysIndex = [];
           let regionIndex = [];
           let departementIndex = [];
           let communeIndex = [];
           let localiteIndex = [];
-          let idFederation, idUnion, idPays, idRegion, idDepartement, idCommune, idLieuHabitation;
+          let idFederation, idUnion, idOp, idPays, idRegion, idDepartement, idCommune, idLieuHabitation, idEthnie, idProfession;
           for(let u of res.membres){
             //supprimer l'historique de la liste
             delete u.security['shared_history'];
@@ -2080,6 +2549,19 @@ export class MembrePage implements OnInit {
               u.formData.niveau = res;
             });
 
+            this.translate.get('MEMBRE_PAGE.SEXES.'+u.formData.sexe).subscribe((res2: string) => {
+              u.formData.sexe = res2;
+            });
+
+            this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+u.formData.etatCivil).subscribe((res2: string) => {
+              u.formData.etatCivil = res2;
+            });
+
+            if(u.formData.education && u.formData.education != ''){
+              this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+u.formData.education).subscribe((res2: string) => {
+                u.formData.education = res2;
+              });
+            }
             //charger la relation avec le partenaire si non niveaue
             if(u.partenaire && u.partenaire != ''){
               if(isDefined(federationIndex[u.partenaire])){
@@ -2127,17 +2609,39 @@ export class MembrePage implements OnInit {
               idUnion = null;
             }
 
+            if(u.op && u.op != ''){
+              if(isDefined(opIndex[u.op])){
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[opIndex[u.op]].formData.numero, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[opIndex[u.op]].formData.nom, 9);
+                idOp = res.ops[opIndex[u.op]].id;
+              }else{
+                for(let i=0; i < res.ops.length; i++){
+                  if(res.ops[i].id == u.op){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[i].formData.numero, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[i].formData.nom, 9);
+                    opIndex[u.op] = i;
+                    idOp = res.ops[i].id;
+                    break;
+                  }
+                }
+              }  
+            }else{
+              //collone vide
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', null, 8);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', null, 9);
+              idOp = null;
+            }
 
             //chargement des relation des localités
             if(isDefined(paysIndex[u.pays])){
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 8);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 9);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 10);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 11);
               idPays = res.pays[paysIndex[u.pays]].id;
             }else{
               for(let i=0; i < res.pays.length; i++){
                 if(res.pays[i].id == u.pays){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 9);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 10);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 11);
                   idPays = res.pays[i].id;
                   paysIndex[u.pays] = i;
                   break;
@@ -2146,14 +2650,14 @@ export class MembrePage implements OnInit {
             }
 
             if(isDefined(regionIndex[u.region])){
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 10);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 11);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 12);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 13);
               idRegion = res.regions[regionIndex[u.region]].id;
             }else{
               for(let i=0; i < res.regions.length; i++){
                 if(res.regions[i].id == u.region){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 10);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 11);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 12);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 13);
                   regionIndex[u.region] = i;
                   idRegion = res.regions[i].id;
                   break;
@@ -2162,14 +2666,14 @@ export class MembrePage implements OnInit {
             }
             
             if(isDefined(departementIndex[u.departement])){
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 12);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 13);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 14);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 15);
               idDepartement = res.departements[departementIndex[u.departement]].id;
             }else{
               for(let i=0; i < res.departements.length; i++){
                 if(res.departements[i].id == u.departement){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 12);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 13);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 14);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 15);
                   departementIndex[u.departement] = i;
                   idDepartement = res.departements[i].id;
                   break;
@@ -2179,39 +2683,78 @@ export class MembrePage implements OnInit {
             
 
             if(isDefined(communeIndex[u.commune])){
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 14);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 15);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 16);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 17);
               idCommune = res.communes[communeIndex[u.commune]].id;
             }else{
               for(let i=0; i < res.communes.length; i++){
                 if(res.communes[i].id == u.commune){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 14);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 15);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 16);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 17);
                   communeIndex[u.commune] = i;
                   idCommune = res.communes[i].id;
                   break;
                 }
-                }
+              }
             }
 
             if(isDefined(localiteIndex[u.localite])){
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 16);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 17);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 18);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 19);
               idLieuHabitation = res.localites[localiteIndex[u.localite]].id;
             }else{
               for(let i=0; i < res.localites.length; i++){
                 if(res.localites[i].id == u.localite){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 16);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 17);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 18);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 19);
                   localiteIndex[u.localite] = i;
                   idLieuHabitation = res.localites[i].id;
                   break;
                 }
               }
             }
-            
 
-            membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, ...u.formData, ...u.formioData, ...u.security});
+            if(u.ethnie && u.ethnie != ''){
+              if(isDefined(ethnieIndex[u.ethnie])){
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[ethnieIndex[u.ethnie]].formData.nom, 20);
+                idEthnie = res.ethnies[ethnieIndex[u.ethnie]].id;
+              }else{
+                for(let i=0; i < res.ethnies.length; i++){
+                  if(res.ethnies[i].id == u.ethnie){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[i].formData.nom, 20);
+                    ethnieIndex[u.ethnie] = i;
+                    idEthnie = res.ethnies[i].id;
+                    break;
+                  }
+                }
+              }  
+            }else{
+              //collone vide
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', null, 20);
+              idEthnie = null;
+            }
+            
+            if(u.profession && u.profession != ''){
+              if(isDefined(professionIndex[u.profession])){
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[professionIndex[u.profession]].formData.nom, 21);
+                idProfession = res.professions[professionIndex[u.profession]].id;
+              }else{
+                for(let i=0; i < res.professions.length; i++){
+                  if(res.professions[i].id == u.profession){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[i].formData.nom, 21);
+                    professionIndex[u.profession] = i;
+                    idProfession = res.professions[i].id;
+                    break;
+                  }
+                }
+              }  
+            }else{
+              //collone vide
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', null, 21);
+              idProfession = null;
+            }
+
+            membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
           }
 
           if(this.mobile){
@@ -2465,7 +3008,7 @@ export class MembrePage implements OnInit {
   
       /*popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.navCtrl.navigateForward('/localite/membres/membre/'+this.unMembre.numero)
+          this.navCtrl.navigateForward('/localite/membres/membre/'+this.unMembre.matricule)
         }else if(dataReturned !== null && dataReturned.data == 'membre') {
           
         }else if(dataReturned !== null && dataReturned.data == 'membre') {
@@ -2532,8 +3075,8 @@ export class MembrePage implements OnInit {
         //créer un nouveau membre
       
         let membre: any = {
-          //_id: 'fuma:membre:'+data.numero,
-          //id: formData.numero,
+          //_id: 'fuma:membre:'+data.matricule,
+          //id: formData.matricule,
           type: 'membre',
           pays: formData.idPays,
           region: formData.idRegion,
@@ -2543,6 +3086,8 @@ export class MembrePage implements OnInit {
           union: formData.idUnion,
           op: formData.idOp,
           partenaire: formData.idFederation, //relation avec la fédération
+          ethnie: formData.idEthnie,
+          profession: formData.idProfession,
           formData: formData,
           //pour le customisation
           formioData: formioData,
@@ -2596,14 +3141,51 @@ export class MembrePage implements OnInit {
         delete doc.formData.idFederation;
         delete doc.formData.numeroFederation;
         delete doc.formData.nomFederation;
+        delete doc.formData.idProfession;
+        delete doc.formData.profession;
+        delete doc.formData.idEthnie;
+        delete doc.formData.ethnie;
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let membreData = {id: res.id,...membre.formData, ...membre.formioData, ...membre.security};
+          //console.log(res.membres)
+          let membreData = {id: res.membres[0].id,...membre.formData, ...membre.formioData, ...membre.security};
+          if(this.base64Image && this.base64Image != ''){
+            var attachement;
+            var extension;
+            if(this.base64Image.indexOf(';base64') !== -1){
+              extension = this.base64Image.substring(this.base64Image.indexOf('/') + 1, this.base64Image.indexOf(';'))
+              attachement = this.base64Image.split(',')[1];
+            }else{
+              attachement = this.base64Image;
+            }
+
+            this.servicePouchdb.putRelationalDocAttachment(res.membres[0].type, res.membres[0].id, res.membres[0].rev, 'avatar', attachement, 'image/'+extension).then((res) => {
+              //membreData.rev = res.rev;
+              console.log('Attachement added');
+              this.base64Image = null;
+            }).catch((err) => {
+              alert(err);
+            });
+          }
           //this.membres = membre;
           this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+membreData.niveau).subscribe((res2: string) => {
             membreData.niveau = res2;
           });
+          
+          this.translate.get('MEMBRE_PAGE.SEXES.'+membreData.sexe).subscribe((res2: string) => {
+            membreData.sexe = res2;
+          });
+
+          this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+membreData.etatCivil).subscribe((res2: string) => {
+            membreData.etatCivil = res2;
+          });
+
+          if(membreData.education && membreData.education != ''){
+            this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+membreData.education).subscribe((res2: string) => {
+              membreData.education = res2;
+            });
+          }
           //membre._rev = res.membres[0].rev;
           //this.membres.push(membre);
           this.action = 'liste';
@@ -2650,6 +3232,8 @@ export class MembrePage implements OnInit {
           this.localiteData = [];
         }).catch((err) => {
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
+          this.base64Image = null;
+          this.action = 'liste';
         });
   
       }else{
@@ -2662,6 +3246,8 @@ export class MembrePage implements OnInit {
         this.unMembreDoc.union = formData.idUnion;
         this.unMembreDoc.op = formData.idOp;
         this.unMembreDoc.partenaire = formData.idFederation;
+        this.unMembreDoc.profession = formData.idProfession;
+        this.unMembreDoc.ethnie = formData.idEthnie;
         this.unMembreDoc.formData = formData;
         this.unMembreDoc.formioData = formioData;
 
@@ -2694,6 +3280,10 @@ export class MembrePage implements OnInit {
         delete doc.formData.idFederation;
         delete doc.formData.numeroFederation;
         delete doc.formData.nomFederation;
+        delete doc.formData.idEthnie;
+        delete doc.formData.ethnie;
+        delete doc.formData.idProfession;
+        delete doc.formData.profession;
 
         this.servicePouchdb.updateRelationalDoc(doc).then((res) => {
           //this.membres._rev = res.rev;
@@ -2704,8 +3294,58 @@ export class MembrePage implements OnInit {
             membreData.niveau = res2;
           });
 
-          this.action = 'infos';
-          this.infos(membreData);
+          this.translate.get('MEMBRE_PAGE.SEXES.'+membreData.sexe).subscribe((res2: string) => {
+            membreData.sexe = res2;
+          });
+
+          this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+membreData.etatCivil).subscribe((res2: string) => {
+            membreData.etatCivil = res2;
+          });
+
+          if(membreData.education && membreData.education != ''){
+            this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+membreData.education).subscribe((res2: string) => {
+              membreData.education = res2;
+            });
+          }
+
+          if(this.base64Image && this.base64Image != ''){
+            
+            var attachement;
+            var extension;
+            if(this.base64Image.indexOf(';base64') !== -1){
+              extension = this.base64Image.substring(this.base64Image.indexOf('/') + 1, this.base64Image.indexOf(';'))
+              attachement = this.base64Image.split(',')[1];
+            }else{
+              attachement = this.base64Image;
+            }
+            
+            this.servicePouchdb.putRelationalDocAttachment(res.membres[0].type, res.membres[0].id, res.membres[0].rev, 'avatar', attachement, 'image/'+extension).then((res) => {
+              //membreData.rev = res.rev;
+              console.log('Attachement updated');
+              this.action = 'infos';
+              this.imageProfile = this.clone(this.base64Image);
+              this.infos(membreData);
+              this.base64Image = null;
+            }).catch((err) => {
+              alert('erreur enregistrement photo: '+err);
+              this.action = 'infos';
+              this.infos(membreData);
+              this.base64Image = null;
+            });
+          }else if(this.imageProfile && this.imageProfile != ''){
+            this.servicePouchdb.removeRelationalDocAttachment(res.membres[0], 'avatar').then((res) => {
+              console.log('Attachement removed');
+              this.action = 'infos';
+              this.imageProfile = null;
+              this.infos(membreData);
+            }).catch((err) => {
+              alert('erreur suppresion photo: '+err);
+              this.action = 'infos';
+              this.infos(membreData);
+            })
+            
+          }
+
 
           if(this.mobile){
             //mode liste
@@ -2764,6 +3404,8 @@ export class MembrePage implements OnInit {
 
         }).catch((err) => {
           alert(this.translate.instant('GENERAL.ALERT_ERREUR_SAUVEGARDE')+': '+err.toString());
+          this.base64Image = null;
+          this.action = 'liste';
         });
       }
     }
@@ -2799,7 +3441,7 @@ export class MembrePage implements OnInit {
   
     doRefresh(event) {
       if(this.action != 'conflits'){
-        if((this.idUnion && this.idUnion != '') || (this.idPartenaire && this.idPartenaire != '')){
+        if((this.idOp && this.idOp != '') || (this.idUnion && this.idUnion != '') || (this.idPartenaire && this.idPartenaire != '')){
           var deleted: any;
           var archived: any;
           var shared: any;
@@ -2822,7 +3464,10 @@ export class MembrePage implements OnInit {
             shared = {$ne: null};
           }
           
-          if(this.idUnion){
+          if(this.idOp){
+            typePere = 'op';
+            idPere = this.idOp;
+          }else if(this.idUnion){
             typePere = 'union';
             idPere = this.idUnion;
           }else{
@@ -2831,17 +3476,18 @@ export class MembrePage implements OnInit {
           }
           this.servicePouchdb.findRelationalDocOfTypeByPere('membre', typePere, idPere, deleted, archived, shared).then((res) => {
             if(res && res.membres){
-              //this.membres = [...membres];
               let membresData = [];
-              //var datas = [];
               let federationIndex = [];
               let unionIndex = [];
+              let opIndex = [];
+              let professionIndex = [];
+              let ethnieIndex = [];
               let paysIndex = [];
               let regionIndex = [];
               let departementIndex = [];
               let communeIndex = [];
               let localiteIndex = [];
-              let idFederation, idUnion, idPays, idRegion, idDepartement, idCommune, idLieuHabitation;
+              let idFederation, idUnion, idOp, idPays, idRegion, idDepartement, idCommune, idLieuHabitation, idEthnie, idProfession;
               for(let u of res.membres){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
@@ -2850,6 +3496,19 @@ export class MembrePage implements OnInit {
                   u.formData.niveau = res;
                 });
 
+                this.translate.get('MEMBRE_PAGE.SEXES.'+u.formData.sexe).subscribe((res2: string) => {
+                  u.formData.sexe = res2;
+                });
+
+                this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+u.formData.etatCivil).subscribe((res2: string) => {
+                  u.formData.etatCivil = res2;
+                });
+
+                if(u.formData.education && u.formData.education != ''){
+                  this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+u.formData.education).subscribe((res2: string) => {
+                    u.formData.education = res2;
+                  });
+                }
                 //charger la relation avec le partenaire si non niveaue
                 if(u.partenaire && u.partenaire != ''){
                   if(isDefined(federationIndex[u.partenaire])){
@@ -2897,17 +3556,39 @@ export class MembrePage implements OnInit {
                   idUnion = null;
                 }
 
+                if(u.op && u.op != ''){
+                  if(isDefined(opIndex[u.op])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[opIndex[u.op]].formData.numero, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[opIndex[u.op]].formData.nom, 9);
+                    idOp = res.ops[opIndex[u.op]].id;
+                  }else{
+                    for(let i=0; i < res.ops.length; i++){
+                      if(res.ops[i].id == u.op){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[i].formData.numero, 8);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[i].formData.nom, 9);
+                        opIndex[u.op] = i;
+                        idOp = res.ops[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', null, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', null, 9);
+                  idOp = null;
+                }
 
                 //chargement des relation des localités
                 if(isDefined(paysIndex[u.pays])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 9);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 10);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 11);
                   idPays = res.pays[paysIndex[u.pays]].id;
                 }else{
                   for(let i=0; i < res.pays.length; i++){
                     if(res.pays[i].id == u.pays){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 8);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 9);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 10);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 11);
                       idPays = res.pays[i].id;
                       paysIndex[u.pays] = i;
                       break;
@@ -2916,14 +3597,14 @@ export class MembrePage implements OnInit {
                 }
 
                 if(isDefined(regionIndex[u.region])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 10);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 11);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 12);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 13);
                   idRegion = res.regions[regionIndex[u.region]].id;
                 }else{
                   for(let i=0; i < res.regions.length; i++){
                     if(res.regions[i].id == u.region){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 10);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 11);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 12);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 13);
                       regionIndex[u.region] = i;
                       idRegion = res.regions[i].id;
                       break;
@@ -2932,14 +3613,14 @@ export class MembrePage implements OnInit {
                 }
                 
                 if(isDefined(departementIndex[u.departement])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 12);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 13);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 14);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 15);
                   idDepartement = res.departements[departementIndex[u.departement]].id;
                 }else{
                   for(let i=0; i < res.departements.length; i++){
                     if(res.departements[i].id == u.departement){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 12);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 13);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 14);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 15);
                       departementIndex[u.departement] = i;
                       idDepartement = res.departements[i].id;
                       break;
@@ -2949,40 +3630,80 @@ export class MembrePage implements OnInit {
                 
 
                 if(isDefined(communeIndex[u.commune])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 14);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 15);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 16);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 17);
                   idCommune = res.communes[communeIndex[u.commune]].id;
                 }else{
                   for(let i=0; i < res.communes.length; i++){
                     if(res.communes[i].id == u.commune){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 14);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 15);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 16);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 17);
                       communeIndex[u.commune] = i;
                       idCommune = res.communes[i].id;
                       break;
                     }
-                    }
+                  }
                 }
 
                 if(isDefined(localiteIndex[u.localite])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 16);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 17);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 18);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 19);
                   idLieuHabitation = res.localites[localiteIndex[u.localite]].id;
                 }else{
                   for(let i=0; i < res.localites.length; i++){
                     if(res.localites[i].id == u.localite){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 16);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 17);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 18);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 19);
                       localiteIndex[u.localite] = i;
                       idLieuHabitation = res.localites[i].id;
                       break;
                     }
                   }
                 }
-                
 
-                membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, ...u.formData, ...u.formioData, ...u.security});
+                if(u.ethnie && u.ethnie != ''){
+                  if(isDefined(ethnieIndex[u.ethnie])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[ethnieIndex[u.ethnie]].formData.nom, 20);
+                    idEthnie = res.ethnies[ethnieIndex[u.ethnie]].id;
+                  }else{
+                    for(let i=0; i < res.ethnies.length; i++){
+                      if(res.ethnies[i].id == u.ethnie){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[i].formData.nom, 20);
+                        ethnieIndex[u.ethnie] = i;
+                        idEthnie = res.ethnies[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', null, 20);
+                  idEthnie = null;
+                }
+                
+                if(u.profession && u.profession != ''){
+                  if(isDefined(professionIndex[u.profession])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[professionIndex[u.profession]].formData.nom, 21);
+                    idProfession = res.professions[professionIndex[u.profession]].id;
+                  }else{
+                    for(let i=0; i < res.professions.length; i++){
+                      if(res.professions[i].id == u.profession){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[i].formData.nom, 21);
+                        professionIndex[u.profession] = i;
+                        idProfession = res.professions[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', null, 21);
+                  idProfession = null;
+                }
+
+                membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
               }
+
   
               //this.membresData = [...datas];
     
@@ -3055,15 +3776,17 @@ export class MembrePage implements OnInit {
           this.servicePouchdb.findRelationalDocByType('membre', deleted, archived, shared).then((res) => {
             if(res && res.membres){
               let membresData = [];
-                //var datas = [];
-              let unionIndex = [];
               let federationIndex = [];
+              let unionIndex = [];
+              let opIndex = [];
+              let professionIndex = [];
+              let ethnieIndex = [];
               let paysIndex = [];
               let regionIndex = [];
               let departementIndex = [];
               let communeIndex = [];
               let localiteIndex = [];
-              let idFederation, idUnion, idPays, idRegion, idDepartement, idCommune, idLieuHabitation;
+              let idFederation, idUnion, idOp, idPays, idRegion, idDepartement, idCommune, idLieuHabitation, idEthnie, idProfession;
               for(let u of res.membres){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
@@ -3072,6 +3795,19 @@ export class MembrePage implements OnInit {
                   u.formData.niveau = res;
                 });
 
+                this.translate.get('MEMBRE_PAGE.SEXES.'+u.formData.sexe).subscribe((res2: string) => {
+                  u.formData.sexe = res2;
+                });
+
+                this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+u.formData.etatCivil).subscribe((res2: string) => {
+                  u.formData.etatCivil = res2;
+                });
+
+                if(u.formData.education && u.formData.education != ''){
+                  this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+u.formData.education).subscribe((res2: string) => {
+                    u.formData.education = res2;
+                  });
+                }
                 //charger la relation avec le partenaire si non niveaue
                 if(u.partenaire && u.partenaire != ''){
                   if(isDefined(federationIndex[u.partenaire])){
@@ -3119,17 +3855,39 @@ export class MembrePage implements OnInit {
                   idUnion = null;
                 }
 
+                if(u.op && u.op != ''){
+                  if(isDefined(opIndex[u.op])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[opIndex[u.op]].formData.numero, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[opIndex[u.op]].formData.nom, 9);
+                    idOp = res.ops[opIndex[u.op]].id;
+                  }else{
+                    for(let i=0; i < res.ops.length; i++){
+                      if(res.ops[i].id == u.op){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[i].formData.numero, 8);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[i].formData.nom, 9);
+                        opIndex[u.op] = i;
+                        idOp = res.ops[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', null, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', null, 9);
+                  idOp = null;
+                }
 
                 //chargement des relation des localités
                 if(isDefined(paysIndex[u.pays])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 9);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 10);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 11);
                   idPays = res.pays[paysIndex[u.pays]].id;
                 }else{
                   for(let i=0; i < res.pays.length; i++){
                     if(res.pays[i].id == u.pays){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 8);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 9);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 10);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 11);
                       idPays = res.pays[i].id;
                       paysIndex[u.pays] = i;
                       break;
@@ -3138,14 +3896,14 @@ export class MembrePage implements OnInit {
                 }
 
                 if(isDefined(regionIndex[u.region])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 10);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 11);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 12);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 13);
                   idRegion = res.regions[regionIndex[u.region]].id;
                 }else{
                   for(let i=0; i < res.regions.length; i++){
                     if(res.regions[i].id == u.region){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 10);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 11);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 12);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 13);
                       regionIndex[u.region] = i;
                       idRegion = res.regions[i].id;
                       break;
@@ -3154,14 +3912,14 @@ export class MembrePage implements OnInit {
                 }
                 
                 if(isDefined(departementIndex[u.departement])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 12);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 13);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 14);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 15);
                   idDepartement = res.departements[departementIndex[u.departement]].id;
                 }else{
                   for(let i=0; i < res.departements.length; i++){
                     if(res.departements[i].id == u.departement){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 12);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 13);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 14);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 15);
                       departementIndex[u.departement] = i;
                       idDepartement = res.departements[i].id;
                       break;
@@ -3171,39 +3929,78 @@ export class MembrePage implements OnInit {
                 
 
                 if(isDefined(communeIndex[u.commune])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 14);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 15);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 16);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 17);
                   idCommune = res.communes[communeIndex[u.commune]].id;
                 }else{
                   for(let i=0; i < res.communes.length; i++){
                     if(res.communes[i].id == u.commune){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 14);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 15);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 16);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 17);
                       communeIndex[u.commune] = i;
                       idCommune = res.communes[i].id;
                       break;
                     }
-                    }
+                  }
                 }
 
                 if(isDefined(localiteIndex[u.localite])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 16);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 17);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 18);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 19);
                   idLieuHabitation = res.localites[localiteIndex[u.localite]].id;
                 }else{
                   for(let i=0; i < res.localites.length; i++){
                     if(res.localites[i].id == u.localite){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 16);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 17);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 18);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 19);
                       localiteIndex[u.localite] = i;
                       idLieuHabitation = res.localites[i].id;
                       break;
                     }
                   }
                 }
-                
 
-                membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, ...u.formData, ...u.formioData, ...u.security});
+                if(u.ethnie && u.ethnie != ''){
+                  if(isDefined(ethnieIndex[u.ethnie])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[ethnieIndex[u.ethnie]].formData.nom, 20);
+                    idEthnie = res.ethnies[ethnieIndex[u.ethnie]].id;
+                  }else{
+                    for(let i=0; i < res.ethnies.length; i++){
+                      if(res.ethnies[i].id == u.ethnie){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[i].formData.nom, 20);
+                        ethnieIndex[u.ethnie] = i;
+                        idEthnie = res.ethnies[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', null, 20);
+                  idEthnie = null;
+                }
+                
+                if(u.profession && u.profession != ''){
+                  if(isDefined(professionIndex[u.profession])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[professionIndex[u.profession]].formData.nom, 21);
+                    idProfession = res.professions[professionIndex[u.profession]].id;
+                  }else{
+                    for(let i=0; i < res.professions.length; i++){
+                      if(res.professions[i].id == u.profession){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[i].formData.nom, 21);
+                        professionIndex[u.profession] = i;
+                        idProfession = res.professions[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', null, 21);
+                  idProfession = null;
+                }
+
+                membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
               }
   
                 //si mobile
@@ -3274,11 +4071,26 @@ export class MembrePage implements OnInit {
       if(this.idMembre && this.idMembre != ''){
         this.servicePouchdb.findRelationalDocByID('membre', this.idMembre).then((res) => {
           if(res && res.membres[0]){
-            let f, u;
+            let f, u, op, et, pro;
             //this.unMembre = res && res.membres[0];
             this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+res.membres[0].formData.niveau).subscribe((res2: string) => {
               res.membres[0].formData.niveau = res2;
             });
+
+            this.translate.get('MEMBRE_PAGE.SEXES.'+res.membres[0].formData.sexe).subscribe((res2: string) => {
+              res.membres[0].formData.sexe = res2;
+            });
+
+            this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+res.membres[0].formData.etatCivil).subscribe((res2: string) => {
+              res.membres[0].formData.etatCivil = res2;
+            });
+
+            if(res.membres[0].formData.education && res.membres[0].formData.education != ''){
+              this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+res.membres[0].formData.education).subscribe((res2: string) => {
+                res.membres[0].formData.education = res2;
+              });
+            }
+            
 
             if(res.partenaires && res.partenaires[0]){
               res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'numeroFederation', res.partenaires[0].formData.numero, 4);
@@ -3300,18 +4112,44 @@ export class MembrePage implements OnInit {
               u = null;
             }
 
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomPays', res.pays[0].formData.nom, 8); 
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codePays', res.pays[0].formData.code, 9);   
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomRegion', res.regions[0].formData.nom, 10); 
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeRegion', res.regions[0].formData.code, 11);   
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomDepartement', res.departements[0].formData.nom, 12);
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeDepartement', res.departements[0].formData.code, 13);  
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomCommune', res.communes[0].formData.nom, 14);  
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeCommune', res.communes[0].formData.code, 15);   
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomLieuHabitation', res.localites[0].formData.nom, 16);  
-            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeLieuHabitation', res.localites[0].formData.code, 17);   
+            if(res.ops && res.ops[0]){
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'numeroOp', res.ops[0].formData.numero, 8);
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomOp', res.ops[0].formData.nom, 9); 
+              op = res.ops[0].id; 
+            }else{
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'numeroOp', null, 8);
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomOp', null, 9);
+              op = null;
+            }
+
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomPays', res.pays[0].formData.nom, 10); 
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codePays', res.pays[0].formData.code, 11);   
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomRegion', res.regions[0].formData.nom, 12); 
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeRegion', res.regions[0].formData.code, 13);   
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomDepartement', res.departements[0].formData.nom, 14);
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeDepartement', res.departements[0].formData.code, 15);  
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomCommune', res.communes[0].formData.nom, 16);  
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeCommune', res.communes[0].formData.code, 17);   
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'nomLieuHabitation', res.localites[0].formData.nom, 18);  
+            res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'codeLieuHabitation', res.localites[0].formData.code, 19);   
             
-            this.infos({id: res.partenaires[0].id, idFederation: f, idUnion: u, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idLieuHabitation: res.localites[0].id, ...res.membres[0].formData}); 
+            if(res.ethnies && res.ethnies[0]){
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'ethnie', res.ethnies[0].formData.nom, 20);
+              et = res.ethnies[0].id;
+            }else{
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'ethnie', null, 20);
+              et = null;
+            }
+
+            if(res.profession && res.professions[0]){
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'profession', res.professions[0].formData.nom, 21);
+              pro = res.profession[0].id;
+            }else{
+              res.membres[0].formData = this.addItemToObjectAtSpecificPosition(res.membres[0].formData, 'profession', null, 21);
+              pro = null;
+            }
+
+            this.infos({id: res.partenaires[0].id, idFederation: f, idUnion: u, idOp: op, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idLieuHabitation: res.localites[0].id, idEthnie: et, idProfession: pro,...res.membres[0].formData}); 
           }else{
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
@@ -3321,7 +4159,7 @@ export class MembrePage implements OnInit {
           console.log(err)
           this.close();
         });
-      }else if((this.idUnion && this.idUnion != '') || this.idPartenaire && this.idPartenaire != ''){
+      }else if((this.idOp && this.idOp != '') || (this.idUnion && this.idUnion != '') || this.idPartenaire && this.idPartenaire != ''){
         var deleted: any;
         var archived: any;
         var shared: any;
@@ -3344,26 +4182,32 @@ export class MembrePage implements OnInit {
           shared = {$ne: null};
         }
         
-        if(this.idUnion){
+        if(this.idOp){
+          typePere = 'op';
+          idPere = this.idOp;
+        }if(this.idUnion){
           typePere = 'union';
           idPere = this.idUnion;
         }else{
           typePere = 'partenaire';
           idPere = this.idPartenaire;
         }
+      
         this.servicePouchdb.findRelationalDocOfTypeByPere('membre', typePere, idPere, deleted, archived, shared).then((res) => {
+          //console.log(res)
           if(res && res.membres){
-            //this.membres = [...membres];
             let membresData = [];
-            //var datas = [];
             let federationIndex = [];
             let unionIndex = [];
+            let opIndex = [];
+            let professionIndex = [];
+            let ethnieIndex = [];
             let paysIndex = [];
             let regionIndex = [];
             let departementIndex = [];
             let communeIndex = [];
             let localiteIndex = [];
-            let idFederation, idUnion, idPays, idRegion, idDepartement, idCommune, idLieuHabitation;
+            let idFederation, idUnion, idOp, idPays, idRegion, idDepartement, idCommune, idLieuHabitation, idEthnie, idProfession;
             for(let u of res.membres){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
@@ -3372,6 +4216,19 @@ export class MembrePage implements OnInit {
                 u.formData.niveau = res;
               });
 
+              this.translate.get('MEMBRE_PAGE.SEXES.'+u.formData.sexe).subscribe((res2: string) => {
+                u.formData.sexe = res2;
+              });
+
+              this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+u.formData.etatCivil).subscribe((res2: string) => {
+                u.formData.etatCivil = res2;
+              });
+
+              if(u.formData.education && u.formData.education != ''){
+                this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+u.formData.education).subscribe((res2: string) => {
+                  u.formData.education = res2;
+                });
+              }
               //charger la relation avec le partenaire si non niveaue
               if(u.partenaire && u.partenaire != ''){
                 if(isDefined(federationIndex[u.partenaire])){
@@ -3419,17 +4276,39 @@ export class MembrePage implements OnInit {
                 idUnion = null;
               }
 
+              if(u.op && u.op != ''){
+                if(isDefined(opIndex[u.op])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[opIndex[u.op]].formData.numero, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[opIndex[u.op]].formData.nom, 9);
+                  idOp = res.ops[opIndex[u.op]].id;
+                }else{
+                  for(let i=0; i < res.ops.length; i++){
+                    if(res.ops[i].id == u.op){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[i].formData.numero, 8);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[i].formData.nom, 9);
+                      opIndex[u.op] = i;
+                      idOp = res.ops[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', null, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', null, 9);
+                idOp = null;
+              }
 
               //chargement des relation des localités
               if(isDefined(paysIndex[u.pays])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 9);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 10);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 11);
                 idPays = res.pays[paysIndex[u.pays]].id;
               }else{
                 for(let i=0; i < res.pays.length; i++){
                   if(res.pays[i].id == u.pays){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 9);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 10);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 11);
                     idPays = res.pays[i].id;
                     paysIndex[u.pays] = i;
                     break;
@@ -3438,14 +4317,14 @@ export class MembrePage implements OnInit {
               }
 
               if(isDefined(regionIndex[u.region])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 10);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 11);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 12);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 13);
                 idRegion = res.regions[regionIndex[u.region]].id;
               }else{
                 for(let i=0; i < res.regions.length; i++){
                   if(res.regions[i].id == u.region){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 10);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 11);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 12);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 13);
                     regionIndex[u.region] = i;
                     idRegion = res.regions[i].id;
                     break;
@@ -3454,14 +4333,14 @@ export class MembrePage implements OnInit {
               }
               
               if(isDefined(departementIndex[u.departement])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 12);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 13);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 14);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 15);
                 idDepartement = res.departements[departementIndex[u.departement]].id;
               }else{
                 for(let i=0; i < res.departements.length; i++){
                   if(res.departements[i].id == u.departement){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 12);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 13);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 14);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 15);
                     departementIndex[u.departement] = i;
                     idDepartement = res.departements[i].id;
                     break;
@@ -3471,39 +4350,78 @@ export class MembrePage implements OnInit {
               
 
               if(isDefined(communeIndex[u.commune])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 14);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 15);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 16);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 17);
                 idCommune = res.communes[communeIndex[u.commune]].id;
               }else{
                 for(let i=0; i < res.communes.length; i++){
                   if(res.communes[i].id == u.commune){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 14);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 15);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 16);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 17);
                     communeIndex[u.commune] = i;
                     idCommune = res.communes[i].id;
                     break;
                   }
-                  }
+                }
               }
 
               if(isDefined(localiteIndex[u.localite])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 16);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 17);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 18);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 19);
                 idLieuHabitation = res.localites[localiteIndex[u.localite]].id;
               }else{
                 for(let i=0; i < res.localites.length; i++){
                   if(res.localites[i].id == u.localite){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 16);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 17);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 18);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 19);
                     localiteIndex[u.localite] = i;
                     idLieuHabitation = res.localites[i].id;
                     break;
                   }
                 }
               }
-              
 
-              membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, ...u.formData, ...u.formioData, ...u.security});
+              if(u.ethnie && u.ethnie != ''){
+                if(isDefined(ethnieIndex[u.ethnie])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[ethnieIndex[u.ethnie]].formData.nom, 20);
+                  idEthnie = res.ethnies[ethnieIndex[u.ethnie]].id;
+                }else{
+                  for(let i=0; i < res.ethnies.length; i++){
+                    if(res.ethnies[i].id == u.ethnie){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[i].formData.nom, 20);
+                      ethnieIndex[u.ethnie] = i;
+                      idEthnie = res.ethnies[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', null, 20);
+                idEthnie = null;
+              }
+              
+              if(u.profession && u.profession != ''){
+                if(isDefined(professionIndex[u.profession])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[professionIndex[u.profession]].formData.nom, 21);
+                  idProfession = res.professions[professionIndex[u.profession]].id;
+                }else{
+                  for(let i=0; i < res.professions.length; i++){
+                    if(res.professions[i].id == u.profession){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[i].formData.nom, 21);
+                      professionIndex[u.profession] = i;
+                      idProfession = res.professions[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', null, 21);
+                idProfession = null;
+              }
+
+              membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
             }
 
             //this.membresData = [...datas]; 
@@ -3560,19 +4478,20 @@ export class MembrePage implements OnInit {
           shared = {$ne: null};
         }
         this.servicePouchdb.findRelationalDocByType('membre', deleted, archived, shared).then((res) => {
-          // console.log(res)
+          //console.log(res)
           if(res && res.membres){
-            //this.membres = [...membres];
             let membresData = [];
-            //var datas = [];
-            let unionIndex = [];
             let federationIndex = [];
+            let unionIndex = [];
+            let opIndex = [];
+            let professionIndex = [];
+            let ethnieIndex = [];
             let paysIndex = [];
             let regionIndex = [];
             let departementIndex = [];
             let communeIndex = [];
             let localiteIndex = [];
-            let idFederation, idUnion, idPays, idRegion, idDepartement, idCommune, idLieuHabitation;
+            let idFederation, idUnion, idOp, idPays, idRegion, idDepartement, idCommune, idLieuHabitation, idEthnie, idProfession;
             for(let u of res.membres){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
@@ -3581,6 +4500,20 @@ export class MembrePage implements OnInit {
                 u.formData.niveau = res;
               });
 
+              this.translate.get('MEMBRE_PAGE.SEXES.'+u.formData.sexe).subscribe((res2: string) => {
+                //console.log(res2)
+                u.formData.sexe = res2;
+              });
+
+              this.translate.get('MEMBRE_PAGE.ETATCIVILS.'+u.formData.etatCivil).subscribe((res2: string) => {
+                u.formData.etatCivil = res2;
+              });
+
+              if(u.formData.education && u.formData.education != ''){
+                this.translate.get('MEMBRE_PAGE.EDUCATIONS.'+u.formData.education).subscribe((res2: string) => {
+                  u.formData.education = res2;
+                });
+              }
               //charger la relation avec le partenaire si non niveaue
               if(u.partenaire && u.partenaire != ''){
                 if(isDefined(federationIndex[u.partenaire])){
@@ -3628,17 +4561,39 @@ export class MembrePage implements OnInit {
                 idUnion = null;
               }
 
+              if(u.op && u.op != ''){
+                if(isDefined(opIndex[u.op])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[opIndex[u.op]].formData.numero, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[opIndex[u.op]].formData.nom, 9);
+                  idOp = res.ops[opIndex[u.op]].id;
+                }else{
+                  for(let i=0; i < res.ops.length; i++){
+                    if(res.ops[i].id == u.op){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', res.ops[i].formData.numero, 8);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', res.ops[i].formData.nom, 9);
+                      opIndex[u.op] = i;
+                      idOp = res.ops[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroOp', null, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomOp', null, 9);
+                idOp = null;
+              }
 
               //chargement des relation des localités
               if(isDefined(paysIndex[u.pays])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 9);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[paysIndex[u.pays]].formData.nom, 10);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[paysIndex[u.pays]].formData.code, 11);
                 idPays = res.pays[paysIndex[u.pays]].id;
               }else{
                 for(let i=0; i < res.pays.length; i++){
                   if(res.pays[i].id == u.pays){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 9);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPays', res.pays[i].formData.nom, 10);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codePays', res.pays[i].formData.code, 11);
                     idPays = res.pays[i].id;
                     paysIndex[u.pays] = i;
                     break;
@@ -3647,14 +4602,14 @@ export class MembrePage implements OnInit {
               }
 
               if(isDefined(regionIndex[u.region])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 10);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 11);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[regionIndex[u.region]].formData.nom, 12);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[regionIndex[u.region]].formData.code, 13);
                 idRegion = res.regions[regionIndex[u.region]].id;
               }else{
                 for(let i=0; i < res.regions.length; i++){
                   if(res.regions[i].id == u.region){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 10);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 11);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomRegion', res.regions[i].formData.nom, 12);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeRegion', res.regions[i].formData.code, 13);
                     regionIndex[u.region] = i;
                     idRegion = res.regions[i].id;
                     break;
@@ -3663,14 +4618,14 @@ export class MembrePage implements OnInit {
               }
               
               if(isDefined(departementIndex[u.departement])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 12);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 13);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[departementIndex[u.departement]].formData.nom, 14);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[departementIndex[u.departement]].formData.code, 15);
                 idDepartement = res.departements[departementIndex[u.departement]].id;
               }else{
                 for(let i=0; i < res.departements.length; i++){
                   if(res.departements[i].id == u.departement){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 12);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 13);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomDepartement', res.departements[i].formData.nom, 14);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeDepartement', res.departements[i].formData.code, 15);
                     departementIndex[u.departement] = i;
                     idDepartement = res.departements[i].id;
                     break;
@@ -3680,39 +4635,78 @@ export class MembrePage implements OnInit {
               
 
               if(isDefined(communeIndex[u.commune])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 14);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 15);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[communeIndex[u.commune]].formData.nom, 16);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[communeIndex[u.commune]].formData.code, 17);
                 idCommune = res.communes[communeIndex[u.commune]].id;
               }else{
                 for(let i=0; i < res.communes.length; i++){
                   if(res.communes[i].id == u.commune){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 14);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 15);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomCommune', res.communes[i].formData.nom, 16);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeCommune', res.communes[i].formData.code, 17);
                     communeIndex[u.commune] = i;
                     idCommune = res.communes[i].id;
                     break;
                   }
-                  }
+                }
               }
 
               if(isDefined(localiteIndex[u.localite])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 16);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 17);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[localiteIndex[u.localite]].formData.nom, 18);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[localiteIndex[u.localite]].formData.code, 19);
                 idLieuHabitation = res.localites[localiteIndex[u.localite]].id;
               }else{
                 for(let i=0; i < res.localites.length; i++){
                   if(res.localites[i].id == u.localite){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 16);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 17);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomLieuHabitation', res.localites[i].formData.nom, 18);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeLieuHabitation', res.localites[i].formData.code, 19);
                     localiteIndex[u.localite] = i;
                     idLieuHabitation = res.localites[i].id;
                     break;
                   }
                 }
               }
-              
 
-              membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, ...u.formData, ...u.formioData, ...u.security});
+              if(u.ethnie && u.ethnie != ''){
+                if(isDefined(ethnieIndex[u.ethnie])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[ethnieIndex[u.ethnie]].formData.nom, 20);
+                  idEthnie = res.ethnies[ethnieIndex[u.ethnie]].id;
+                }else{
+                  for(let i=0; i < res.ethnies.length; i++){
+                    if(res.ethnies[i].id == u.ethnie){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', res.ethnies[i].formData.nom, 20);
+                      ethnieIndex[u.ethnie] = i;
+                      idEthnie = res.ethnies[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'ethnie', null, 20);
+                idEthnie = null;
+              }
+              
+              if(u.profession && u.profession != ''){
+                if(isDefined(professionIndex[u.profession])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[professionIndex[u.profession]].formData.nom, 21);
+                  idProfession = res.professions[professionIndex[u.profession]].id;
+                }else{
+                  for(let i=0; i < res.professions.length; i++){
+                    if(res.professions[i].id == u.profession){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', res.professions[i].formData.nom, 21);
+                      professionIndex[u.profession] = i;
+                      idProfession = res.professions[i].id;
+                      break;
+                    }
+                  }
+                }  
+              }else{
+                //collone vide
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'profession', null, 21);
+                idProfession = null;
+              }
+
+              membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
             }
 
             //this.membresData = [...datas];
@@ -3751,7 +4745,75 @@ export class MembrePage implements OnInit {
       
     }
   
+    getProfession(){
+      this.professionsData = [];
+      this.servicePouchdb.findAllRelationalDocByType('profession').then((res) => {
+        if(res && res.professions){
+          //this.pays = [...pays];
+          this.professionsData = [];
+          //var datas = [];
+          for(let p of res.professions){
+            this.professionsData.push({id: p.id, ...p.formData});
+          }
+
+          this.professionsData.sort((a, b) => {
+            if (a.nom < b.nom) {
+              return -1;
+            }
+            if (a.nom > b.nom) {
+              return 1;
+            }
+            return 0;
+          });
+
+          if(this.doModification){
+            this.setSelect2DefaultValue('idProfession', this.unMembre.idProfession);
+          }
+        }
+      }).catch((e) => {
+        console.log('profession erreur: '+e);
+        this.professionsData = [];
+      });
+
+    }
     
+    getEthnie(idPays){
+      this.ethniesData = [];
+      this.servicePouchdb.findRelationalDocHasMany('ethnie', 'pays', idPays).then((res) => {
+        if(res && res.ethnies){
+          //this.pays = [...pays];
+          this.ethniesData = [];
+          //var datas = [];
+          for(let p of res.ethnies){
+            this.ethniesData.push({id: p.id, ...p.formData});
+          }
+
+          this.ethniesData.sort((a, b) => {
+            if (a.nom < b.nom) {
+              return -1;
+            }
+            if (a.nom > b.nom) {
+              return 1;
+            }
+            return 0;
+          });
+
+          if(this.doModification){
+            this.setSelect2DefaultValue('idEthnie', this.unMembre.idEthnie);
+          }
+        }else{
+          this.membreForm.controls.idEthnie.setValue(null);
+          this.membreForm.controls.ethnie.setValue(null);
+          this.ethniesData = [];
+        }
+      }).catch((e) => {
+        console.log('ethnie erreur: '+e);
+        this.ethniesData = [];
+        this.membreForm.controls.idEthnie.setValue(null);
+        this.membreForm.controls.ethnie.setValue(null);
+      });
+
+    }
   
     getPays(){
       this.paysData = [];
@@ -4030,6 +5092,100 @@ export class MembrePage implements OnInit {
       
     }
 
+    getOpParUnion(idUnion){
+      this.opData = [];
+      if(idUnion && idUnion != ''){
+        this.servicePouchdb.findRelationalDocHasMany('op', 'union', idUnion).then((res) => {
+          if(res && res.ops){
+            for(let u of res.ops){
+              if(!u.security.deleted){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              }
+            }
+  
+            this.opData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unMembre.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }else{
+        //get les ops indépendantes
+        this.servicePouchdb.findRelationalDocByTypeNiveauAndDeleted('op', '3', false).then((res) => {
+          if(res && res.ops){
+            //this.unions = [...unions];
+            this.opData = [];
+            //var datas = [];
+            for(let u of res.ops){
+              //if(f.data.formData.categorie == 'Fédération'){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              //}
+            }
+  
+            this.unionData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unMembre.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }
+      
+    }
+
+
+    setNomEthnie(idEthnie){
+      if(idEthnie && idEthnie != ''){
+        for(let e of this.ethniesData){
+          if(idEthnie == e.id){
+            this.membreForm.controls.ethnie.setValue(e.nom);
+            break;
+          }
+        }
+      }
+    }
+
+    setNomProfession(idProfession){
+      if(idProfession && idProfession != ''){
+        for(let p of this.professionsData){
+          if(idProfession == p.id){
+            this.membreForm.controls.profession.setValue(p.nom);
+            break;
+          }
+        }
+      }
+    }
+
+
     setCodeAndNomPays(idPays){
       if(idPays && idPays != ''){
         for(let p of this.paysData){
@@ -4057,6 +5213,7 @@ export class MembrePage implements OnInit {
             this.membreForm.controls.nomLieuHabitation.setValue(null);
 
             this.getRegionParPays(idPays)
+            this.getEthnie(idPays);
             break;
           }
         }
@@ -4153,6 +5310,10 @@ export class MembrePage implements OnInit {
             this.membreForm.controls.idUnion.setValue(null);
             this.membreForm.controls.numeroUnion.setValue(null);
             this.membreForm.controls.nomUnion.setValue(null);
+
+            this.membreForm.controls.idOp.setValue(null);
+            this.membreForm.controls.numeroOp.setValue(null);
+            this.membreForm.controls.nomOp.setValue(null);
             //console.log(numeroFederation)
             this.getUnionParFederation(idFederation)
             break;
@@ -4164,6 +5325,9 @@ export class MembrePage implements OnInit {
 
         this.membreForm.controls.numeroUnion.setValue(null);
         this.membreForm.controls.nomUnion.setValue(null);
+
+        this.membreForm.controls.numeroOp.setValue(null);
+        this.membreForm.controls.nomOp.setValue(null);
         this.getUnionParFederation(idFederation)
       }
     }
@@ -4174,12 +5338,38 @@ export class MembrePage implements OnInit {
           if(idUnion == u.id){
             this.membreForm.controls.numeroUnion.setValue(u.numero);
             this.membreForm.controls.nomUnion.setValue(u.nom);
+
+            this.membreForm.controls.idOp.setValue(null);
+            this.membreForm.controls.numeroOp.setValue(null);
+            this.membreForm.controls.nomOp.setValue(null);
+            //console.log(numeroFederation)
+            this.getOpParUnion(idUnion)
             break;
           }
         }
       }else{
         this.membreForm.controls.nomUnion.setValue(null);
         this.membreForm.controls.numeroUnion.setValue(null);
+
+        this.membreForm.controls.numeroOp.setValue(null);
+        this.membreForm.controls.nomOp.setValue(null);
+        this.getOpParUnion(idUnion)
+      }
+    }
+
+    setNumeroAndNomOp(idOp){
+      if(idOp && idOp != ''){
+        for(let o of this.opData){
+          if(idOp == o.id){
+            this.membreForm.controls.numeroOp.setValue(o.numero);
+            this.membreForm.controls.nomOp.setValue(o.nom);
+            break;
+          }
+        }
+      }else{
+        this.membreForm.controls.nomOp.setValue(null);
+        this.membreForm.controls.numeroOp.setValue(null);
+
       }
     }
   
@@ -4317,11 +5507,11 @@ export class MembrePage implements OnInit {
     translateMessagesValidation(){
       //numéro membre
       this.translate.get('MEMBRE_PAGE.MESSAGES_VALIDATION.NUMERO.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.numero[0].message = res;
+        this.messages_validation.matricule[0].message = res;
       });
       
       this.translate.get('MEMBRE_PAGE.MESSAGES_VALIDATION.NUMERO.UNIQUENUMERMEMBREARTENAIRE').subscribe((res: string) => {
-        this.messages_validation.numero[1].message = res;
+        this.messages_validation.matricule[1].message = res;
       });
   
       //nom membre
@@ -4357,6 +5547,11 @@ export class MembrePage implements OnInit {
       //numero union
        this.translate.get('MEMBRE_PAGE.MESSAGES_VALIDATION.NUMERO_UNION.REQUIRED').subscribe((res: string) => {
         this.messages_validation.idUnion[0].message = res;
+      });
+
+       //numero op
+       this.translate.get('MEMBRE_PAGE.MESSAGES_VALIDATION.NUMERO_OP.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idOp[0].message = res;
       });
 
 
@@ -4436,7 +5631,7 @@ export class MembrePage implements OnInit {
   }
 
   dataTableAddRechercheParColonne(){
-    if(this.membres && this.membresData && this.membresData.length > 0){
+    if(this.membreHTMLTable && this.membreHTMLTable.datatable){
       //var id = 'membre-datatable';
 
       var self = this;
@@ -4621,7 +5816,7 @@ export class MembrePage implements OnInit {
       //if(val && val.trim() != '' && val.trim().length > 1){
         ///let u = [...this.membresData]
         this.membresData = this.allMembresData.filter((item) => {
-          return item.numero.toLowerCase().indexOf(val) !== -1 || item.nom.toLowerCase().indexOf(val) !== -1 || item.niveau.toLowerCase().indexOf(val) !== -1 || !val;
+          return item.matricule.toLowerCase().indexOf(val) !== -1 || item.nom.toLowerCase().indexOf(val) !== -1 || item.niveau.toLowerCase().indexOf(val) !== -1 || !val;
         });
       //}
       

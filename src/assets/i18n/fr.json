@@ -18,6 +18,10 @@
         "SUR": "Sur",
         "sur": "sur",
         "VIDE": "Vide",
+        "CAMERA": "Caméra",
+        "GALLERIE": "Gallérie",
+        "PRENDREPHOTO": "Prendre un photo",
+        "CROPPHTOT": "Recadrer l'image",
         "GESTION_DES_CONFLITS": "Gestion des conflits",
         "LISTE_PRINCIPALE": "Liste principale",
         "AFFICHER": "Afficher",
@@ -68,14 +72,17 @@
         "DEPARTEMENTS": "Départements",
         "COMMUNES": "Communes",
         "LOCALITES":"Localités",
+        "LIEUHABITATION":"Lieu d'habitation",
         "FEDERATION": "Fédération",
         "UNION": "Union",
+        "OP": "Op",
         "INFORMATION": "Information",
         "DERNIERE_MODIFICATION": "Dernière modification...",
         "ALERT_EXPORTER": "Exporter les données!",
         "ALERT_EXPORTER_MESSAGE": "Veuillez choisir le format",
         "ALERT_CONFIERMER": "Confirmer!",
         "ALERT_MESSAGE": "Etes vous sûr de vouloir supprimer cet/ces enregistrement(s)?",
+        "ALERT_MESSAGE_PROFILE": "Etes vous sûr de vouloir supprimer la photo de profile?",
         "ALERT_MESSAGE_SUPPRESSION": "Etes vous sûr de vouloir supprimer cet/ces enregistrement(s)?",
         "ALERT_MESSAGE_SUPPRESSION_DEFINITIVE": "Etes vous sûr de vouloir supprimer cet/ces enregistrement(s) définitivement?",
         "ALERT_MESSAGE_ARCHIVER": "Etes vous sûr de vouloir archiver cet/ces enregistrement(s)?",
@@ -162,7 +169,9 @@
             "UNION": "Union",
             "OP": "OP",
             "MEMBRE": "Membre",
-            "CHAMP": "Champ"
+            "CHAMP": "Champ",
+            "PROFESSION": "Profession",
+            "ETHNIE": "Ethnies"
         },
         "ADMINISTRATION": {
             "ADMINISTRATION": "Administration",
@@ -682,17 +691,16 @@
         "DATENAISSANCE": "Date de naissance",
         "AGE": "Age",
         "ETATCIVIL": "Etat civil",
-        "ORIGINEETHNIQUE": "Origine ethnique",
+        "ETHNIE": "Ethnie",
         "PROFESSION": "Profession",
         "EDUCATION": "Education",
-        "TEL": "Téléphone",
+        "TELEPHONE": "Téléphone",
         "EMAIL": "E-mail",
         "ADRESSE": "Adrèsse",
         "NIVEAU": "Niveau",
         "CHOIXNIVEAU": {
-            "1": "Membre d'une union membre d'une fédération",
-            "2": "Membre d'une union nom membre d'une fédération",
-            "3": "Non membre"
+            "1": "Membre",
+            "2": "Non membre"
         },
         "SEXES": {
             "1": "Homme",
@@ -735,6 +743,7 @@
         "NOMLIEUHABITATION": "Nom lieu d'habitation",
         "SELECTIONOP": "Sélectionner l'op",
         "SELECTIONUNION": "Sélectionner l'union",
+        "SELECTIONFEDERATION": "Sélectionner la fédération",
         "SELECTIONPAYS": "Sélectionner le pays",
         "SELECTIONREGION": "Sélectionner la région",
         "SELECTIONDEPARTEMENT": "Sélectionner le département",
@@ -793,6 +802,44 @@
             },
             "CODESIEGE": {
                 "REQUIRED": "Le siège est requis."
+            }
+        }
+    },
+    "PROFESSION_PAGE": {
+        "TITRE_LISTE": "Professions",
+        "TITRE_AJOUTER": "Ajouter une profession",
+        "TITRE_INFO": "Infos profession",
+        "TITRE_MODIFIER": "Modifier une profession",
+        "CODE": "Code",
+        "NOM": "Nom",
+        "DESCRIPTION": "Description",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une profession",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une profession",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            }
+        }
+    },
+    "ETHNIE_PAGE": {
+        "TITRE_LISTE": "Ethnies",
+        "TITRE_AJOUTER": "Ajouter une ethnie",
+        "TITRE_INFO": "Infos ethnie",
+        "TITRE_MODIFIER": "Modifier une ethnie",
+        "CODE": "Code",
+        "NOM": "Nom",
+        "DESCRIPTION": "Description",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "SELECTIONPAYS": "Sélectionner le pays",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une ethnie",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une ethnie",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
             }
         }
     }

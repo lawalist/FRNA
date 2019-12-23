@@ -183,13 +183,19 @@ export class OpPage implements OnInit {
   
     }
 
-    initSelect2(id, placeholder){
+    initSelect2(id, placeholder, search = false){
       var self = this;
+      var infinity = null;
+      if(search){
+        infinity = Infinity;
+      }
+
       $(function () {
         $('#'+id+' select').select2({
           theme: 'bootstrap4',
           width: 'style',
           placeholder: placeholder,
+          minimumResultsForSearch: infinity,
           allowClear: Boolean($('#'+id+' select').data('allow-clear')),
         });
 
@@ -573,7 +579,7 @@ export class OpPage implements OnInit {
       //this.getFederation();
       //this.getUnion();
       this.initForm();
-      this.initSelect2('niveau', this.translate.instant('OP_PAGE.NIVEAU'));
+      this.initSelect2('niveau', this.translate.instant('OP_PAGE.NIVEAU'), true);
       this.initSelect2('idFederation', this.translate.instant('UNION_PAGE.SELECTIONFEDERATION'));
       this.initSelect2('idUnion', this.translate.instant('OP_PAGE.SELECTIONUNION'));
       //this.initSelect2('domaine', this.translate.instant('OP_PAGE.DOMAINE'));
@@ -4200,7 +4206,7 @@ export class OpPage implements OnInit {
   }
 
   dataTableAddRechercheParColonne(){
-    if(this.ops && this.opsData && this.opsData.length > 0){
+    if(this.opHTMLTable && this.opHTMLTable.datatable){
       //var id = 'op-datatable';
 
       var self = this;

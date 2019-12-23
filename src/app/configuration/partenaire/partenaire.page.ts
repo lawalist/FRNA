@@ -42,7 +42,7 @@ export class PartenairePage implements OnInit {
 
   ngOnInit() {
     this.getFormDoc();
-    this.formRender(this.form)
+    //this.formRender(this.form)
   }
 
   ionViewDidEnter(){
@@ -53,7 +53,7 @@ export class PartenairePage implements OnInit {
 
   formBuilder(form){
     Formio.icons = 'fontawesome';
-    Formio.builder(document.getElementById('partenaire-builder'), form);
+    Formio.builder(document.getElementById('partenaire-builder'), form, {});
     
   }
 
@@ -76,6 +76,7 @@ export class PartenairePage implements OnInit {
       if(doc){
         this.formDoc = doc;
         this.formBuilder(this.form);
+        this.formRender(this.form)
       }else{
         this.initDoc();
       }
@@ -93,5 +94,6 @@ export class PartenairePage implements OnInit {
     //this.formDoc.;
     //this.formDoc.;
     this.formBuilder(this.formDoc.form);
+    this.formRender(this.form)
   }
 }

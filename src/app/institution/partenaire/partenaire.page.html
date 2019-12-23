@@ -109,15 +109,15 @@
         <!--div [class.barre-verticale]="selectedIndexes.length > 0"-->
         <!--/div-->
 
-        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getPartenainesByType('liste')">
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getPartenairesByType('liste')">
           <ion-icon name="ios-undo"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getPartenainesByType('archives')">
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getPartenairesByType('archives')">
           <ion-icon name="archive"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getPartenainesByType('corbeille')">
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getPartenairesByType('corbeille')">
           <ion-icon name="trash"></ion-icon>
         </ion-button>
 
@@ -323,7 +323,7 @@
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'PARTENAIRE_PAGE.DATECREATION' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.dateCreation}}</ion-col></ion-row>
         <div class="hr"></div>
-
+ 
         <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unPartenaire.idPays)">{{unPartenaire.nomPays}}</a> </ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'GENERAL.REGION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentRegion(unPartenaire.idRegion)">{{unPartenaire.nomRegion}}</a> </ion-col></ion-row>

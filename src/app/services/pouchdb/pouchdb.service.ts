@@ -45,6 +45,17 @@ export class PouchdbService {
    createDBSchema(){
     //une fédération peut avoir plusieurs union
     this.localDB.setSchema([
+      {
+        singular: 'profession',
+        plural: 'professions'
+      },
+      {
+        singular: 'ethnie',
+        plural: 'ethnies',
+        relations: {
+          'pays': {belongsTo: 'pays'},
+        }
+      },
       //relation pays
       {
         singular: 'pays',
@@ -151,7 +162,9 @@ export class PouchdbService {
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'},
           'union': {belongsTo: 'union'},
-          'op': {belongsTo: 'op'}
+          'op': {belongsTo: 'op'},
+          'profession': {belongsTo: 'profession'},
+          'ethnie': {belongsTo: 'ethnie'}
         }
       }
     ]);
@@ -159,6 +172,25 @@ export class PouchdbService {
 
   createRelationalDoc(doc){
     return this.localDB.rel.save(doc.type, doc);
+  }
+
+  putRelationalDocAttachment(docType, docId, docRev, fileName = 'avatar', attachment, contentType = 'text/plain'){
+    return this.localDB.rel.putAttachment(docType,  {id: docId, rev: docRev}, fileName, attachment, contentType);
+  }
+
+  getRelationalDocAttachment(docType, docId, fileName = 'avatar'){
+    return this.localDB.rel.getAttachment(docType, docId, fileName).then((attachment) => {
+      // convert the Blob into an object URL and show it in an image tag
+      if(attachment && attachment != ''){
+        return URL.createObjectURL(attachment);
+      }else{
+        return null;
+      }
+    });
+  }
+
+  removeRelationalDocAttachment(doc, fileName = 'avatar'){
+    return this.localDB.rel.removeAttachment(doc.type, doc, fileName);
   }
 
   updateRelationalDoc(doc){

@@ -201,6 +201,18 @@ export class AppComponent implements OnInit {
           url: '/configuration/champ',
           icon: 'document',
           color: ''
+        },
+        {
+          title: 'Profession',
+          url: '/profession',
+          icon: 'document',
+          color: ''
+        },
+        {
+          title: 'Ethnie',
+          url: '/ethnie',
+          icon: 'document',
+          color: ''
         }
       ]
     },
@@ -431,8 +443,15 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.CONFIGURATION.MEMBRE').subscribe((res: string) => {
       this.appPages[5].children[3].title = res;
     });
+    
     this.translate.get('MENU.CONFIGURATION.CHAMP').subscribe((res: string) => {
       this.appPages[5].children[4].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.PROFESSION').subscribe((res: string) => {
+      this.appPages[5].children[5].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.ETHNIE').subscribe((res: string) => {
+      this.appPages[5].children[6].title = res;
     });
 
     //Administration

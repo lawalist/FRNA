@@ -8,10 +8,12 @@ import { PopoverController, NavParams } from '@ionic/angular';
 })
 export class ListeActionComponent implements OnInit {
   retournedAction: any;
+  retournetLimite: any;
   monInstitution: any = false;
   localite: any;
   constructor(private popoverController: PopoverController, private navParams: NavParams) {
     this.retournedAction = this.navParams.data.action;
+    this.retournetLimite = this.navParams.data.limite;
     this.monInstitution = this.navParams.data.monInstitution;
     this.localite = this.navParams.data.localite;
    }

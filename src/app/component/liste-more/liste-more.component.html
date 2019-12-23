@@ -11,23 +11,23 @@
     <ion-label>{{'GENERAL.DESELECTIONNER_TOUS' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="options.action && options.action != 'liste'" title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" button (click)="choix('liste')">
+  <ion-item *ngIf="options.action && options.action != 'liste' && !options.limite" title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" button (click)="choix('liste')">
     <ion-label>{{'GENERAL.LISTE_PRINCIPALE' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="options.action && options.action != 'archives'" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix('archives')">
+  <ion-item *ngIf="options.action && options.action != 'archives' && !options.limite" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix('archives')">
     <ion-label>{{'GENERAL.ARCHIVES' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="options.action && options.action != 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix('corbeille')">
+  <ion-item *ngIf="options.action && options.action != 'corbeille' && !options.limite" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix('corbeille')">
     <ion-label>{{'GENERAL.CORBEILLE' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="options.action && options.action != 'partages'" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix('partages')">
+  <ion-item *ngIf="options.action && options.action != 'partages' && !options.limite" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix('partages')">
     <ion-label>{{'GENERAL.PARTAGES' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="options.action && options.action != 'conflits'" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix('conflits')">
+  <ion-item *ngIf="options.action && options.action != 'conflits' && !options.limite" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix('conflits')">
     <ion-label>{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-label>
   </ion-item>
 

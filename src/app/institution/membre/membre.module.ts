@@ -6,6 +6,8 @@ import { Routes, RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { RelationsMembreComponent } from '../../component/relations-membre/relations-membre.component';
+import { ActionAvatarComponent } from '../../component/action-avatar/action-avatar.component';
+import { CameraComponent } from '../../component/camera/camera.component';
 import { File } from '@ionic-native/file/ngx';
 import { HttpClientModule, HttpClient } from '@angular/common/http';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
@@ -48,8 +50,8 @@ const routes: Routes = [
     }),
     RouterModule.forChild(routes)
   ],
-  declarations: [MembrePage, RelationsMembreComponent, CorpImageComponent],
-  entryComponents: [RelationsMembreComponent, CorpImageComponent],
+  declarations: [MembrePage, RelationsMembreComponent, ActionAvatarComponent, CameraComponent, CorpImageComponent],
+  entryComponents: [RelationsMembreComponent, ActionAvatarComponent, CameraComponent, CorpImageComponent],
   providers: [File, Geolocation]
 })
 export class MembrePageModule {}

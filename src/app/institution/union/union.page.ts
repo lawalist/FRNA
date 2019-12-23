@@ -177,13 +177,19 @@ export class UnionPage implements OnInit {
   
     }
 
-    initSelect2(id, placeholder){
+    initSelect2(id, placeholder, search = false){
       var self = this;
+      var infinity = null;
+      if(search){
+        infinity = Infinity;
+      }
+
       $(function () {
         $('#'+id+' select').select2({
           theme: 'bootstrap4',
           width: 'style',
           placeholder: placeholder,
+          minimumResultsForSearch: infinity,
           allowClear: Boolean($('#'+id+' select').data('allow-clear')),
         });
 
@@ -473,7 +479,7 @@ export class UnionPage implements OnInit {
       this.getFederation();
       this.initForm()
       ;
-      this.initSelect2('niveau', this.translate.instant('UNION_PAGE.NIVEAU'));
+      this.initSelect2('niveau', this.translate.instant('UNION_PAGE.NIVEAU'), true);
       this.initSelect2('idFederation', this.translate.instant('UNION_PAGE.SELECTIONFEDERATION'));
       //this.initSelect2('domaine', this.translate.instant('UNION_PAGE.DOMAINE'));
       this.initSelect2('idPays', this.translate.instant('UNION_PAGE.SELECTIONPAYS'));
@@ -3647,7 +3653,7 @@ export class UnionPage implements OnInit {
   }
 
   dataTableAddRechercheParColonne(){
-    if(this.unions && this.unionsData && this.unionsData.length > 0){
+    if(this.unionHTMLTable && this.unionHTMLTable.datatable){
       //var id = 'union-datatable';
 
       var self = this;

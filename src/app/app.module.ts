@@ -36,6 +36,8 @@ import { UnionPageModule } from './institution/union/union.module';
 import { OpPageModule } from './institution/op/op.module';
 import { RelationsPartenaireComponent } from './component/relations-partenaire/relations-partenaire.component';
 import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
+import { Crop } from '@ionic-native/crop/ngx';
+import { Camera } from '@ionic-native/camera/ngx';
 
 
 //Activé angular en mode production
@@ -74,6 +76,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     StatusBar,
     SplashScreen,
     PhotoViewer,
+    Crop,
+    Camera,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]

@@ -466,11 +466,24 @@ export class TableauDeBordPage implements OnInit {
 
 
   onChange(event) {
-    /*this.jsonElement.nativeElement.innerHTML = '';
+    this.jsonElement.nativeElement.innerHTML = '';
     this.jsonElement.nativeElement.appendChild(document.createTextNode(JSON.stringify(this.form, null, 4)));
+
+    let formio = new Formio(this.form);
+    formio.loadForm((form) => {
+      console.log(form);
+      formio.saveSubmission({data: {
+        firstName: 'Joe',
+        lastName: 'Smith',
+        email: 'joe@example.com'
+      }}).then((submission) => {
+        console.log(submission);
+      });
+    });
 
     Formio.icons = 'fontawesome';
     Formio.createForm(document.getElementById('formio'), this.form, {language: "fr"}).then((form) => {
+      
       form.submission = {
         data: {
           firstName: 'Joe',
@@ -489,7 +502,7 @@ export class TableauDeBordPage implements OnInit {
       })
     })
     
-*/
+
   }
 
   load(){

@@ -226,13 +226,19 @@ export class PartenairePage implements OnInit {
   
     }
 
-    initSelect2(id, placeholder){
+    initSelect2(id, placeholder, search = false){
       var self = this;
+      var infinity = null;
+      if(search){
+        infinity = Infinity;
+      }
+
       $(function () {
         $('#'+id+' select').select2({
           theme: 'bootstrap4',
           width: 'style',
           placeholder: placeholder,
+          minimumResultsForSearch: infinity,
           allowClear: Boolean($('#'+id+' select').data('allow-clear')),
         });
 
@@ -448,9 +454,9 @@ export class PartenairePage implements OnInit {
       this.doModification = false;
       this.getPays();
       this.initForm();
-      this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
-      this.initSelect2('secteur', this.translate.instant('PARTENAIRE_PAGE.SECTEUR'));
-      this.initSelect2('domaine', this.translate.instant('PARTENAIRE_PAGE.DOMAINE'));
+      this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'), true);
+      this.initSelect2('secteur', this.translate.instant('PARTENAIRE_PAGE.SECTEUR'), true);
+      this.initSelect2('domaine', this.translate.instant('PARTENAIRE_PAGE.DOMAINE'), true);
       this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
       this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
       this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
@@ -973,16 +979,16 @@ export class PartenairePage implements OnInit {
           this.changeStyle();
         }  else  if(dataReturned !== null && dataReturned.data == 'liste') {
           this.estModeCocherElemListe = false;
-          this.getPartenainesByType('liste');
+          this.getPartenairesByType('liste');
         }  else  if(dataReturned !== null && dataReturned.data == 'archives') {
           this.estModeCocherElemListe = false;
-          this.getPartenainesByType('archives');
+          this.getPartenairesByType('archives');
         }  else  if(dataReturned !== null && dataReturned.data == 'corbeille') {
           this.estModeCocherElemListe = false;
-          this.getPartenainesByType('corbeille');
+          this.getPartenairesByType('corbeille');
         }  else  if(dataReturned !== null && dataReturned.data == 'partages') {
           this.estModeCocherElemListe = false;
-          this.getPartenainesByType('partages');
+          this.getPartenairesByType('partages');
         } else  if(dataReturned !== null && dataReturned.data == 'conflits') {
           this.estModeCocherElemListe = false;
           this.getPartenaireWithConflicts();
@@ -1605,15 +1611,15 @@ export class PartenairePage implements OnInit {
         } else if(dataReturned !== null && dataReturned.data == 'changeStyle') {
           this.changeStyle();
         } else if(dataReturned !== null && dataReturned.data == 'corbeille') {
-          this.getPartenainesByType('corbeille');
+          this.getPartenairesByType('corbeille');
         } else if(dataReturned !== null && dataReturned.data == 'archives') {
-          this.getPartenainesByType('archives');
+          this.getPartenairesByType('archives');
         } else if(dataReturned !== null && dataReturned.data == 'partages') {
-          this.getPartenainesByType('partages');
+          this.getPartenairesByType('partages');
         } else if(dataReturned !== null && dataReturned.data == 'conflits') {
           this.getPartenaireWithConflicts();
         } else if(dataReturned !== null && dataReturned.data == 'liste') {
-          this.getPartenainesByType('liste');
+          this.getPartenairesByType('liste');
         } 
 
   
@@ -1656,9 +1662,9 @@ export class PartenairePage implements OnInit {
   
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'listePrincipale') {
-          this.getPartenainesByType('liste');
+          this.getPartenairesByType('liste');
         }else if(dataReturned !== null && dataReturned.data == 'partages') {
-          this.getPartenainesByType('partages');
+          this.getPartenairesByType('partages');
         }else if(dataReturned !== null && dataReturned.data == 'conflits') {
           this.getPartenaireWithConflicts();
         }else if(dataReturned !== null && dataReturned.data == 'styleAffichage') {
@@ -1837,7 +1843,7 @@ export class PartenairePage implements OnInit {
       });
     }
 
-    getPartenainesByType(type){
+    getPartenairesByType(type){
       this.action = type;
       this.cacheAction = type;
       this.getPartenaire();
@@ -3390,7 +3396,7 @@ export class PartenairePage implements OnInit {
   }
 
   dataTableAddRechercheParColonne(){
-    if(this.partenaires && this.partenairesData && this.partenairesData.length > 0){
+    if(this.partenaireHTMLTable && this.partenaireHTMLTable.datatable){
       //var id = 'partenaire-datatable';
 
       var self = this;

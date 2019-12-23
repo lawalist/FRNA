@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { NavParams, ModalController } from '@ionic/angular';
 import Cropper from 'cropperjs';
 
-declare var $: any;
+//declare var $: any;
 
 @Component({
   selector: 'app-corp-image',
@@ -35,7 +35,7 @@ export class CorpImageComponent implements OnInit {
   
   async crop() {
     var cropURL;
-    var cropBlob;
+    //var cropBlob;
     var canvas;
     if (this.cropper) {
       canvas = this.cropper.getCroppedCanvas(/*{
@@ -43,15 +43,16 @@ export class CorpImageComponent implements OnInit {
         height: 160,
       }*/);
 
-      cropURL = canvas.toDataURL();
-      canvas.toBlob(function (blob) {
+      cropURL = canvas.toDataURL('image/jpeg');
+      /*canvas.toBlob(function (blob) {
         cropBlob = blob
-      });
+      });*/
     }
     this.cropper.destroy();
     this.cropper = null;
-    await this.modalCtl.dismiss({cropURL: cropURL, cropBlob: cropBlob});
+    await this.modalCtl.dismiss({cropURL: cropURL/*, cropBlob: cropBlob*/});
   }
 
 
 }
+ 
