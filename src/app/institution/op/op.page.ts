@@ -2,7 +2,6 @@ import { Component, OnInit, Input  } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { opValidator } from '../../validators/op.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
 import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
@@ -21,7 +20,7 @@ import { SelectionComponent } from 'src/app/component/selection/selection.compon
 import { DerniereModificationComponent } from 'src/app/component/derniere-modification/derniere-modification.component';
 import { ListeMoreComponent } from 'src/app/component/liste-more/liste-more.component';
 import { ListeActionComponent } from 'src/app/component/liste-action/liste-action.component';
-import { isObject } from 'util';
+import { isObject } from 'util'; 
 import { UnionPage } from '../union/union.page';
 import { isDefined } from '@angular/compiler/src/util';
 import { PartenairePage } from '../partenaire/partenaire.page';

@@ -38,25 +38,25 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Mon institution',
-          url: '/institution/mon-institution',
+          url: '/mon-institution',
           icon: 'document',
           color: ''
         },
         {
           title: 'Partenaires',
-          url: '/institution/partenaires',
+          url: '/partenaires',
           icon: 'document',
           color: ''
         },
         {
           title: 'Unions',
-          url: '/institution/unions',
+          url: '/unions',
           icon: 'document',
           color: ''
         },
         {
           title: 'OPs',
-          url: '/institution/ops',
+          url: '/ops',
           icon: 'document',
           color: ''
         },
@@ -75,37 +75,43 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Projets',
-          url: '/recherche/projets',
+          url: '/projets',
           icon: 'folder',
           color: ''
         },
         {
           title: 'Protocoles',
-          url: '/recherche/protocoles',
+          url: '/protocoles',
           icon: 'document',
           color: ''
         },
         {
           title: 'Traitements',
-          url: '/recherche/traitements',
+          url: '/traitements',
           icon: 'document',
           color: ''
         },
         {
           title: 'Essais',
-          url: '/recherche/essais',
+          url: '/essais',
           icon: 'document',
           color: ''
         },
         {
           title: 'Pluviométrie',
-          url: '/recherche/pluviometrie',
+          url: '/pluviometrie',
           icon: 'document',
           color: ''
         },
         {
           title: 'Typologie',
-          url: '/recherche/typologie',
+          url: '/typologie',
+          icon: 'document',
+          color: ''
+        },
+        {
+          title: 'Formulaire',
+          url: '/formulaire',
           icon: 'document',
           color: ''
         }
@@ -118,13 +124,13 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Restitution',
-          url: '/rapports/restitution',
+          url: '/restitution',
           icon: 'document',
           color: ''
         },
         {
           title: 'Statistiques',
-          url: '/rapports/statistiques',
+          url: '/statistiques',
           icon: 'document',
           color: ''
         }
@@ -137,31 +143,31 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Pays',
-          url: '/localite/pays',
+          url: '/pays',
           icon: 'document',
           color: ''
         },
         {
           title: 'Régions',
-          url: '/localite/regions',
+          url: '/regions',
           icon: 'document',
           color: ''
         },
         {
           title: 'Départments',
-          url: '/localite/departements',
+          url: '/departements',
           icon: 'document',
           color: ''
         },
         {
           title: 'Communes',
-          url: '/localite/communes',
+          url: '/communes',
           icon: 'document',
           color: ''
         },
         {
           title: 'Localites',
-          url: '/localite/localites',
+          url: '/localites',
           icon: 'document',
           color: ''
         }
@@ -174,31 +180,31 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Partenaire',
-          url: '/configuration/partenaire',
+          url: '/partenaire',
           icon: 'document',
           color: ''
         },
         {
           title: 'Union',
-          url: '/configuration/union',
+          url: '/union',
           icon: 'document',
           color: ''
         },
         {
           title: 'OP',
-          url: '/configuration/op',
+          url: '/op',
           icon: 'document',
           color: ''
         },
         {
           title: 'Membre',
-          url: '/configuration/membre',
+          url: '/membre',
           icon: 'document',
           color: ''
         },
         {
           title: 'Champ',
-          url: '/configuration/champ',
+          url: '/champ',
           icon: 'document',
           color: ''
         },
@@ -223,31 +229,31 @@ export class AppComponent implements OnInit {
       children: [
         {
           title: 'Modules',
-          url: '/administration/modules',
+          url: '/modules',
           icon: 'document',
           color: ''
         },
         {
           title: 'Utilisateurs',
-          url: '/administration/utilisateurs',
+          url: '/utilisateurs',
           icon: 'document',
           color: ''
         },
         {
           title: 'Localités',
-          url: '/administration/localites',
+          url: '/localites',
           icon: 'document',
           color: ''
         },
         {
           title: 'Serveur',
-          url: '/administration/serveur',
+          url: '/serveur',
           icon: 'document',
           color: ''
         },
         {
           title: 'Base de données locale',
-          url: '/administration/bd-locale',
+          url: '/bd-locale',
           icon: 'document',
           color: ''
         }
@@ -391,6 +397,9 @@ export class AppComponent implements OnInit {
     });
     this.translate.get('MENU.RECHERCHE.TYPOLOGIE').subscribe((res: string) => {
       this.appPages[2].children[5].title = res;
+    });
+    this.translate.get('MENU.RECHERCHE.FORMULAIRE').subscribe((res: string) => {
+      this.appPages[2].children[6].title = res;
     });
     
     //Rapport

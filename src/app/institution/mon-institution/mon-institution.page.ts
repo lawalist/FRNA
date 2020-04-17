@@ -2,7 +2,6 @@ import { Component, OnInit, Input  } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { NumeroPartenaireValidator } from '../../validators/partenaire.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
 import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';

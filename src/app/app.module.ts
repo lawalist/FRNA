@@ -1,5 +1,6 @@
 import { NgModule, enableProdMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+
 import { RouteReuseStrategy } from '@angular/router';
 
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
@@ -38,6 +39,8 @@ import { RelationsPartenaireComponent } from './component/relations-partenaire/r
 import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
 import { Crop } from '@ionic-native/crop/ngx';
 import { Camera } from '@ionic-native/camera/ngx';
+import { ProjetPageModule } from './recherche/projet/projet.module';
+import { FormulaireProtocolePageModule } from './recherche/formulaire-protocole/formulaire-protocole.module';
 
 
 //Activé angular en mode production
@@ -70,7 +73,9 @@ export function HttpLoaderFactory(http: HttpClient) {
     LocalitePageModule,
     PartenairePageModule,
     UnionPageModule,
-    OpPageModule
+    OpPageModule,
+    ProjetPageModule,
+    FormulaireProtocolePageModule
   ],
   providers: [
     StatusBar,

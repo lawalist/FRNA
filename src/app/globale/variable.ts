@@ -65,11 +65,11 @@ export var global = {
           "sSortDescending": ": activer pour trier la colonne par ordre d&eacute;croissant"
       },
       "select": {
-              "rows": {
-                  _: "%d lignes séléctionnées",
-                  0: "Aucune ligne séléctionnée",
-                  1: "1 ligne séléctionnée"
-              } 
+            "rows": {
+                _: "%d lignes séléctionnées",
+                0: "Aucune ligne séléctionnée",
+                1: "1 ligne séléctionnée"
+            } 
       },
       "buttons": {
         "copy": "Copier",
@@ -83,9 +83,28 @@ export var global = {
         }
       }
     },
+    formio_fr: {
+        'Submit': 'Terminer',
+        'submit': 'Terminer',
+        'cancel': 'Annuler',
+        'complete': 'Terminé avec succès',
+        'error' : "Veuillez corriger les erreurs suivantes avant de termier.",
+        'invalid_date' :"{{field}} is not a valid date.",
+        'invalid_email' : "{{field}} must be a valid email.",
+        'invalid_regex' : "{{field}} does not match the pattern {{regex}}.",
+        'mask' : "{{field}} does not match the mask.",
+        'max' : "{{field}} ne peut pas être supérieur à {{max}}.",
+        'maxLength' : "{{field}} doit être plus court que {{length}} charactères.",
+        'min' : "{{field}} ne peut pas être inférieur à {{min}}.",
+        'minLength' : "{{field}} doit être plus long que {{length}} charactères.",
+        'next' : "Suivant",
+        'pattern' : "{{field}} does not match the pattern {{pattern}}",
+        'previous' : "Précédent",
+        'required' : "{{field}} est requis"
+    },
     dataTable: true,
     peutExporterDonnees: true,
-    mobile: false,
+    mobile: true,
     selectedIndexes: [],
     estConnecte: false,
     remoteSaved: null,

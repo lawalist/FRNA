@@ -298,7 +298,7 @@
   <!--Mode tableau-->
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
-
+      
       <div *ngIf="!idPartenaire && !idUnion" class="table-responsive" id="membre"></div>
 
       <div *ngIf="idPartenaire || idUnion" class="table-responsive" id="membre-relation"></div>

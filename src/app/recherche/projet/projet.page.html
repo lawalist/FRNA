@@ -1,12 +1,540 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar> 
     <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+      <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
+      <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>Projets</ion-title>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action != 'infos' && action != 'modifier' && action != 'ajouter' && estModeCocherElemListe" slot="start">
+      <ion-button ion-button icon-only  (click)="changerModeCocherElemListe()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+
+      <ion-badge>{{selectedIndexes.length}}</ion-badge>
+    </ion-buttons>
+      
+    
+    <ion-title *ngIf="action == 'liste' && !estModeCocherElemListe">{{'PROJET_PAGE.TITRE_LISTE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'ajouter'">{{'PROJET_PAGE.TITRE_AJOUTER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'infos'">{{'PROJET_PAGE.TITRE_INFO' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'modifier'">{{'PROJET_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'corbeille' && !estModeCocherElemListe">{{'GENERAL.CORBEILLE' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'archives' && !estModeCocherElemListe">{{'GENERAL.ARCHIVES' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
+    <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
+
+    <ion-buttons *ngIf="mobile && action == 'infos'" slot="end">
+      <ion-button ion-button icon-only  (click)="openRelationProjet($event)">
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+      <ion-button ion-button icon-only (click)="listActionPopover($event)">
+        <ion-icon name="ios-build"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <!--Si liste mobile-->
+    <ion-buttons *ngIf="mobile && action != 'infos' && action != 'modifier' && action != 'ajouter'" slot="end">
+      <ion-button [class.color-blue]="projetsData.length == selectedIndexes.length" *ngIf="estModeCocherElemListe" (click)="cacherAction()">
+        <ion-icon name="done-all"></ion-icon>
+      </ion-button>
+
+      <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="openRelationProjetDepuisListe($event)">
+        <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+      </ion-button>
+                
+      <ion-button ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
+        <ion-icon name="more"></ion-icon>
+      </ion-button>
+
+      <ion-button ion-button icon-only [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
+        <ion-icon name="ios-build"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-buttons *ngIf="(idProjet || idPartenaire)" slot="end">
+      <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
+
+
+  
+  <!--Les bouton si mot mobile-->
+  <ion-toolbar class="toolbar-border-top" *ngIf="!mobile && !idProjet">
+    <!--Si tableau-->
+    <ng-container *ngIf="action != 'infos' && action != 'modifier' && action != 'ajouter'">
+      <ion-buttons style="padding-left: 5px !important" slot="start">
+        <ion-button class="button-no-padding" title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" [hidden]="allSelected || selectedIndexes.length > 0" (click)="dataTableSelectAll()">
+          <ion-icon name="square-outline"></ion-icon>
+        </ion-button>
+        
+        <ion-button class="button-no-padding" style="margin: 2px !important" title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" [hidden]="allSelected || selectedIndexes.length == 0" (click)="dataTableSelectNon()">
+          <i style="font-size: 17px" class="fa fa-minus-square"></i>
+        </ion-button>
+
+        <ion-button class="button-no-padding" title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" [hidden]="!allSelected" (click)="dataTableSelectNon()">
+          <ion-icon name="checkbox"></ion-icon>
+        </ion-button>
+
+        <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
+          <i style="font-size: 18px" class="fa fa-caret-down"></i>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
+          <ion-icon name="refresh"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-trop-petit-ecran" *ngIf="!recherchePlus" title="{{'GENERAL.AJOUTER_RECHERCHE_PAR_COLONNE' | translate}}" (click)="dataTableAddRechercheParColonne()">
+          <i style="font-size: 18px" class="fa fa-search-plus"></i>
+        </ion-button>
+
+        <ion-button class="hid-boutons-trop-petit-ecran" *ngIf="recherchePlus" title="{{'GENERAL.SUPPRIMER_RECHERCHE_PAR_COLONNE' | translate}}" (click)="dataTableRemoveRechercheParColonne()">
+            <i style="font-size: 18px" class="fa fa-search-minus"></i>
+        </ion-button>
+
+        <div class="hid-boutons-petit-ecran barre-verticale">
+          <ion-button *ngIf="!filterAjouter"  title="{{'GENERAL.AJOUTER_FILTRE' | translate}}" (click)="dataTableAddCustomFiltre()">
+            <!--ion-icon name="ios-funnel"></ion-icon-->
+            <i style="font-size: 18px" class="mdi mdi-filter"></i>
+          </ion-button>
+
+          <ion-button *ngIf="filterAjouter" title="{{'GENERAL.SUPPRIMER_FILTRE' | translate}}" slot="end" (click)="dataTableRemoveCustomFiltre()">
+            <!--ion-icon style="font-size: 18px" src='./../../../assets/svgs/remove-filter-2.svg'></ion-icon-->
+            <i style="font-size: 18px" class="mdi mdi-filter-remove"></i>
+          </ion-button>
+        </div>
+
+        <!--div [class.barre-verticale]="selectedIndexes.length > 0"-->
+        <!--/div-->
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getProjetsByType('liste')">
+          <ion-icon name="ios-undo"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getProjetsByType('archives')">
+          <ion-icon name="archive"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getProjetsByType('corbeille')">
+          <ion-icon name="trash"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableMorePopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS ' | translate}}" (click)="actionDatatablePopover($event)">
+          <ion-icon name="more"></ion-icon>
+        </ion-button>
+        
+      </ion-buttons>
+
+      <!--Action pour selection-->
+      <ion-buttons slot="end" style="padding-right: 5px !important">
+        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
+          <ion-icon name="eye"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
+          <ion-icon  name="create"></ion-icon>
+        </ion-button>
+
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="openRelationProjetDepuisTableau($event)">
+          <!--ion-icon name="redo"></ion-icon-->
+          <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
+        </ion-button>
+
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.ACTION' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="datatableConstructPopover($event)">
+          <ion-icon name="ios-build"></ion-icon>
+        </ion-button>
+
+        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.ACTION' | translate}}" color="primary" *ngIf="selectedIndexes.length > 0" slot="end" (click)="actionPopover($event)">
+          <ion-icon name="ios-build"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ng-container>
+    
+    <!--Si infos-->
+    <ng-container *ngIf="action == 'infos'">
+        <ion-buttons slot="start" style="padding-left: 5px !important">
+          <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+            <ion-icon name="arrow-back"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unProjet.archived && !unProjet.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
+            <ion-icon name="create"></ion-icon>
+          </ion-button>
+
+          <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" (click)="openRelationProjetDepuisListe($event)">
+            <!--ion-icon name="redo"></ion-icon-->
+            <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unProjet.archived && !unProjet.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
+            <ion-icon name="md-archive"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="unProjet.archived && !unProjet.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
+            <ion-icon name="ios-archive"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unProjet.archived && unProjet.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
+            <!--ion-icon name="trash"></ion-icon-->
+            <i style="font-size: 22px" class="mdi mdi-backup-restore"></i>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!unProjet.archived && !unProjet.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+
+          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!unProjet.archived && unProjet.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
+            <ion-icon name="trash"></ion-icon>
+          </ion-button>
+          
+          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+            <ion-icon name="more"></ion-icon>
+          </ion-button>
+
+        </ion-buttons>      
+ 
+        <!--Button vers la droite-->
+        <ion-buttons slot="end" style="padding-right: 5px !important">
+          {{projetHTMLTable.datatable.row('.selected').index() + 1}} {{'GENERAL.sur' | translate}} {{projetHTMLTable.datatable.page.info().recordsTotal}}
+
+          <ion-button [disabled]="!prev" title="{{'GENERAL.PRECEDENT' | translate}}" slot="end" (click)="doPrev()">
+            <ion-icon name="ios-arrow-back"></ion-icon>
+          </ion-button>
+
+          <ion-button [disabled]="!next" title="{{'GENERAL.SUIVANT' | translate}}" slot="end" (click)="doNext()">
+            <ion-icon name="ios-arrow-forward"></ion-icon>
+          </ion-button>
+        </ion-buttons>      
+      </ng-container>
+
+      <!--Si ajout ou modification--> 
+      <ng-container *ngIf="action == 'modifier' || action == 'ajouter'">
+        <ion-buttons slot="start" style="padding-left: 5px !important">
+          <ion-button title="{{'GENERAL.RETOUR' | translate}}" slot="end" (click)="retour()">
+            <ion-icon name="arrow-back"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+
+        <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+          <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!projetForm.valid" color="success">
+            <ion-icon name="save"></ion-icon>
+          </ion-button>
+          <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
+              <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-item>
+      </ng-container>
+  </ion-toolbar>
+
 </ion-header>
 
-<ion-content>
+<ion-content class="content">
+  
+  <ion-refresher *ngIf="mobile && (action == 'liste' || action == 'corbeille' || action == 'archives' || action == 'partages' || action == 'conflits')" slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="arrow-dropdown"
+      pullingText= "{{'GENERAL.ACTUALISER' | translate}}"
+      refreshingSpinner="circles"
+      refreshingText="{{'GENERAL.ACTUALISATION' | translate}}">
+    </ion-refresher-content>
+  </ion-refresher>
 
+  <!--Mode liste-->
+  <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="(mobile && styleAffichage == 'liste')">
+    <ion-card-header class="remove-card-header-padding">
+      <ion-item class="card-header-item">
+        <ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar>
+      </ion-item>
+    </ion-card-header>
+    <ion-card-content>
+      <!--ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar-->
+      <ng-container *ngIf="projetsData && projetsData.length > 0">
+        <ion-virtual-scroll [items]="projetsData">
+          <ion-item-sliding *virtualItem="let p; let i =index">
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
+              <ion-label>
+                <h2 text-capitalize><!--strong>{{'PROJET_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                <h3 text-capitalize>{{p.nomInstitution}}</h3>
+                <!--h2 text-capitalize>{{p.numero}}</h2-->
+                <p text-capitalize>{{p.nomSiege}}</p>
+              </ion-label>
+              <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
+            </ion-item>
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+              <ion-item-option (click)="modifier(p)">
+                <ion-icon slot="icon-only" name="create"></ion-icon>
+              </ion-item-option>
+            </ion-item-options> 
+    
+            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+              <ion-item-option color="danger" (click)="supprimer(p)">
+                <ion-icon slot="icon-only" name="trash"></ion-icon>
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>  
+        </ion-virtual-scroll>    
+      </ng-container>
+      
+      <!--Si la liste est vide-->
+      <ion-list *ngIf="!projetsData || !projetsData.length > 0" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!--Mode tableau-->
+  <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
+    <ion-card-content>
+
+      <div *ngIf="!idPartenaire" class="table-responsive" id="projet"></div>
+
+      <div *ngIf="idPartenaire" class="table-responsive" id="projet-partenaire"></div>
+
+      <!--Si le tableau est vide-->
+      <!--ion-list *ngIf="!projetHTMLTable || !projetHTMLTable.datatable" lines="none">        
+        <ion-item class="vide">
+          <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
+        </ion-item>
+      </ion-list-->
+    </ion-card-content>
+</ion-card>
+
+
+<!--Infos-->
+  <ion-card *ngIf="action == 'infos'">
+    <ion-card-content>
+
+      <div>
+        <ul class="nav nav-tabs" id="myProjetTab" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#infoProjetPanel" role="tab">{{'GENERAL.GENERAL' | translate}}</a>
+          <li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#projetDescription" role="tab">{{'PROJET_PAGE.DESCRIPTION' | translate}}</a>
+          <li>
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#projetSecurity" role="tab">{{'GENERAL.SECURITE' | translate}}</a>
+          <li>
+        </ul>
+        
+        <div class="tab-content mt-2" (dblclick)="modifier(unProjet)">
+          <div class="tab-pane fade show active" id="infoProjetPanel" role="tabpanel">
+            <h4>{{'GENERAL.INFOS_GENERAL' | translate}}</h4>
+            <div class="form-group mt-2">
+              <ion-row ><ion-col><h2><strong>{{'PROJET_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unProjet.nom}}</ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'PROJET_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unProjet.numero}}</ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row><ion-col><h2><strong>{{'GENERAL.INSTITUTION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentInstitution(unProjet.idInstitution)">{{unProjet.nomInstitution}}</a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'PROJET_PAGE.DATEDEBUT' | translate}}:</strong></h2></ion-col><ion-col>{{unProjet.dateDebut}}</ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'PROJET_PAGE.DATEFIN' | translate}}:</strong></h2></ion-col><ion-col>{{unProjet.dateFin}}</ion-col></ion-row>
+            </div>
+
+            <!--ng-container *ngIf="formulaireData && formulaireData.length > 0">
+              <button class="btn btn-secondary" (click)="contunier($event, formulaireData[0].formData.code)" id="adsContinue">Continue</button>
+            </ng-container-->
+            
+          </div>
+
+          <div class="tab-pane fade" id="projetDescription" role="tabpanel">
+            <h4>{{'PROJET_PAGE.DESCRIPTION' | translate}}</h4>
+
+            <div class="row form-group" style="margin-top: -8px;">
+              <ion-row *ngIf="unProjet.description && unProjet.description != ''">
+                <ion-col col-12>
+                  <ckeditor class="ok" [editor]="Editor" [config]="config" [disabled]="true" [data]="unProjet.description" (ready)="onReadyInfo($event)"></ckeditor>
+                </ion-col>
+              </ion-row>
+            </div>
+            
+            <!--button class="btn btn-secondary" id="adsContinue">Continue</button-->
+          </div>
+
+          <div class="tab-pane fade" id="projetSecurity" role="tabpanel">
+            <h4>{{'GENERAL.SECURITE' | translate}}</h4>
+            <div class="form-group mt-2">
+              <ng-container *ngIf="unProjetDoc && unProjetDoc.projets && unProjetDoc.projets[0] && unProjetDoc.projets[0].security">
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.created_by}}</ion-col></ion-row>
+                <div class="hr"></div>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.created_at | date: 'dd-MM-yyyy'}} {{unProjetDoc.projets[0].security.created_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                <div class="hr"></div>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.updated_by}}</ion-col></ion-row>
+                <div class="hr"></div>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.updated_at | date: 'dd-MM-yyyy'}} {{unProjetDoc.projets[0].security.updated_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                <div class="hr"></div>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.NOMBRE_DE_MISE_A_JOUR' | translate}}:</strong></h2></ion-col><ion-col>{{rev}}</ion-col></ion-row>
+                
+                <ng-container *ngIf="unProjetDoc.projets[0].security.archived_at && unProjetDoc.projets[0].security.archived_at != ''">
+                  <div class="hr"></div>
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.archived_by}}</ion-col></ion-row>
+                  <div class="hr"></div>
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.archived_at | date: 'dd-MM-yyyy'}} {{unProjetDoc.projets[0].security.archived_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                </ng-container>
+                
+                <ng-container *ngIf="unProjetDoc.projets[0].security.deleted_at && unProjetDoc.projets[0].security.deleted_at != ''">
+                  <div class="hr"></div>
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.deleted_by}}</ion-col></ion-row>
+                  <div class="hr"></div>
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unProjetDoc.projets[0].security.deleted_at | date: 'dd-MM-yyyy'}} {{unProjetDoc.projets[0].security.deleted_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>  
+                </ng-container>
+            
+              </ng-container>
+              
+            </div>
+
+            <!--button class="btn btn-secondary" id="adsContinue">Continue</button-->
+          </div>
+        </div>   
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <ion-card *ngIf="action == 'ajouter' || action == 'modifier'">
+    <ion-card-content>
+      <form [formGroup]="projetForm" (ngSubmit)="onSubmit()">
+        
+      
+        <ion-row>
+          <ion-col>
+            <div id="nom" class="form-group has-feedback">
+                <label class="control-label field-required">{{'PROJET_PAGE.NOM' | translate}}</label>
+                <input ion-input formControlName="nom" type="text" class="form-control" placeholder="{{'PROJET_PAGE.NOM' | translate}}" (keyup)="setInputRequredError('nom', 'nom')" required>
+              
+                <div class="formio-errors invalid-feedback">
+                  <ng-container *ngFor="let validation of messages_validation.nom">
+                    <p class="help-block" *ngIf="projetForm.get('nom').hasError(validation.type) && (projetForm.get('nom').dirty || projetForm.get('nom').touched)">
+                      {{ validation.message }}
+                    </p>
+                  </ng-container>
+                </div>
+              </div>
+            </ion-col>
+          <ion-col>
+            <div id="numero" class="form-group has-feedback">
+              <label class="control-label field-required">{{'PROJET_PAGE.NUMERO' | translate}}</label>
+              <input ion-input formControlName="numero" type="text"  class="form-control" placeholder="{{'PROJET_PAGE.NUMERO' | translate}}" (keyup)="setInputRequredError('numero', 'numero')">
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.numero">
+                  <p class="help-block" *ngIf="projetForm.get('numero').hasError(validation.type) && (projetForm.get('numero').dirty || projetForm.get('numero').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>  
+
+        <ion-row>
+          <ion-col>
+            <div id="dateDebut" class="form-group has-feedback">
+              <label class="control-label field-required">{{'PROJET_PAGE.DATEDEBUT' | translate}}</label>
+              <input ion-input formControlName="dateDebut" placeholder="{{'PROJET_PAGE.DATEDEBUT' | translate}}" value="projetForm.controls.dateDebut.value" data-provide="datepicker" class="form-control" type="text">
+            
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.dateDebut">
+                  <p class="help-block" *ngIf="projetForm.get('dateDebut').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+
+          <ion-col>
+            <div id="dateFin" class="form-group has-feedback">
+              <label class="control-label field-required">{{'PROJET_PAGE.DATEFIN' | translate}}</label>
+              <input ion-input formControlName="dateFin" value="projetForm.controls.dateFin.value" type="text"  class="form-control" placeholder="{{'PROJET_PAGE.DATEFIN' | translate}}" data-provide="datepicker">
+              
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.dateFin">
+                  <p class="help-block" *ngIf="projetForm.get('dateFin').hasError(validation.type) && (projetForm.get('dateFin').dirty || projetForm.get('dateFin').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+
+
+        <ion-row>
+          <!--Institution-->
+          <ion-col>
+            <div id="idInstitution" class="form-group has-feedback">
+              <label class="control-label field-required">{{'PROJET_PAGE.SELECTIONINSTITUTION' | translate}}</label>
+              <select class="select2 form-control" data-allow-clear="1">
+                <option></option>
+                <option *ngFor="let f of institutionData" [value]=f.id >{{f.nom}}</option>
+              </select>
+
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.idInstitution">
+                  <p class="help-block" *ngIf="projetForm.get('idInstitution').hasError(validation.type)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+            </div>
+          </ion-col>
+        </ion-row>
+        
+        <ion-row>
+          <ion-col>
+            <label>{{'PROJET_PAGE.DESCRIPTION' | translate}}</label>
+            <ckeditor [editor]="Editor" [config]="config" [disabled]="false" [data]="projetForm.controls.description.value" (ready)="onReady($event)" (change)="onChange($event)"></ckeditor>
+          </ion-col>
+        </ion-row>
+
+
+        <br>
+        <ion-row>
+          <ion-col>
+            <div class="form-group text-right m-b-0">
+              <ion-button type="submit" [disabled]="!projetForm.valid" color="success" block>{{'GENERAL.SAUVEGARDER' | translate}}</ion-button>
+              <ion-button color="light" class="m-l-5" (click)="annuler()" block>{{'GENERAL.ANNULER' | translate}}</ion-button>
+            </div>
+          </ion-col>
+        </ion-row> 
+      </form>
+
+    </ion-card-content>
+  </ion-card>
+
+  <br><br><br>
+  <ion-fab *ngIf="!mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab *ngIf="mobile && !idProjet && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="modifier(unProjet)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
+  </ion-fab>
+
+  
+  <ion-fab *ngIf="!mobile && !idProjet && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unProjet)" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="create"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

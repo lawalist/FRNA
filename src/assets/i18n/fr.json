@@ -3,6 +3,9 @@
         "ANNULER": "Annuler",
         "VALIDER": "Valider",
         "TERMINER": "Terminer",
+        "SECURITE": "Sécurité",
+        "GENERAL": "Général",
+        "INFOS_GENERAL": "Informations générales",
         "PLUS_DE_OPTIONS": "Plus d'options",
         "RECHERGER_ANNULER": "Recharger/Annuler",
         "OK": "Ok",
@@ -74,8 +77,11 @@
         "LOCALITES":"Localités",
         "LIEUHABITATION":"Lieu d'habitation",
         "FEDERATION": "Fédération",
+        "INSTITUTION": "Institution",
+        "PROJET": "Projet",
         "UNION": "Union",
         "OP": "Op",
+        "PROTOCOLE": "Protocole",
         "INFORMATION": "Information",
         "DERNIERE_MODIFICATION": "Dernière modification...",
         "ALERT_EXPORTER": "Exporter les données!",
@@ -149,7 +155,8 @@
             "TRAITEMENTS": "Traitements",
             "ESSAIS": "Essais",
             "PLUVIOMETRIE": "Pluviométrie",
-            "TYPOLOGIE": "Typologie"
+            "TYPOLOGIE": "Typologie",
+            "FORMULAIRE": "Formulaire"
         },
         "RAPPORT": {
             "RAPPORT": "Rapport",
@@ -840,6 +847,136 @@
             },
             "CODEPAYS": {
                 "REQUIRED": "Le pays est requis."
+            }
+        }
+    },
+    "PROJET_PAGE": {
+        "TITRE_LISTE": "Projets",
+        "TITRE_AJOUTER": "Ajouter un projet",
+        "TITRE_INFO": "Infos projet",
+        "TITRE_MODIFIER": "Modifier un projet",
+        "CODE": "Code",
+        "NUMERO": "Numéro",
+        "NOM": "Nom",
+        "DESCRIPTION": "Description",
+        "NUMERO_INSTITUTION": "Numéro institution",
+        "NOM_INSTITUTION": "Nom institution",
+        "DATEDEBUT": "Date début",
+        "DATEFIN": "Date fin",
+        "SELECTIONINSTITUTION": "Sélectionner l'institution",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un projet",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un projet",
+        "MESSAGES_VALIDATION": {
+            "NUMERO": {
+                "REQUIRED": "Le numéro est requis.",
+                "UNIQUENUMEROINSTITUTION": "Le numéro a été déjà pris."
+            },
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "NUMERO_INSTITUTION": {
+                "REQUIRED": "L'institution est requise."
+            },
+            "DATE_DEBUT": {
+                "REQUIRED": "La date de début est requise."
+            },
+            "DATE_FIN": {
+                "REQUIRED": "La date de fin est requise."
+            }
+        }
+    },
+    "PROTOCOLE_PAGE": {
+        "TITRE_LISTE": "Protocoles",
+        "TITRE_AJOUTER": "Ajouter un protocole",
+        "TITRE_INFO": "Infos protocole",
+        "TITRE_MODIFIER": "Modifier un protocole",
+        "CODE": "Code",
+        "NUMERO": "Numéro",
+        "NOM": "Nom",
+        "NUMERO_PROJET": "Numéro projet",
+        "NOM_PROJET": "Nom projet",
+        "NUMERO_INSTITUTION": "Numéro institution",
+        "NOM_INSTITUTION": "Nom institution",
+        "DESCRIPTION": "Description",
+        "ANNEE": "Année",
+        "DATEDEBUT": "Date début",
+        "DATEFIN": "Date fin",
+        "SELECTIONINSTITUTION": "Sélectionner l'institution",
+        "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
+        "SELECTIONPROJET": "Sélectionner le projet",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un protocole",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un protocole",
+        "MESSAGES_VALIDATION": {
+            "NUMERO": {
+                "REQUIRED": "Le numéro est requis.",
+                "UNIQUENUMEROINSTITUTION": "Le numéro a été déjà pris."
+            },
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "NUMERO_PROJET": {
+                "REQUIRED": "Le projet est requis."
+            },
+            "NUMERO_INSTITUTION": {
+                "REQUIRED": "L'institution est requise."
+            },
+            "DATE_DEBUT": {
+                "REQUIRED": "La date de début est requise."
+            },
+            "DATE_FIN": {
+                "REQUIRED": "La date de fin est requise."
+            }
+        }
+    },
+    "FORMULAIREPROTOCOLE_PAGE": {
+        "TITRE_LISTE": "Formulaires",
+        "TITRE_AJOUTER": "Ajouter un formulaire",
+        "TITRE_INFO": "Infos formulaire",
+        "TITRE_MODIFIER": "Modifier un formulaire",
+        "CODE": "Code formulaire",
+        "NOM": "Nom formulaire",
+        "TYPE": "Type",
+        "NUMERO_PROTOCOLE": "Numéro protocole",
+        "NOM_PROTOCOLE": "Nom protocole",
+        "DATECREATION": "Date création",
+        "SELECTIONPROTOCOLE": "Sélectionner le protocole",
+        "FORMULAIRE_AJOUT": "Formulaire",
+        "FORMULAIRE_MODIFICATION": "Formulaire",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "NUMERO_PROTOCOLE": {
+                "REQUIRED": "Le protocole est requis."
+            }
+        }
+    },
+    "ESSAI_PAGE": {
+        "TITRE_LISTE": "Essais",
+        "TITRE_AJOUTER": "Ajouter un essai",
+        "TITRE_INFO": "Infos essai",
+        "TITRE_MODIFIER": "Modifier un essai",
+        "NUMERO": "Numéro",
+        "NUMERO_PROJET": "Numéro projet",
+        "NOM_PROJET": "Nom projet",
+        "NUMERO_INSTITUTION": "Numéro institution",
+        "NOM_INSTITUTION": "Nom institution",
+        "ANNEE": "Année",
+        "SELECTIONINSTITUTION": "Sélectionner l'institution",
+        "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
+        "SELECTIONPROJET": "Sélectionner le projet",
+        "SELECTIONPROTOCOLE": "Sélectionner le protocole",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un essai",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un essai",
+        "MESSAGES_VALIDATION": {
+            "NUMERO_PROTOCOLE": {
+                "REQUIRED": "Le protocole est requis."
+            },
+            "NUMERO_PROJET": {
+                "REQUIRED": "Le projet est requis."
+            },
+            "NUMERO_INSTITUTION": {
+                "REQUIRED": "L'institution est requise."
             }
         }
     }

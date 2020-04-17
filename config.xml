@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.fumagaskiya.frna2" version="0.0.4" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.fumagaskiya.frna2" version="0.0.5" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>FRNA2</name>
     <description>Farmer Research Network Application par FUMA Gaskiya Maradi - Niger</description>
     <author email="mahamanlawali09@gmail.com" href="http://fumagaskiya.ne">Mahaman Lawali Inoussa / FUMA Gaskiya Maradi - Niger</author>

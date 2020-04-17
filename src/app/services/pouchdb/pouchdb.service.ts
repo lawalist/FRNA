@@ -46,6 +46,36 @@ export class PouchdbService {
     //une fédération peut avoir plusieurs union
     this.localDB.setSchema([
       {
+        singular: 'essai',
+        plural: 'essais',
+        relations: {
+          'protocole': {belongsTo: 'protocole'},
+          'membre': {belongsTo: 'membre'}
+        }
+      },
+      {
+        singular: 'projet',
+        plural: 'projets',
+        relations: {
+          'partenaire': {belongsTo: 'partenaire'}
+        }
+      },
+      {
+        singular: 'protocole',
+        plural: 'protocoles',
+        relations: {
+          'projet': {belongsTo: 'projet'},
+          //'partenaire': {belongsTo: 'partenaire'}
+        }
+      },
+      {
+        singular: 'formulaire-protocole',
+        plural: 'formulaire-protocoles',
+        relations: {
+          'protocole': {belongsTo: 'protocole'}
+        }
+      },
+      {
         singular: 'profession',
         plural: 'professions'
       },
@@ -83,8 +113,10 @@ export class PouchdbService {
         singular: 'departement',
         plural: 'departements',
         relations: {
-          'pays': {belongsTo: 'pays'},
+          //'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
+          
+          
           //communes: {hasMany: {type: 'commune', options: {queryInverse: 'departement'}}},
           //localites: {hasMany: {type: 'localite', options: {queryInverse: 'departement'}}}
         }
@@ -94,9 +126,11 @@ export class PouchdbService {
         singular: 'commune',
         plural: 'communes',
         relations: {
-          'pays': {belongsTo: 'pays'},
-          'region': {belongsTo: 'region'},
+          //'pays': {belongsTo: 'pays'},
+          //'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
+          
+          
           //localites: {hasMany: {type: 'localite', options: {/*async: true, */queryInverse: 'commune'}}}
         }
       },
@@ -105,10 +139,12 @@ export class PouchdbService {
         singular: 'localite',
         plural: 'localites',
         relations: {
-          'pays': {belongsTo: 'pays'},
-          'region': {belongsTo: 'region'},
-          'departement': {belongsTo: 'departement'},
+          //'pays': {belongsTo: 'pays'},
+          //'region': {belongsTo: 'region'},
+          //'departement': {belongsTo: 'departement'},
           'commune': {belongsTo: 'commune'},
+          
+          
           //partenaires: {hasMany: {type: 'partenaire', options: {/*async: true, */queryInverse: 'localite'}}}
         }
       },
@@ -117,12 +153,14 @@ export class PouchdbService {
         singular: 'partenaire',
         plural: 'partenaires',
         relations: {
-         'pays': {belongsTo: 'pays'},
-         'region': {belongsTo: 'region'},
-         'departement': {belongsTo: 'departement'},
-         'commune': {belongsTo: 'commune'},
+         //'pays': {belongsTo: 'pays'},
+         //'region': {belongsTo: 'region'},
+         //'departement': {belongsTo: 'departement'},
+         //'commune': {belongsTo: 'commune'},
          'localite': {belongsTo: 'localite'},
-          //unions: {hasMany: {type: 'union', options: {/*async: true, */queryInverse: 'partenaire'}}}
+          
+         
+         //unions: {hasMany: {type: 'union', options: {/*async: true, */queryInverse: 'partenaire'}}}
         }
       },
       //relation union
@@ -130,10 +168,10 @@ export class PouchdbService {
         singular: 'union',
         plural: 'unions',
         relations: {
-          'pays': {belongsTo: 'pays'},
-          'region': {belongsTo: 'region'},
-          'departement': {belongsTo: 'departement'},
-          'commune': {belongsTo: 'commune'},
+          //'pays': {belongsTo: 'pays'},
+          //'region': {belongsTo: 'region'},
+          //'departement': {belongsTo: 'departement'},
+          //'commune': {belongsTo: 'commune'},
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'}
         },
@@ -142,10 +180,10 @@ export class PouchdbService {
         singular: 'op',
         plural: 'ops',
         relations: {
-          'pays': {belongsTo: 'pays'},
+          /*'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
-          'commune': {belongsTo: 'commune'},
+          'commune': {belongsTo: 'commune'},*/
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'},
           'union': {belongsTo: 'union'}
@@ -155,16 +193,23 @@ export class PouchdbService {
         singular: 'membre',
         plural: 'membres',
         relations: {
-          'pays': {belongsTo: 'pays'},
+          /*'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
-          'commune': {belongsTo: 'commune'},
+          'commune': {belongsTo: 'commune'},*/
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'},
           'union': {belongsTo: 'union'},
           'op': {belongsTo: 'op'},
           'profession': {belongsTo: 'profession'},
           'ethnie': {belongsTo: 'ethnie'}
+        }
+      },
+      {
+        singular: 'champ',
+        plural: 'champs',
+        relations: {
+          'membre': {belongsTo: 'membre'}
         }
       }
     ]);

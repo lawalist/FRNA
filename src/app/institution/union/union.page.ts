@@ -2,7 +2,7 @@ import { Component, OnInit, Input  } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
-import { unionValidator } from '../../validators/union.validator';
+//import { unionValidator } from '../../validators/union.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
 import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
@@ -2923,6 +2923,7 @@ export class UnionPage implements OnInit {
           shared = {$ne: null};
         }
         this.servicePouchdb.findRelationalDocByType('union', deleted, archived, shared).then((res) => {
+          //console.log(res)
           if(res && res.unions){
             //this.unions = [...unions];
             //this.unionsData = [];

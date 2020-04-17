@@ -28,13 +28,19 @@ import { PartenairePage } from '../partenaire/partenaire.page';
 import { CorpImageComponent } from 'src/app/component/corp-image/corp-image.component';
 import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
 import JsBarcode from 'jsbarcode';
-import shortid from 'shortid';
+//import shortid from 'shortid';
 import { Crop } from '@ionic-native/crop/ngx';
 import { Camera, CameraOptions } from '@ionic-native/camera/ngx';
 
 import { OpPage } from '../op/op.page';
 import { ActionAvatarComponent } from 'src/app/component/action-avatar/action-avatar.component';
 import { CameraComponent } from 'src/app/component/camera/camera.component';
+
+import {customAlphabet} from 'nanoid';
+//Speed: 1000 IDs per hour/second
+//~919 years needed, in order to have a 1% probability of at least one collision.
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 12)
+
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -161,6 +167,7 @@ export class MembrePage implements OnInit {
       this.translateEtatCivil();
       this.translateEducation();
     }
+
 
     onFileChange(event) {
       if(event.target.files && event.target.files.length > 0) {
@@ -800,7 +807,7 @@ export class MembrePage implements OnInit {
     initForm(){
       //this.membreForm = null;
       this.membreForm = this.formBuilder.group({
-        matricule: [null, Validators.required],
+        matricule: [nanoid(), Validators.required],
         nom: [null, Validators.required],
         prenom: [null, Validators.required],
         surnom: [null],
@@ -851,11 +858,11 @@ export class MembrePage implements OnInit {
       this.validerNumero();
       //console.log(uniqid.time().toString())
       
-      do{
+      /*do{
         //exclure le _ et -
         this.membreForm.controls.matricule.setValue(shortid.generate());
       }while(this.membreForm.controls.matricule.value.indexOf('_') !== -1 || this.membreForm.controls.matricule.value.indexOf('-') !== -1)
-
+      */
 
       $('#barcode').ready(() => {
         JsBarcode('#barcode', this.membreForm.controls.matricule.value, {height: 50});

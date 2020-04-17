@@ -1022,7 +1022,8 @@ function parse_object(obj, path) {
         var d = {};
         for (var i in obj) {
 
-            var newD = parse_object(obj[i], path + i + "/");
+            /*var newD = parse_object(obj[i], path + i + "/");*/
+			var newD = parse_object(obj[i], path + i + ".");
             $.extend(d, newD);
         }
 
