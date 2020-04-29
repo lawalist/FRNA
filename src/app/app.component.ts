@@ -65,7 +65,12 @@ export class AppComponent implements OnInit {
           url: '/membres',
           icon: 'document',
           color: ''
-        }
+        },{
+          title: 'Champ',
+          url: '/champ',
+          icon: 'document',
+          color: ''
+        },
       ]
     },
     {
@@ -86,12 +91,6 @@ export class AppComponent implements OnInit {
           color: ''
         },
         {
-          title: 'Traitements',
-          url: '/traitements',
-          icon: 'document',
-          color: ''
-        },
-        {
           title: 'Essais',
           url: '/essais',
           icon: 'document',
@@ -106,12 +105,6 @@ export class AppComponent implements OnInit {
         {
           title: 'Typologie',
           url: '/typologie',
-          icon: 'document',
-          color: ''
-        },
-        {
-          title: 'Formulaire',
-          url: '/formulaire',
           icon: 'document',
           color: ''
         }
@@ -178,7 +171,7 @@ export class AppComponent implements OnInit {
       icon: 'construct',
       open: false,
       children: [
-        {
+        /*{
           title: 'Partenaire',
           url: '/partenaire',
           icon: 'document',
@@ -201,13 +194,7 @@ export class AppComponent implements OnInit {
           url: '/membre',
           icon: 'document',
           color: ''
-        },
-        {
-          title: 'Champ',
-          url: '/champ',
-          icon: 'document',
-          color: ''
-        },
+        },*/
         {
           title: 'Profession',
           url: '/profession',
@@ -217,6 +204,12 @@ export class AppComponent implements OnInit {
         {
           title: 'Ethnie',
           url: '/ethnie',
+          icon: 'document',
+          color: ''
+        },
+        {
+          title: 'Types de soles',
+          url: '/type-sole',
           icon: 'document',
           color: ''
         }
@@ -239,12 +232,12 @@ export class AppComponent implements OnInit {
           icon: 'document',
           color: ''
         },
-        {
+        /*{
           title: 'Localités',
           url: '/localites',
           icon: 'document',
           color: ''
-        },
+        },*/
         {
           title: 'Serveur',
           url: '/serveur',
@@ -374,6 +367,9 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.INSTITUTION.MEMBRES').subscribe((res: string) => {
       this.appPages[1].children[4].title = res;
     });
+    this.translate.get('MENU.INSTITUTION.CHAMP').subscribe((res: string) => {
+      this.appPages[1].children[5].title = res;
+    });
 
     //Recherche
     this.translate.get('MENU.RECHERCHE.RECHERCHE').subscribe((res: string) => {
@@ -386,21 +382,17 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.RECHERCHE.PROTOCOLES').subscribe((res: string) => {
       this.appPages[2].children[1].title = res;
     });
-    this.translate.get('MENU.RECHERCHE.TRAITEMENTS').subscribe((res: string) => {
+    
+    this.translate.get('MENU.RECHERCHE.ESSAIS').subscribe((res: string) => {
       this.appPages[2].children[2].title = res;
     });
-    this.translate.get('MENU.RECHERCHE.ESSAIS').subscribe((res: string) => {
+    this.translate.get('MENU.RECHERCHE.PLUVIOMETRIE').subscribe((res: string) => {
       this.appPages[2].children[3].title = res;
     });
-    this.translate.get('MENU.RECHERCHE.PLUVIOMETRIE').subscribe((res: string) => {
+    this.translate.get('MENU.RECHERCHE.TYPOLOGIE').subscribe((res: string) => {
       this.appPages[2].children[4].title = res;
     });
-    this.translate.get('MENU.RECHERCHE.TYPOLOGIE').subscribe((res: string) => {
-      this.appPages[2].children[5].title = res;
-    });
-    this.translate.get('MENU.RECHERCHE.FORMULAIRE').subscribe((res: string) => {
-      this.appPages[2].children[6].title = res;
-    });
+    
     
     //Rapport
     this.translate.get('MENU.RAPPORT.RAPPORT').subscribe((res: string) => {
@@ -440,7 +432,7 @@ export class AppComponent implements OnInit {
       this.appPages[5].title = res;
     });
     //sous-menu configuration
-    this.translate.get('MENU.CONFIGURATION.PARTENAIRE').subscribe((res: string) => {
+    /*this.translate.get('MENU.CONFIGURATION.PARTENAIRE').subscribe((res: string) => {
       this.appPages[5].children[0].title = res;
     });
     this.translate.get('MENU.CONFIGURATION.UNION').subscribe((res: string) => {
@@ -451,16 +443,19 @@ export class AppComponent implements OnInit {
     });
     this.translate.get('MENU.CONFIGURATION.MEMBRE').subscribe((res: string) => {
       this.appPages[5].children[3].title = res;
-    });
+    });*/
     
-    this.translate.get('MENU.CONFIGURATION.CHAMP').subscribe((res: string) => {
+    /*this.translate.get('MENU.CONFIGURATION.CHAMP').subscribe((res: string) => {
       this.appPages[5].children[4].title = res;
-    });
+    });*/
     this.translate.get('MENU.CONFIGURATION.PROFESSION').subscribe((res: string) => {
-      this.appPages[5].children[5].title = res;
+      this.appPages[5].children[0].title = res;
     });
     this.translate.get('MENU.CONFIGURATION.ETHNIE').subscribe((res: string) => {
-      this.appPages[5].children[6].title = res;
+      this.appPages[5].children[1].title = res;
+    });
+    this.translate.get('MENU.CONFIGURATION.TYPESOLE').subscribe((res: string) => {
+      this.appPages[5].children[2].title = res;
     });
 
     //Administration
@@ -474,14 +469,11 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.ADMINISTRATION.UTILISATEURS').subscribe((res: string) => {
       this.appPages[6].children[1].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.LOCALITES').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.SERVEUR').subscribe((res: string) => {
       this.appPages[6].children[2].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.SERVEUR').subscribe((res: string) => {
-      this.appPages[6].children[3].title = res;
-    });
     this.translate.get('MENU.ADMINISTRATION.BASE_DE_DONNEES_LOCALE').subscribe((res: string) => {
-      this.appPages[6].children[4].title = res;
+      this.appPages[6].children[3].title = res;
     });
   }
 

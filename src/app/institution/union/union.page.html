@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar> 
-    <ion-buttons slot="start">
+    <ion-buttons *ngIf="!idUnion" slot="start">
       <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
       <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
@@ -26,7 +26,7 @@
     <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
     <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="mobile && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!idUnion && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only  (click)="openRelationUnion($event)">
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
         </ion-button>
@@ -261,10 +261,10 @@
           <ion-item-sliding *virtualItem="let p; let i =index">
             <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
               <ion-label>
-                <h2 text-capitalize><!--strong>{{'UNION_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
-                <h3 text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomFederation}}</h3>
-                <!--h2 text-capitalize>{{p.numero}}</h2-->
-                <p text-capitalize>{{p.nomSiege}}</p>
+                <h2 ion-text-capitalize><!--strong>{{'UNION_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                <h3 ion-text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomFederation}}</h3>
+                <!--h2 ion-text-capitalize>{{p.numero}}</h2-->
+                <p ion-text-capitalize>{{p.nomSiege}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
@@ -302,11 +302,11 @@
       <div *ngIf="idPartenaire" class="table-responsive" id="union-partenaire"></div>
 
       <!--Si le tableau est vide-->
-      <ion-list *ngIf="!unionHTMLTable || !unionHTMLTable.datatable" lines="none">        
+      <!--ion-list *ngIf="!unionHTMLTable || !unionHTMLTable.datatable" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
-      </ion-list>
+      </ion-list-->
     </ion-card-content>
 </ion-card>
 

@@ -9,6 +9,10 @@ import { global } from '../../globale/variable';
 import { IonicSelectableComponent } from 'ionic-selectable';
 import Cropper from 'cropperjs';
 
+
+
+
+
 //formio importé dans index, il suffit de la déclarer en tant que variable globale
 declare var Formio: any;
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
@@ -522,7 +526,15 @@ export class TableauDeBordPage implements OnInit {
  
 
   ngOnInit() {
-    
+    /*let a = ['2','3']
+    let b = ['2','4']
+    let c = ['5','4']
+    let c = a.concat(b.filter((item) => a.indexOf(item) < 0));
+    console.log(c)
+    a = Array.from(new Set(a.concat(b)))
+    console.log(a)
+    a = c.concat(a) 
+    console.log(a)*/
   }
 
 

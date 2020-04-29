@@ -1,6 +1,12 @@
 var handleDataTableButtons = function(id, columns, formData, langue, tanslate, peutExporterDonnees) {
         "use strict";
 
+        //gerer les message d'erreur du datatable
+        $.fn.dataTable.ext.errMode = 'none';
+        $('#'+id).on( 'error.dt', function (e, settings, techNote, message) {
+            console.log(message)
+        })/*.DataTable()*/
+
         $('#'+id+' thead tr').clone(true).appendTo( '#'+id+' thead' );
         $('#'+id).removeClass("no-footer");
         $('#'+id+' thead tr:eq(1)').removeClass("thead-light");
@@ -33,6 +39,7 @@ var handleDataTableButtons = function(id, columns, formData, langue, tanslate, p
         if(peutExporterDonnees){
             var table = 0 !== $('#'+id).length && $('#'+id).DataTable({
                 //var table = $('#'+id).DataTable({
+                destroy: true,
                 data: formData,
                 language: langue,
                 lengthMenu: [[10,25,50, 100, -1], [10, 25, 50, 100, tanslate.instant('GENERAL.TOUS')]],
@@ -105,6 +112,7 @@ var handleDataTableButtons = function(id, columns, formData, langue, tanslate, p
         }else{
             var table = 0 !== $('#'+id).length && $('#'+id).DataTable({
                 //var table = $('#'+id).DataTable({
+                destroy: true,
                 data: formData,
                 language: langue,
                 dom: 'C<"clear">lfrtip',

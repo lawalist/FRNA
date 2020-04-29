@@ -80,8 +80,16 @@
         "INSTITUTION": "Institution",
         "PROJET": "Projet",
         "UNION": "Union",
-        "OP": "Op",
+        "OP": "OP",
+        "OPS": "OPs",
+        "ESSAIS": "Collecte de données",
+        "CHAMPS": "Champs",
+        "CHAMP": "Champ",
+        "MEMBRE": "Membre",
+        "MEMBRES": "Membres",
         "PROTOCOLE": "Protocole",
+        "PROTOCOLES": "Protocoles",
+        "FORMULAIRE": "Formulaire",
         "INFORMATION": "Information",
         "DERNIERE_MODIFICATION": "Dernière modification...",
         "ALERT_EXPORTER": "Exporter les données!",
@@ -146,14 +154,15 @@
             "PARTENAIRES": "Partenaires",
             "UNIONS": "Unions",
             "OPS": "OPs",
-            "MEMBRES": "Membres"
+            "MEMBRES": "Membres",
+            "CHAMP": "Champ"
         },
         "RECHERCHE": {
             "RECHERCHE": "Recherche",
             "PROJETS": "Projets",
             "PROTOCOLES": "Protocoles",
             "TRAITEMENTS": "Traitements",
-            "ESSAIS": "Essais",
+            "ESSAIS": "Collecte de données",
             "PLUVIOMETRIE": "Pluviométrie",
             "TYPOLOGIE": "Typologie",
             "FORMULAIRE": "Formulaire"
@@ -173,12 +182,12 @@
         "CONFIGURATION": {
             "CONFIGURATION": "Configuration",
             "PARTENAIRE": "Partenaire",
-            "UNION": "Union",
+            "UNION": "Unions",
             "OP": "OP",
-            "MEMBRE": "Membre",
-            "CHAMP": "Champ",
-            "PROFESSION": "Profession",
-            "ETHNIE": "Ethnies"
+            "MEMBRE": "Membres",
+            "PROFESSION": "Professions",
+            "ETHNIE": "Ethnies",
+            "TYPESOLE": "Types de soles"
         },
         "ADMINISTRATION": {
             "ADMINISTRATION": "Administration",
@@ -463,18 +472,32 @@
             "8": "Société"
         },
         "DATECREATION": "Date de création",
-        "DOMAINE": "Domaine",
-        "DOMAINES": {
-            "1": "Agronamie",
-            "2": "Economie",  
-            "3": "Elévage", 
-            "4": "Environement", 
-            "5": "Commerce",
-            "6": "Recherche",
-            "7": "Santé"
+        "SECTEURACTIVITE": "Secteur d'activité",
+        "SECTEURACTIVITES": {
+            "1": "Agriculture, sylviculture et pêche",
+            "2": "Activités extractives",  
+            "3": "Activités de fabrication", 
+            "4": "Production et distribution d’électricité, de gaz, de vapeur et climatisation", 
+            "5": "Distribution d’eau; réseau d’assainissement; gestion des déchets et remise en état",
+            "6": "Construction",
+            "7": "Commerce de gros et de détail, réparation de véhicules automobiles et de motocycles",
+            "8": "Transport et entreposage",
+            "9": "Activités d’hébergement et de restauration",
+            "10": "Information et communication",
+            "11": "Activités financières et d’assurances",
+            "12": "Activités immobilières",
+            "13": "Activités professionnelles, scientifiques et techniques",
+            "14": "Activités de services administratifs et d’appui",
+            "15": "Administation publique et défense; sécurité sociale et obligatoire",
+            "16": "Éducation",
+            "17": "Santé et action sociale",
+            "18": "Arts, spectacles et loisirs",
+            "19": "Autres activités de services",
+            "20": "Activités des ménages privés employant du personnel domestique; activités non différenciées de production de biens et de services des ménages privés pour usage propre",
+            "21": "Activités des organisations et organismes extra-territoriaux"
         },
-        "SECTEUR": "Secteur",
-        "SECTEURS": {
+        "SECTEURPUBLIC": "Secteur public",
+        "SECTEURPUBLICS": {
            "1": "Privé", 
            "2": "Etat", 
            "3": "Sémi-privé"
@@ -608,7 +631,7 @@
         }
     },
     "OP_PAGE": {
-        "TITRE_LISTE": "Ops",
+        "TITRE_LISTE": "OPs",
         "TITRE_AJOUTER": "Ajouter une op",
         "TITRE_INFO": "Infos op",
         "TITRE_MODIFIER": "Modifier une op",
@@ -850,6 +873,106 @@
             }
         }
     },
+    "TYPESOLE_PAGE": {
+        "TITRE_LISTE": "Types de soles",
+        "TITRE_AJOUTER": "Ajouter un type de sole",
+        "TITRE_INFO": "Infos type de sole",
+        "TITRE_MODIFIER": "Modifier un type de sole",
+        "CODE": "Code",
+        "NOM": "Nom",
+        "DESCRIPTION": "Description",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un type de sole",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un type de sole",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            }
+        }
+    },
+    "CHAMP_PAGE": {
+        "TITRE_LISTE": "Champs",
+        "TITRE_AJOUTER": "Ajouter un champ",
+        "TITRE_INFO": "Infos champ",
+        "TITRE_MODIFIER": "Modifier un champ",
+        "CODE": "Code",
+        "SUPERFICIE": "Superficie",
+        "TYPESOLE": "Type de sole",
+        "NUMERO": "Numéro",
+        "NOM": "Nom",
+        "MODEACQUISITION": "Mode d'acquisition",
+        "CHOIXMODEACQUISITION": {
+            "1": "Achât",
+            "2": "Donnation",
+            "3": "Gage", 
+            "4": "Héritage", 
+            "5": "Location", 
+            "6": "Prêt"
+        },
+        "NUMERO_MEMBRE": "Numéro membre",
+        "NOM_MEMBRE": "Nom membre",
+        "DATEACQUISITION": "Date d'acquisition",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "CODECOMMUNE": "Code commune",
+        "NOMCOMMUNET": "Nom commune",
+        "CODESIEGE": "Code siège",
+        "NOMSIEGE": "Nom siège",
+        "SELECTIONMEMBRE": "Membre",
+        "SELECTIONPAYS": "Pays",
+        "SELECTIONREGION": "Région",
+        "SELECTIONDEPARTEMENT": "Département",
+        "SELECTIONCOMMUNE": "Commune",
+        "SELECTIONTYPESOLE": "Type de sole",
+        "SELECTIONSIEGE": "Village",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un champ",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un champ",
+        "MESSAGES_VALIDATION": {
+            "CODE": {
+                "REQUIRED": "Le code est requis.",
+                "MINLENGTH": "Le code doit comporter au moins 2 lettres majuscules.",
+                "MAXLENGTH": "Le code doit comporter au plus 3 lettres majuscules.",
+                "PATTERN": "Le code ne doit contenir que des lettres majuscules."
+            },
+            "NUMERO": {
+                "REQUIRED": "Le numéro est requis.",
+                "UNIQUENUMEROPARTENAIRE": "Le numéro a été déjà pris."
+            },
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "SUPERFICIE": {
+                "REQUIRED": "La superficie est requis."
+            },
+            "NIVEAU": {
+                "REQUIRED": "Ce champ est requis."
+            },
+            "NUMERO_MEMBRE": {
+                "REQUIRED": "Le membre est requise."
+            },
+            "TYPE_SOLE": {
+                "REQUIRED": "Le type de sole est requise."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le département est requis."
+            },
+            "CODECOMMUNE": {
+                "REQUIRED": "La commune est requise."
+            },
+            "CODESIEGE": {
+                "REQUIRED": "Le siège est requis."
+            }
+        }
+    },
     "PROJET_PAGE": {
         "TITRE_LISTE": "Projets",
         "TITRE_AJOUTER": "Ajouter un projet",
@@ -952,22 +1075,24 @@
         }
     },
     "ESSAI_PAGE": {
-        "TITRE_LISTE": "Essais",
-        "TITRE_AJOUTER": "Ajouter un essai",
-        "TITRE_INFO": "Infos essai",
-        "TITRE_MODIFIER": "Modifier un essai",
+        "TITRE_LISTE": "Collecte de données",
+        "TITRE_AJOUTER": "Nouvelle collecte",
+        "TITRE_INFO": "Infos collecte",
+        "TITRE_MODIFIER": "Modifier des données",
         "NUMERO": "Numéro",
         "NUMERO_PROJET": "Numéro projet",
         "NOM_PROJET": "Nom projet",
         "NUMERO_INSTITUTION": "Numéro institution",
         "NOM_INSTITUTION": "Nom institution",
-        "ANNEE": "Année",
+        "ANNEE": "Date collecte",
         "SELECTIONINSTITUTION": "Sélectionner l'institution",
         "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
         "SELECTIONPROJET": "Sélectionner le projet",
         "SELECTIONPROTOCOLE": "Sélectionner le protocole",
-        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un essai",
-        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un essai",
+        "SELECTIONMEMBRE": "Sélectionner le membre",
+        "SELECTIONCHAMP": "Sélectionner le champ",
+        "FORMULAIRE_AJOUT": "Formulaire de collecte",
+        "FORMULAIRE_MODIFICATION": "Formulaire de collecte",
         "MESSAGES_VALIDATION": {
             "NUMERO_PROTOCOLE": {
                 "REQUIRED": "Le protocole est requis."
@@ -977,6 +1102,10 @@
             },
             "NUMERO_INSTITUTION": {
                 "REQUIRED": "L'institution est requise."
+            },"MATRICULE_MEMBRE": {
+                "REQUIRED": "Le membre est requise."
+            },"CODE_CHAMP": {
+                "REQUIRED": "Le champ est requise."
             }
         }
     }

@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { PopoverController } from '@ionic/angular'
 
 @Component({
   selector: 'app-relations-op',
@@ -7,8 +8,12 @@ import { Component, OnInit } from '@angular/core';
 })
 export class RelationsOpComponent implements OnInit {
 
-  constructor() { }
+  constructor(public popoverController: PopoverController) { }
 
   ngOnInit() {}
+
+  async choix(res) {
+    await this.popoverController.dismiss(res);
+  }
 
 }

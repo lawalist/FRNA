@@ -193,8 +193,8 @@
           <ion-item-sliding *virtualItem="let p">
             <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
               <ion-label> 
-                <h2 text-capitalize><!--strong>{{'PAYS_PAGE.NOM' | translate}}:</strong--> {{p.nom}}</h2>
-                <p text-capitalize><!--strong>{{'PAYS_PAGE.CODE' | translate}}:</strong--> {{p.code}}</p>
+                <h2 ion-text-capitalize><!--strong>{{'PAYS_PAGE.NOM' | translate}}:</strong--> {{p.nom}}</h2>
+                <p ion-text-capitalize><!--strong>{{'PAYS_PAGE.CODE' | translate}}:</strong--> {{p.code}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>

@@ -28,6 +28,7 @@ import * as moment from 'moment';
 //import '../../../assets/external/bootstrap-4.4.1/custom.css'
 //import '../../../assets/external/bootstrap-4.4.1/styles.css'
 import { FormulaireProtocolePage } from '../formulaire-protocole/formulaire-protocole.page';
+import { EssaiPage } from '../essai/essai.page';
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
 declare var JSONToCSVAndTHMLTable: any;
@@ -504,7 +505,8 @@ export class ProtocolePage implements OnInit {
       this.annee = (new Date).getFullYear();
       if(this.idProjet && this.idProjet != ''){
         if(this.protocoleHTMLTable && this.protocoleHTMLTable.datatable && this.protocoleHTMLTable.datatable.row(0) && this.protocoleHTMLTable.datatable.row(0).data()){
-          this.idPartenaire = this.protocoleHTMLTable.datatable.row(0).data().numeroInstitution;
+          //console.log(this.protocoleHTMLTable.datatable.row(0).data())
+          this.idPartenaire = this.protocoleHTMLTable.datatable.row(0).data().idInstitution;
         }else{
           this.servicePouchdb.findRelationalDocByTypeAndID('projet', this.idProjet).then((res) => {
             if(res && res.projets){
@@ -514,6 +516,7 @@ export class ProtocolePage implements OnInit {
         }
       }
   
+      //console.log(this.idPartenaire)
       this.getInstitution();
       //this.getProjet();
       this.initForm();
@@ -2087,6 +2090,8 @@ export class ProtocolePage implements OnInit {
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'Formulaire') {
           this.presentFormulaire(this.unProtocole.id)
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(this.unProtocole.id)
         }/*else if(dataReturned !== null && dataReturned.data == 'protocole') {
           
         }else if(dataReturned !== null && dataReturned.data == 'protocole') {
@@ -2110,6 +2115,17 @@ export class ProtocolePage implements OnInit {
       return await modal.present();
     }
 
+    async presentEssai(idProtocole) {
+      const modal = await this.modalController.create({
+        component: EssaiPage,
+        componentProps: { idProtocole: idProtocole },
+        //backdropDismiss: false,
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
     async openRelationProtocoleDepuisListe(ev: any) {
       const popover = await this.popoverController.create({
         component: RelationsProtocoleComponent,
@@ -2124,6 +2140,8 @@ export class ProtocolePage implements OnInit {
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'Formulaire') {
           this.presentFormulaire(this.selectedIndexes[0])
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(this.selectedIndexes[0])
         } /*else if(dataReturned !== null && dataReturned.data == 'protocole') {
           this.presentProtocole(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
         }*/
@@ -2149,6 +2167,8 @@ export class ProtocolePage implements OnInit {
       popover.onWillDismiss().then((dataReturned) => {
         if(dataReturned !== null && dataReturned.data == 'Formulaire') {
           this.presentFormulaire(data.id)
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(data.id)
         }/* else if(dataReturned !== null && dataReturned.data == 'protocole') {
           this.presentProtocole(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
         }*/
@@ -2206,7 +2226,7 @@ export class ProtocolePage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let protocoleData = {id: res.id,...protocole.formData, ...protocole.formioData, ...protocole.security};
+          let protocoleData = {id: res.protocoles[0].id,...protocole.formData, ...protocole.formioData, ...protocole.security};
           //this.protocoles = protocole;
           //protocole._rev = res.protocoles[0].rev;
           //this.protocoles.push(protocole);
@@ -2653,8 +2673,6 @@ export class ProtocolePage implements OnInit {
           if(res && res.protocoles[0]){
             let f, u;
             //this.unProtocole = res && res.protocoles[0];
-
-
             if(res.partenaires && res.partenaires[0]){
               res.protocoles[0].formData = this.addItemToObjectAtSpecificPosition(res.protocoles[0].formData, 'numeroInstitution', res.partenaires[0].formData.numero, 2);
               res.protocoles[0].formData = this.addItemToObjectAtSpecificPosition(res.protocoles[0].formData, 'nomInstitution', res.partenaires[0].formData.nom, 3);  
@@ -2958,11 +2976,14 @@ export class ProtocolePage implements OnInit {
           });
 
           //this.institutionData.push({numero: null, nom: 'Indépendant'});
-
+          //console.log(this.idPartenaire)
           if(this.doModification){
             this.setSelect2DefaultValue('idInstitution', this.unProtocole.idInstitution);
           }else if(this.idPartenaire){
             this.setSelect2DefaultValue('idInstitution', this.idPartenaire);
+            $('#idInstitution select').ready(()=>{
+              $('#idInstitution select').attr('disabled', true)
+            });
           }else{
             this.setSelect2DefaultValue('idInstitution', monInstitution);
           }
@@ -2990,14 +3011,14 @@ export class ProtocolePage implements OnInit {
 
               dateDebutProjet = moment(u.formData.dateDebut, 'DD-MM-YYYY')//.format('DD-MM-YYYY'); 
               
-             dateFinProjet = moment(u.formData.dateFin, 'DD-MM-YYYY')//.format('DD-MM-YYYY');
+              dateFinProjet = moment(u.formData.dateFin, 'DD-MM-YYYY')//.format('DD-MM-YYYY');
               
               //ne charger que les projet qui ne sont pa terminés
               /*if(!u.security.deleted && dateDebutProjet <= now && (!dateFinProjet || (dateFinProjet && dateFinProjet >= now))){
                 this.projetData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom, dateDebut: dateDebutProjet, dateFin: dateFinProjet});
               }*/
 
-              if(!u.security.deleted && dateFinProjet >= now){
+              if(!u.security.deleted/* && dateFinProjet >= now*/){
                 this.projetData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom, dateDebut: dateDebutProjet, dateFin: dateFinProjet});
               }
             }
@@ -3016,6 +3037,9 @@ export class ProtocolePage implements OnInit {
               this.setSelect2DefaultValue('idProjet', this.unProtocole.idProjet);
             }else if(this.idProjet){
               this.setSelect2DefaultValue('idProjet', this.idProjet);
+              $('#idProjet select').ready(()=>{
+                $('#idProjet select').attr('disabled', true)
+              });
             }
             
           }
@@ -3041,7 +3065,6 @@ export class ProtocolePage implements OnInit {
             this.protocoleForm.controls.nomProjet.setValue(null);
             this.projetDateDebut = null;
             this.projetDateFin = null;
-            //console.log(numeroInstitution)
             this.getProjetParInstitution(idInstitution);
             break;
           }
@@ -3096,7 +3119,13 @@ export class ProtocolePage implements OnInit {
 
     attacheEventToDataTable(datatable){
       var self = this;
-      var id = 'protocole-datatable';
+      var id;
+      if((this.idPartenaire && this.idPartenaire != '') || (this.idProjet && this.idProjet != '')){
+        id = 'protocole-datatable';
+      }else{ 
+        id = 'protocole';
+      }
+       
       datatable.on( 'select', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           //pour éviter les doublon d'index
@@ -3151,8 +3180,7 @@ export class ProtocolePage implements OnInit {
         datatable.row('.selected').deselect();
         datatable.row(this).select();
         self.selectedItemInfo();
-        //console.log(datatable.row(this).data()[0]);
-      });
+      });  
 
       //traduitre les collonnes de la table la table
       this.translateDataTableCollumn();

@@ -19,11 +19,12 @@ import { ListeActionComponent } from 'src/app/component/liste-action/liste-actio
 import { isObject } from 'util';
 import { PartenairePage } from '../../institution/partenaire/partenaire.page';
 import { isDefined } from '@angular/compiler/src/util';
-import { OpPage } from '../../institution/op/op.page';
 import '@ckeditor/ckeditor5-build-decoupled-document/build/translations/fr';
 import * as DecoupledEditor from '@ckeditor/ckeditor5-build-decoupled-document';
 import { ChangeEvent } from '@ckeditor/ckeditor5-angular/ckeditor.component';
 import * as moment from 'moment';
+import { ProtocolePage } from '../protocole/protocole.page';
+import { EssaiPage } from '../essai/essai.page';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -1912,8 +1913,10 @@ export class ProjetPage implements OnInit {
       });
   
       popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'OPs') {
-          this.presentOP(this.unProjet.id);
+        if(dataReturned !== null && dataReturned.data == 'protocole') {
+          this.presentProtocole(this.unProjet.id);
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(this.unProjet.id);
         }/*else if(dataReturned !== null && dataReturned.data == 'projet') {
           
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
@@ -1938,8 +1941,10 @@ export class ProjetPage implements OnInit {
       });
   
       popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'OPs') {
-          this.presentOP(this.selectedIndexes[0]);
+        if(dataReturned !== null && dataReturned.data == 'protocole') {
+          this.presentProtocole(this.selectedIndexes[0]);
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(this.selectedIndexes[0]);
         }
         /*if(dataReturned !== null && dataReturned.data == 'commune') {
           this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
@@ -1966,17 +1971,29 @@ export class ProjetPage implements OnInit {
       });
   
       popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'OPs') {
-          this.presentOP(this.selectedIndexes[0]);
+        if(dataReturned !== null && dataReturned.data == 'protocole') {
+          this.presentProtocole(this.selectedIndexes[0]);
+        }else if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssai(this.selectedIndexes[0]);
         }
   
       });
       return await popover.present();
     }
 
-    async presentOP(idProjet){
+    async presentProtocole(idProjet){
       const modal = await this.modalController.create({
-        component: OpPage,
+        component: ProtocolePage,
+        componentProps: { idProjet: idProjet },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    async presentEssai(idProjet){
+      const modal = await this.modalController.create({
+        component: EssaiPage,
         componentProps: { idProjet: idProjet },
         mode: 'ios',
         cssClass: 'costom-modal',
@@ -1984,7 +2001,7 @@ export class ProjetPage implements OnInit {
       return await modal.present();
     }
   
-
+ 
     onSubmit(){
       let formData = this.projetForm.value;
       //formData.description = this.editorData;
@@ -2031,7 +2048,7 @@ export class ProjetPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let projetData = {id: res.id, ...projet.formData, ...projet.formioData, ...projet.security};
+          let projetData = {id: res.projets[0].id, ...projet.formData, ...projet.formioData, ...projet.security};
           //this.projets = projet;
           
           //projet._rev = res.projets[0].rev;
@@ -2207,71 +2224,83 @@ export class ProjetPage implements OnInit {
           shared = {$ne: null};
         }
 
-        this.servicePouchdb.findRelationalDocByType('projet', deleted, archived, shared).then((res) => {
-          if(res && res.projets){
-            let projetsData = [];
-              //var datas = [];
-            let partenaireIndex = [];
-            let idInstitution;
-
-            for(let u of res.projets){
-              //supprimer l'historique de la liste
-              delete u.security['shared_history'];
+        if(this.idPartenaire && this.idPartenaire != ''){
+          this.servicePouchdb.findRelationalDocOfTypeByPere('projet', 'partenaire', this.idPartenaire, deleted, archived, shared).then((res) => {
+            if(res && res.projets){
+              let projetsData = [];
+                //var datas = [];
+              let partenaireIndex = [];
+              let idInstitution;
   
-              if(u.partenaire && u.partenaire != ''){
-                if(isDefined(partenaireIndex[u.partenaire])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
-                  idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
-                }else{
-                  for(let i=0; i < res.partenaires.length; i++){
-                    if(res.partenaires[i].id == u.partenaire){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                      partenaireIndex[u.partenaire] = i;
-                      idInstitution = res.partenaires[i].id;
-                      break;
+              for(let u of res.projets){
+                //supprimer l'historique de la liste
+                delete u.security['shared_history'];
+    
+                if(u.partenaire && u.partenaire != ''){
+                  if(isDefined(partenaireIndex[u.partenaire])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                    idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                  }else{
+                    for(let i=0; i < res.partenaires.length; i++){
+                      if(res.partenaires[i].id == u.partenaire){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                        partenaireIndex[u.partenaire] = i;
+                        idInstitution = res.partenaires[i].id;
+                        break;
+                      }
                     }
-                  }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                idInstitution = null;
-              }
-  
-              projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
-            }
-  
-          //si mobile
-          if(this.mobile){
-            this.projetsData = projetsData;
-            this.projetsData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
-
-            this.allProjetsData = [...this.projetsData]
-          } else{
-              $('#projet').ready(()=>{
-                if(global.langue == 'en'){
-                  this.projetHTMLTable = createDataTable("projet", this.colonnes, projetsData, null, this.translate, global.peutExporterDonnees);
+                  }  
                 }else{
-                  this.projetHTMLTable = createDataTable("projet", this.colonnes, projetsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                  idInstitution = null;
                 }
-                this.attacheEventToDataTable(this.projetHTMLTable.datatable);
+    
+                projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+              }
+    
+            //si mobile
+            if(this.mobile){
+              this.projetsData = projetsData;
+              this.projetsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
               });
+  
+              this.allProjetsData = [...this.projetsData]
+            } else{
+                $('#projet-partenaire').ready(()=>{
+                  if(global.langue == 'en'){
+                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, null, this.translate, global.peutExporterDonnees);
+                  }else{
+                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  }
+                  this.attacheEventToDataTable(this.projetHTMLTable.datatable);
+                });
+              }
+              this.selectedIndexes = [];
+              if(event)
+                event.target.complete();
+            }else{
+              this.projets = [];
+              //if(this.mobile){
+                this.projetsData = [];
+                this.allProjetsData = [];
+              //}
+              this.selectedIndexes = [];
+              if(event)
+                event.target.complete();
             }
-            this.selectedIndexes = [];
-            if(event)
-              event.target.complete();
-          }else{
+          }).catch((err) => {
+            console.log('Erreur acces à la projet ==> '+err)
             this.projets = [];
             //if(this.mobile){
               this.projetsData = [];
@@ -2280,19 +2309,95 @@ export class ProjetPage implements OnInit {
             this.selectedIndexes = [];
             if(event)
               event.target.complete();
-          }
-        }).catch((err) => {
-          console.log('Erreur acces à la projet ==> '+err)
-          this.projets = [];
-          //if(this.mobile){
-            this.projetsData = [];
-            this.allProjetsData = [];
-          //}
-          this.selectedIndexes = [];
-          if(event)
-            event.target.complete();
-        });
+          });  
+        }else{
+          this.servicePouchdb.findRelationalDocByType('projet', deleted, archived, shared).then((res) => {
+            if(res && res.projets){
+              let projetsData = [];
+                //var datas = [];
+              let partenaireIndex = [];
+              let idInstitution;
+  
+              for(let u of res.projets){
+                //supprimer l'historique de la liste
+                delete u.security['shared_history'];
     
+                if(u.partenaire && u.partenaire != ''){
+                  if(isDefined(partenaireIndex[u.partenaire])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                    idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                  }else{
+                    for(let i=0; i < res.partenaires.length; i++){
+                      if(res.partenaires[i].id == u.partenaire){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                        partenaireIndex[u.partenaire] = i;
+                        idInstitution = res.partenaires[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                  idInstitution = null;
+                }
+    
+                projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+              }
+    
+            //si mobile
+            if(this.mobile){
+              this.projetsData = projetsData;
+              this.projetsData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+  
+              this.allProjetsData = [...this.projetsData]
+            } else{
+                $('#projet').ready(()=>{
+                  if(global.langue == 'en'){
+                    this.projetHTMLTable = createDataTable("projet", this.colonnes, projetsData, null, this.translate, global.peutExporterDonnees);
+                  }else{
+                    this.projetHTMLTable = createDataTable("projet", this.colonnes, projetsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  }
+                  this.attacheEventToDataTable(this.projetHTMLTable.datatable);
+                });
+              }
+              this.selectedIndexes = [];
+              if(event)
+                event.target.complete();
+            }else{
+              this.projets = [];
+              //if(this.mobile){
+                this.projetsData = [];
+                this.allProjetsData = [];
+              //}
+              this.selectedIndexes = [];
+              if(event)
+                event.target.complete();
+            }
+          }).catch((err) => {
+            console.log('Erreur acces à la projet ==> '+err)
+            this.projets = [];
+            //if(this.mobile){
+              this.projetsData = [];
+              this.allProjetsData = [];
+            //}
+            this.selectedIndexes = [];
+            if(event)
+              event.target.complete();
+          });  
+        }
+
       }else{
         this.getProjetWithConflicts(event);
       }
@@ -2558,6 +2663,9 @@ export class ProjetPage implements OnInit {
             this.setSelect2DefaultValue('idInstitution', this.unProjet.idInstitution);
           }else if(this.idPartenaire){
             this.setSelect2DefaultValue('idInstitution', this.idPartenaire);
+            $('#idInstitution select').ready(()=>{
+              $('#idInstitution select').attr('disabled', true)
+            });
           }
           
         }
@@ -2590,8 +2698,8 @@ export class ProjetPage implements OnInit {
       datatable.on( 'select', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           //pour éviter les doublon d'index
-          if(self.selectedIndexes.indexOf(datatable.row(i).data().numero) === -1){
-            self.selectedIndexes.push(datatable.row(i).data().numero)
+          if(self.selectedIndexes.indexOf(datatable.row(i).data().id) === -1){
+            self.selectedIndexes.push(datatable.row(i).data().id)
           }
         }
 
@@ -2606,8 +2714,8 @@ export class ProjetPage implements OnInit {
       .on( 'deselect', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           //pour éviter les erreurs d'index
-          if(self.selectedIndexes.indexOf(datatable.row(i).data().numero) !== -1){
-            self.selectedIndexes.splice(self.selectedIndexes.indexOf(datatable.row(i).data().numero), 1)
+          if(self.selectedIndexes.indexOf(datatable.row(i).data().id) !== -1){
+            self.selectedIndexes.splice(self.selectedIndexes.indexOf(datatable.row(i).data().id), 1)
           }
         }
 

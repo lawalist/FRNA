@@ -1,6 +1,6 @@
 <ion-header>
     <ion-toolbar> 
-      <ion-buttons slot="start">
+      <ion-buttons *ngIf="!idOp" slot="start">
         <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
         <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
           <ion-icon name="arrow-back"></ion-icon>
@@ -26,7 +26,7 @@
       <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
       <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
   
-      <ion-buttons *ngIf="mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
+      <ion-buttons *ngIf="!idOp && mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
         <ion-button ion-button icon-only  (click)="openRelationOp($event)">
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
         </ion-button>
@@ -262,11 +262,11 @@
             <ion-item-sliding *virtualItem="let p; let i =index">
               <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
                 <ion-label>
-                  <h2 text-capitalize><!--strong>{{'OP_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
-                  <h3 text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomUnion}}</h3>
+                  <h2 ion-text-capitalize><!--strong>{{'OP_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                  <h3 ion-text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomUnion}}</h3>
 
-                  <!--h2 text-capitalize>{{p.numero}}</h2-->
-                  <p text-capitalize><!--strong>{{'OP_PAGE.NUMERO' | translate}}:</strong-->{{p.nomSiege}}</p>
+                  <!--h2 ion-text-capitalize>{{p.numero}}</h2-->
+                  <p ion-text-capitalize><!--strong>{{'OP_PAGE.NUMERO' | translate}}:</strong-->{{p.nomSiege}}</p>
                 </ion-label>
                 <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
               </ion-item>

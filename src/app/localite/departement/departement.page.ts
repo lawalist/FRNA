@@ -1183,7 +1183,7 @@ export class DepartementPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let departementData = {id: res.id, ...departement.formData, ...departement.formioData, ...departement.security};
+          let departementData = {id: res.departements[0].id, ...departement.formData, ...departement.formioData, ...departement.security};
           //this.unions = union;
           this.action = 'liste';
 

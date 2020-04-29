@@ -24,6 +24,7 @@ import { isObject } from 'util';
 import { UnionPage } from '../union/union.page';
 import { isDefined } from '@angular/compiler/src/util';
 import { PartenairePage } from '../partenaire/partenaire.page';
+import { MembrePage } from '../membre/membre.page';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -927,10 +928,10 @@ export class OpPage implements OnInit {
       return await modal.present();
     }
 
-    async presentLocalite(idLocalite) {
+    async presentLocalite(idSiege) {
       const modal = await this.modalController.create({
         component: LocalitePage,
-        componentProps: { idLocalite: idLocalite },
+        componentProps: { idLocalite: idSiege },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -950,7 +951,7 @@ export class OpPage implements OnInit {
     async presentFederation(idFederation) {
       const modal = await this.modalController.create({
         component: PartenairePage,
-        componentProps: { idFederation: idFederation },
+        componentProps: { idPartenaire: idFederation },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -2257,18 +2258,12 @@ export class OpPage implements OnInit {
         //mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'op') {
-          this.navCtrl.navigateForward('/localite/ops/op/'+this.uneOp.numero)
-        }else if(dataReturned !== null && dataReturned.data == 'op') {
-          
-        }else if(dataReturned !== null && dataReturned.data == 'op') {
-          
-        } else if(dataReturned !== null && dataReturned.data == 'op') {
-          
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.uneOp.id);
         }
   
-      });*/
+      });
       return await popover.present();
     }
 
@@ -2283,14 +2278,12 @@ export class OpPage implements OnInit {
         //mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'commune') {
-          this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
-        } else if(dataReturned !== null && dataReturned.data == 'op') {
-          this.presentOp(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
-        }
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.selectedIndexes[0]);
+        } 
   
-      });*/
+      });
       return await popover.present();
     }
   
@@ -2308,15 +2301,23 @@ export class OpPage implements OnInit {
         mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'commune') {
-          this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
-        } else if(dataReturned !== null && dataReturned.data == 'op') {
-          this.presentOp(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
-        }
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.selectedIndexes[0]);
+        } 
   
-      });*/
+      });
       return await popover.present();
+    }
+
+    async presentMembre(idOp){
+      const modal = await this.modalController.create({
+        component: MembrePage,
+        componentProps: { idOp: idOp },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
     }
   
     onSubmit(){
@@ -2388,7 +2389,7 @@ export class OpPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let opData = {id: res.id,...op.formData, ...op.formioData, ...op.security};
+          let opData = {id: res.ops[0].id,...op.formData, ...op.formioData, ...op.security};
           //this.ops = op;
           this.translate.get('OP_PAGE.CHOIXNIVEAU.'+opData.niveau).subscribe((res2: string) => {
             opData.niveau = res2;
@@ -3730,6 +3731,10 @@ export class OpPage implements OnInit {
             this.setSelect2DefaultValue('idFederation', this.uneOp.idFederation);
           }else if(this.idPartenaire){
             this.setSelect2DefaultValue('idFederation', this.idPartenaire);
+
+            $('#idFederation select').ready(()=>{
+              $('#idFederation select').attr('disabled', true)
+            });
           }else{
             this.setSelect2DefaultValue('idFederation', monInstitution);
           }
@@ -3769,6 +3774,10 @@ export class OpPage implements OnInit {
               this.setSelect2DefaultValue('idUnion', this.uneOp.idUnion);
             }else if(this.idUnion){
               this.setSelect2DefaultValue('idUnion', this.idUnion);
+              
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
             }
             
           }
@@ -3803,6 +3812,9 @@ export class OpPage implements OnInit {
               this.setSelect2DefaultValue('idUnion', this.uneOp.idUnion);
             }else if(this.idUnion){
               this.setSelect2DefaultValue('idUnion', this.idUnion);
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
             }
             
           }
@@ -3915,10 +3927,10 @@ export class OpPage implements OnInit {
       }
     }
 
-    setCodeAndNomLocalite(idLocalite){
-      if(idLocalite && idLocalite != ''){
+    setCodeAndNomLocalite(idSiege){
+      if(idSiege && idSiege != ''){
         for(let l of this.localiteData){
-          if(idLocalite == l.id){
+          if(idSiege == l.id){
             this.opForm.controls.codeSiege.setValue(l.code);
             this.opForm.controls.nomSiege.setValue(l.nom);
             break;

@@ -2,6 +2,7 @@ import { Component, OnInit, Input  } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 //import { opValidator } from '../../validators/membre.validator';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
@@ -37,6 +38,8 @@ import { ActionAvatarComponent } from 'src/app/component/action-avatar/action-av
 import { CameraComponent } from 'src/app/component/camera/camera.component';
 
 import {customAlphabet} from 'nanoid';
+import { EssaiPage } from 'src/app/recherche/essai/essai.page';
+import { ChampPage } from '../champ/champ.page';
 //Speed: 1000 IDs per hour/second
 //~919 years needed, in order to have a 1% probability of at least one collision.
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 12)
@@ -63,6 +66,7 @@ export class MembrePage implements OnInit {
   membreForm: FormGroup;
   base64Image: any;
   imageProfile: any;
+  photoSupprimer: boolean = false;
   action: string = 'liste';
   cacheAction: string = 'liste';
   membres: any = [];
@@ -153,7 +157,7 @@ export class MembrePage implements OnInit {
   }
 
   
-    constructor(private formBuilder: FormBuilder, private platform: Platform, private crop: Crop, private camera: Camera, private photoViewer: PhotoViewer, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+    constructor(private formBuilder: FormBuilder, public sanitizer: DomSanitizer, private platform: Platform, private crop: Crop, private camera: Camera, private photoViewer: PhotoViewer, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
       this.translate.setDefaultLang(global.langue);
 
     }
@@ -202,7 +206,11 @@ export class MembrePage implements OnInit {
         component: ActionAvatarComponent,
         event: ev,
         translucent: true,
-        componentProps: {"exist": true},
+        componentProps: {
+          photo: this.unMembre.photo,
+          b: this.base64Image,
+          s: this.photoSupprimer,
+        },
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -225,6 +233,7 @@ export class MembrePage implements OnInit {
           }
         }else if(dataReturned !== null && dataReturned.data == 'supprimer') {
           this.supprimerAvatar();
+          this.photoSupprimer = true;
         }
   
       });
@@ -653,31 +662,38 @@ export class MembrePage implements OnInit {
           }else if(id == 'niveau'){
             //self.setSelect2DefaultValue('numeroFederation', null);
             //self.setSelect2DefaultValue('numeroUnion', null);
+            //self.setSelect2DefaultValue('idFederation', null);
             self.membreForm.controls.idFederation.setValue(null);
             self.membreForm.controls.numeroFederation.setValue(null);
             self.membreForm.controls.nomFederation.setValue(null);
+            self.federationData = [];
+
+            //self.setSelect2DefaultValue('idUnion', null);
             self.membreForm.controls.idUnion.setValue(null);
             self.membreForm.controls.numeroUnion.setValue(null);
             self.membreForm.controls.nomUnion.setValue(null);
+            self.unionData = [];
+
+            //self.setSelect2DefaultValue('idOp', null);
             self.membreForm.controls.idOp.setValue(null);
             self.membreForm.controls.numeroOp.setValue(null);
             self.membreForm.controls.nomOp.setValue(null);
-            if(self.membreForm.value[id] == 1 && !self.federationData.length){
+            self.opData = [];
+
+            //self.getFederation();
+
+
+            if(self.membreForm.value[id] == 1/* && !self.federationData.length*/){
               self.getFederation();
               //self.getUnion();
-            } else if(self.membreForm.value[id] == 2){
+            }/* else if(self.membreForm.value[id] == 2){
               self.federationData = [];
+              self.unionData = [];
+              self.opData = [];
               self.membreForm.controls.idFederation.setValue(null);
               self.membreForm.controls.numeroFederation.setValue(null);
               self.membreForm.controls.nomFederation.setValue(null);
               self.getUnionParFederation(null);
-            }/*else{
-              self.membreForm.controls.idFederation.setValue(null);
-              self.membreForm.controls.numeroFederation.setValue(null);
-              self.membreForm.controls.nomFederation.setValue(null);
-              self.membreForm.controls.idUnion.setValue(null);
-              self.membreForm.controls.numeroUnion.setValue(null);
-              self.membreForm.controls.nomUnion.setValue(null);
             }*/
 
             self.setSelectRequredError(id, id)
@@ -1031,12 +1047,44 @@ export class MembrePage implements OnInit {
         JsBarcode('#barcode', this.membreForm.controls.matricule.value, {height: 50});
       });
 
-      if(this.imageProfile && this.imageProfile != ''){
+      $('#crop-avatar').ready(() => {
+        $('#crop-avatar').attr('src', this.unMembre.photo);
+        $('#crop-avatar').attr('data-src', this.unMembre.photo);
+      });
+
+      /*if(this.imageProfile && this.imageProfile != ''){
         $('#crop-avatar').ready(() => {
           $('#crop-avatar').attr('src', this.imageProfile);
           $('#crop-avatar').attr('data-src', this.imageProfile);
         });
-      }
+      }else{
+        this.servicePouchdb.getRelationalDocAttachment('membre', membre.id, 'avatar').then((res) => {
+          if(res && res != ''){
+            $('#crop-avatar').ready(() => {
+              $('#crop-avatar').attr('src', res);
+              $('#crop-avatar').attr('data-src', res);
+            });
+            this.imageProfile = res;
+          }else{
+            $('#crop-avatar').ready(() => {
+              $('#crop-avatar').attr('src', './assets/img/avatar_2x.png');
+              $('#crop-avatar').attr('data-src', './assets/img/avatar_2x.png');
+            });
+
+            this.imageProfile = null;
+          }
+        }).catch((err) => {
+          $('#crop-avatar').ready(() => {
+            $('#crop-avatar').attr('src', './assets/img/avatar_2x.png');
+            $('#crop-avatar').attr('data-src', './assets/img/avatar_2x.png');
+          });
+          this.imageProfile = null;
+          console.log(err)
+        })
+      }*/
+
+
+
       /*this.membreForm.valueChanges.subscribe(change => {
         this.membreForm.get('matricule').setValidators([opValidator.uniqueNumeroMembre(this.membresData, 'ajouter'), Validators.required]);
       });
@@ -1198,8 +1246,16 @@ export class MembrePage implements OnInit {
           JsBarcode('#barcode-infos', u.matricule, {height: 50});
         });
 
+        //console.log(u)
+        $('#avatar-infos').ready(() => {
+          //$('#avatar-infos').attr('src', '');
+          //$('#avatar-infos').attr('data-src', '');
+          $('#avatar-infos').attr('src', u.photo);
+          $('#avatar-infos').attr('data-src', u.photo);
+        });
+
         //si on vient de modofoer le membre le membre et modifier la photo
-        if(this.imageProfile && this.imageProfile != ''){
+        /*if(this.imageProfile && this.imageProfile != ''){
           var self = this;
           $('#avatar-infos').ready(() => {
             //$('#avatar-infos').attr('src', '');
@@ -1209,6 +1265,7 @@ export class MembrePage implements OnInit {
           });
         }else{
           this.servicePouchdb.getRelationalDocAttachment('membre', u.id, 'avatar').then((res) => {
+            //console.log(res)
             if(res && res != ''){
               $('#avatar-infos').ready(() => {
                 //$('#avatar-infos').attr('src', '');
@@ -1216,7 +1273,7 @@ export class MembrePage implements OnInit {
                 $('#avatar-infos').attr('src', res);
                 $('#avatar-infos').attr('data-src', res);
               });
-              this.imageProfile = res;
+              //this.imageProfile = res;
             }else{
               $('#avatar-infos').ready(() => {
                 $('#avatar-infos').attr('src', './assets/img/avatar_2x.png');
@@ -1233,7 +1290,7 @@ export class MembrePage implements OnInit {
             this.imageProfile = null;
             console.log(err)
           })
-        }
+        }*/
         this.action = 'infos';
       }
     }
@@ -1249,6 +1306,7 @@ export class MembrePage implements OnInit {
       }
 
       this.doModification = true;
+      this.photoSupprimer = false;
       this.base64Image = null;
       this.servicePouchdb.findRelationalDocByID('membre', id).then((res) => {
         if(res && res.membres[0]){
@@ -1270,6 +1328,8 @@ export class MembrePage implements OnInit {
           
           if(oDoc.formData.niveau == '1'){
             this.getFederation();
+            this.getUnionParFederation(oDoc.partenaire)
+            this.getOpParUnion(oDoc.union)
             //this.getUnionParFederation(oDoc.numeroFederation);
           }
 
@@ -1614,13 +1674,33 @@ export class MembrePage implements OnInit {
     async presentFederation(idFederation) {
       const modal = await this.modalController.create({
         component: PartenairePage,
-        componentProps: { idFederation: idFederation },
+        componentProps: { idPartenaire: idFederation },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
       return await modal.present();
     }
+
+    async presentEssais(idMembre){
+      const modal = await this.modalController.create({
+        component: EssaiPage,
+        componentProps: { idMembre: idMembre },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
   
+    async presentChamps(idMembre){
+      const modal = await this.modalController.create({
+        component: ChampPage,
+        componentProps: { idMembre: idMembre },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
     async archivageMultiple(ids) {
       const alert = await this.alertCtl.create({
         header: this.translate.instant('GENERAL.ALERT_CONFIERMER'),
@@ -2304,7 +2384,8 @@ export class MembrePage implements OnInit {
   
     retour(){
       if(this.action === 'modifier'){
-        this.action = "infos";
+        this.infos(this.unMembre)
+        /*this.action = "infos";
 
         //créer code bar et charger image profile
         $('#barcode-infos').ready(() => {
@@ -2317,7 +2398,7 @@ export class MembrePage implements OnInit {
             $('#avatar-infos').attr('src', this.imageProfile);
             $('#avatar-infos').attr('data-src', this.imageProfile);
           });    
-        }
+        }*/
 
       }else{
         //this.action = 'liste';
@@ -2764,6 +2845,10 @@ export class MembrePage implements OnInit {
             membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
           }
 
+          membresData.map((membre) => {
+            this.getPhoto(membre)
+          })
+
           if(this.mobile){
             this.membresData = membresData;
             this.membresData.sort((a, b) => {
@@ -3013,18 +3098,14 @@ export class MembrePage implements OnInit {
         //mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.navCtrl.navigateForward('/localite/membres/membre/'+this.unMembre.matricule)
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
-          
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
-          
-        } else if(dataReturned !== null && dataReturned.data == 'membre') {
-          
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssais(this.unMembre.id);
+        }else if(dataReturned !== null && dataReturned.data == 'champs') {
+          this.presentChamps(this.unMembre.id);
         }
   
-      });*/
+      });
       return await popover.present();
     }
 
@@ -3039,14 +3120,14 @@ export class MembrePage implements OnInit {
         //mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'commune') {
-          this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
-        } else if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.presentMembre(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssais(this.selectedIndexes[0]);
+        } else if(dataReturned !== null && dataReturned.data == 'champs') {
+          this.presentChamps(this.selectedIndexes[0]); 
         }
   
-      });*/
+      });
       return await popover.present();
     }
   
@@ -3064,20 +3145,21 @@ export class MembrePage implements OnInit {
         mode: "ios"
       });
   
-      /*popover.onWillDismiss().then((dataReturned) => {
-        if(dataReturned !== null && dataReturned.data == 'commune') {
-          this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
-        } else if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.presentMembre(this.departementsData[this.selectedIndexes[0]].codeDepartement) 
+      popover.onWillDismiss().then((dataReturned) => {
+        if(dataReturned !== null && dataReturned.data == 'essais') {
+          this.presentEssais(this.selectedIndexes[0]);
+        } else if(dataReturned !== null && dataReturned.data == 'champs') {
+          this.presentChamps(this.selectedIndexes[0]);
         }
   
-      });*/
+      });
       return await popover.present();
     }
   
     onSubmit(){
       let formData = this.membreForm.value;
       let formioData = {};
+      let photo = './assets/img/avatar_2x.png';
       if(this.action === 'ajouter'){
         //créer un nouveau membre
       
@@ -3156,8 +3238,9 @@ export class MembrePage implements OnInit {
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
           //console.log(res.membres)
-          let membreData = {id: res.membres[0].id,...membre.formData, ...membre.formioData, ...membre.security};
+          
           if(this.base64Image && this.base64Image != ''){
+            photo = this.base64Image;
             var attachement;
             var extension;
             if(this.base64Image.indexOf(';base64') !== -1){
@@ -3169,12 +3252,15 @@ export class MembrePage implements OnInit {
 
             this.servicePouchdb.putRelationalDocAttachment(res.membres[0].type, res.membres[0].id, res.membres[0].rev, 'avatar', attachement, 'image/'+extension).then((res) => {
               //membreData.rev = res.rev;
-              console.log('Attachement added');
+              console.log('Attachement ajouté');
               this.base64Image = null;
             }).catch((err) => {
               alert(err);
             });
           }
+          
+          let membreData = {id: res.membres[0].id, photo: photo, ...membre.formData, ...membre.formioData, ...membre.security};
+          
           //this.membres = membre;
           this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+membreData.niveau).subscribe((res2: string) => {
             membreData.niveau = res2;
@@ -3295,7 +3381,7 @@ export class MembrePage implements OnInit {
         this.servicePouchdb.updateRelationalDoc(doc).then((res) => {
           //this.membres._rev = res.rev;
           //this.unMembreDoc._rev = res.rev;
-          let membreData = {id: this.unMembreDoc.id, ...this.unMembreDoc.formData, ...this.unMembreDoc.formioData, ...this.unMembreDoc.security};
+          let membreData = {id: this.unMembreDoc.id, photo: this.unMembre.photo, ...this.unMembreDoc.formData, ...this.unMembreDoc.formioData, ...this.unMembreDoc.security};
 
           this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+membreData.niveau).subscribe((res2: string) => {
             membreData.niveau = res2;
@@ -3316,7 +3402,7 @@ export class MembrePage implements OnInit {
           }
 
           if(this.base64Image && this.base64Image != ''){
-            
+            photo = this.base64Image;
             var attachement;
             var extension;
             if(this.base64Image.indexOf(';base64') !== -1){
@@ -3328,29 +3414,38 @@ export class MembrePage implements OnInit {
             
             this.servicePouchdb.putRelationalDocAttachment(res.membres[0].type, res.membres[0].id, res.membres[0].rev, 'avatar', attachement, 'image/'+extension).then((res) => {
               //membreData.rev = res.rev;
-              console.log('Attachement updated');
-              this.action = 'infos';
-              this.imageProfile = this.clone(this.base64Image);
+              console.log('Attachement mise à jour');
+              //this.action = 'infos';
+              //this.imageProfile = this.clone(this.base64Image);
+              membreData.photo = photo;
               this.infos(membreData);
               this.base64Image = null;
             }).catch((err) => {
               alert('erreur enregistrement photo: '+err);
-              this.action = 'infos';
+              //this.action = 'infos';
+              //membreData.photo = photo;
               this.infos(membreData);
               this.base64Image = null;
             });
-          }else if(this.imageProfile && this.imageProfile != ''){
+          }else if(this.photoSupprimer){
             this.servicePouchdb.removeRelationalDocAttachment(res.membres[0], 'avatar').then((res) => {
-              console.log('Attachement removed');
-              this.action = 'infos';
-              this.imageProfile = null;
+              console.log('Attachement supprimé');
+              //this.action = 'infos';
+              membreData.photo = photo;
+              //console.log(membreData.photo)
               this.infos(membreData);
+              this.imageProfile = null;
+              
             }).catch((err) => {
               alert('erreur suppresion photo: '+err);
-              this.action = 'infos';
+              //this.action = 'infos';
               this.infos(membreData);
+              this.imageProfile = null;
+              
             })
             
+          }else{
+            this.infos(membreData);
           }
 
 
@@ -3711,6 +3806,10 @@ export class MembrePage implements OnInit {
                 membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
               }
 
+              membresData.map((membre) => {
+                this.getPhoto(membre)
+              })
+
   
               //this.membresData = [...datas];
     
@@ -4009,6 +4108,10 @@ export class MembrePage implements OnInit {
 
                 membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
               }
+
+              membresData.map((membre) => {
+                this.getPhoto(membre)
+              })
   
                 //si mobile
             if(this.mobile){
@@ -4156,7 +4259,14 @@ export class MembrePage implements OnInit {
               pro = null;
             }
 
-            this.infos({id: res.partenaires[0].id, idFederation: f, idUnion: u, idOp: op, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idLieuHabitation: res.localites[0].id, idEthnie: et, idProfession: pro,...res.membres[0].formData}); 
+            //console.log(res)
+            //this.infos({id: res.membres[0].id, idFederation: f, idUnion: u, idOp: op, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idLieuHabitation: res.localites[0].id, idEthnie: et, idProfession: pro,...res.membres[0].formData}); 
+          
+            let membre = {id: res.membres[0].id, idFederation: f, idUnion: u, idOp: op, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idLieuHabitation: res.localites[0].id, idEthnie: et, idProfession: pro,...res.membres[0].formData};
+            
+            this.getPhoto(membre)
+            this.infos(membre);
+
           }else{
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
@@ -4171,6 +4281,7 @@ export class MembrePage implements OnInit {
         var archived: any;
         var shared: any;
         var typePere, idPere;
+        
         if(this.action == 'corbeille'){
           deleted = true;
           archived = {$ne: null};
@@ -4192,14 +4303,15 @@ export class MembrePage implements OnInit {
         if(this.idOp){
           typePere = 'op';
           idPere = this.idOp;
-        }if(this.idUnion){
+        }else if(this.idUnion){
           typePere = 'union';
           idPere = this.idUnion;
         }else{
           typePere = 'partenaire';
           idPere = this.idPartenaire;
         }
-      
+
+        
         this.servicePouchdb.findRelationalDocOfTypeByPere('membre', typePere, idPere, deleted, archived, shared).then((res) => {
           //console.log(res)
           if(res && res.membres){
@@ -4431,6 +4543,10 @@ export class MembrePage implements OnInit {
               membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
             }
 
+            membresData.map((membre) => {
+              this.getPhoto(membre)
+            })
+
             //this.membresData = [...datas]; 
   
             if(this.mobile){
@@ -4502,6 +4618,11 @@ export class MembrePage implements OnInit {
             for(let u of res.membres){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
+
+            //  var p = this.getPhoto(u)
+              
+
+              //console.log(u);
 
               this.translate.get('MEMBRE_PAGE.CHOIXNIVEAU.'+u.formData.niveau).subscribe((res: string) => {
                 u.formData.niveau = res;
@@ -4713,8 +4834,28 @@ export class MembrePage implements OnInit {
                 idProfession = null;
               }
 
-              membresData.push({id: u.id, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
+              
+              /*Promise.all(promises).then(
+                res => {
+                    this.membres = res
+                    this.allMembres=[...res]
+                    this.rechercher = false;
+                    if(this.refresher !== ''){
+                      this.refresher.complete();
+                    }
+                 
+                }
+              )*/
+              //console.log(u);
+              //let formData = u.formData
+              //console.log(formData);
+              membresData.push({id: u.id, photo: u.photo, idFederation: idFederation, idUnion: idUnion, idOp: idOp, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idLieuHabitation: idLieuHabitation, idEthnie: idEthnie, idProfession: idProfession, ...u.formData, ...u.formioData, ...u.security});
             }
+
+            membresData.map((membre) => {
+              this.getPhoto(membre)
+            })
+            
 
             //this.membresData = [...datas];
   
@@ -4751,6 +4892,30 @@ export class MembrePage implements OnInit {
       }
       
     }
+
+
+
+    getPhoto(membre) {
+//      return new Promise((resolve, reject) => {  
+
+        return this.servicePouchdb.getRelationalDocAttachment('membre', membre.id, 'avatar').then((res) => {
+          //console.log(res)
+          if(res && res != ''){
+            membre.photo = res;
+            //resolve(membre)
+          }else{
+            membre.photo = './assets/img/avatar_2x.png';
+            //resolve(membre)
+          }
+        }).catch((err) => {
+          
+          membre.photo = './assets/img/avatar_2x.png';
+          //resolve(membre)
+          //console.log(err)
+        });
+      //});
+    }
+  
   
     getProfession(){
       this.professionsData = [];
@@ -5015,6 +5180,9 @@ export class MembrePage implements OnInit {
             this.setSelect2DefaultValue('idFederation', this.unMembre.idFederation);
           }else if(this.idPartenaire){
             this.setSelect2DefaultValue('idFederation', this.idPartenaire);
+            $('#idFederation select').ready(()=>{
+              $('#idFederation select').attr('disabled', true)
+            });
           }else{
             this.setSelect2DefaultValue('idFederation', monInstitution);
           }
@@ -5054,6 +5222,9 @@ export class MembrePage implements OnInit {
               this.setSelect2DefaultValue('idUnion', this.unMembre.idUnion);
             }else if(this.idUnion){
               this.setSelect2DefaultValue('idUnion', this.idUnion);
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
             }
             
           }
@@ -5088,6 +5259,9 @@ export class MembrePage implements OnInit {
               this.setSelect2DefaultValue('idUnion', this.unMembre.idUnion);
             }else if(this.idUnion){
               this.setSelect2DefaultValue('idUnion', this.idUnion);
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
             }
             
           }
@@ -5124,6 +5298,9 @@ export class MembrePage implements OnInit {
               this.setSelect2DefaultValue('idOp', this.unMembre.idOp);
             }else if(this.idOp){
               this.setSelect2DefaultValue('idOp', this.idOp);
+              $('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });
             }
             
           }
@@ -5158,6 +5335,9 @@ export class MembrePage implements OnInit {
               this.setSelect2DefaultValue('idOp', this.unMembre.idOp);
             }else if(this.idOp){
               this.setSelect2DefaultValue('idOp', this.idOp);
+              $('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });
             }
             
           }

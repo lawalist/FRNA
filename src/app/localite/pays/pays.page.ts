@@ -969,7 +969,7 @@ export class PaysPage implements OnInit {
 
       this.servicePouchdb.createRelationalDoc(pays).then((res) => {
         //fusionner les différend objets
-        let paysData = {id: res.id, ...pays.formData, ...pays.formioData, ...pays.security};
+        let paysData = {id: res.pays[0].id, ...pays.formData, ...pays.formioData, ...pays.security};
         //this.pays = pays;
         //pays._rev = res.rev;
 

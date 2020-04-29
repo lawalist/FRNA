@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar> 
-    <ion-buttons slot="start">
+    <ion-buttons *ngIf="!idEssai" slot="start">
       <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
       <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
@@ -38,7 +38,7 @@
       <ion-button [class.color-blue]="essaisData.length == selectedIndexes.length" *ngIf="estModeCocherElemListe" (click)="cacherAction()">
         <ion-icon name="done-all"></ion-icon>
       </ion-button>
-                
+                 
       <ion-button ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
         <ion-icon name="more"></ion-icon>
       </ion-button>
@@ -48,7 +48,7 @@
       </ion-button>
     </ion-buttons>
  
-    <ion-buttons *ngIf="(idEssai || idProjet || idPartenaire)" slot="end">
+    <ion-buttons *ngIf="(idEssai || idProjet || idPartenaire || idProtocole || idMembre || idChamp)" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -245,11 +245,11 @@
           <ion-item-sliding *virtualItem="let p; let i =index">
             <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
               <ion-label>
-                <h2 text-capitalize><!--strong>{{'ESSAI_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
-                <h3 text-capitalize>{{p.nomProjet}}</h3>
+                <h2 ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                <h3 ion-text-capitalize>{{p.nomProjet}}</h3>
 
-                <!--h2 text-capitalize>{{p.numero}}</h2-->
-                <p text-capitalize><!--strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong-->{{p.nomSiege}}</p>
+                <!--h2 ion-text-capitalize>{{p.numero}}</h2-->
+                <p ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong-->{{p.nomSiege}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
@@ -281,9 +281,9 @@
   <!--Mode tableau-->
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
-      <div *ngIf="!idPartenaire && !idProjet" class="table-responsive" id="essai"></div>
+      <div *ngIf="!idChamp && !idMembre && !idPartenaire && !idProjet && !idProtocole" class="table-responsive" id="essai"></div>
 
-      <div *ngIf="idPartenaire || idProjet" class="table-responsive" id="essai-relation"></div>
+      <div *ngIf="idChamp || idMembre || idPartenaire || idProjet || idProtocole" class="table-responsive" id="essai-relation"></div>
 
       <!--Si le tableau est vide>
       <ion-list *ngIf="!essaisData || !essaisData.length > 0" lines="none">        
@@ -324,6 +324,11 @@
               <ion-row><ion-col><h2><strong>{{'GENERAL.PROJET' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentProjet(unEssai.idProjet)">{{unEssai.nomProjet}}</a></ion-col></ion-row>
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.PROTOCOLE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentProtocole(unEssai.idProtocole)">{{unEssai.nomProtocole}}</a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row><ion-col><h2><strong>{{'GENERAL.MEMBRE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentMembre(unEssai.idMembre)">{{unEssai.nomMembre}}</a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row><ion-col><h2><strong>{{'GENERAL.CHAMP' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentChamp(unEssai.idChamp)">{{unEssai.nomChamp}}</a></ion-col></ion-row>
+
             </div>
 
             <!--ng-container *ngIf="formulaireData && formulaireData.length > 0">
@@ -400,7 +405,7 @@
                 </ng-container>
                 
                 <!--li id="payment"><strong>Image</strong></li-->
-                <li id="confirm"><strong>Finish</strong></li>
+                <li id="confirm"><strong>Terminer</strong></li>
             </ul>
             <div class="progress">
                 <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
@@ -487,6 +492,47 @@
                       </div>
                     </ion-col>
                   </ion-row>
+
+
+                  <ion-row>
+                    <!--Membre-->
+                    <ion-col>
+                      <div id="idMembre" class="form-group has-feedback">
+                        <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONMEMBRE' | translate}}</label>
+                        <select class="select2 form-control" data-allow-clear="1">
+                          <option></option>
+                          <option *ngFor="let u of membreData" [value]=u.id >{{u.nom}}</option>
+                        </select>
+
+                        <div class="formio-errors invalid-feedback">
+                          <ng-container *ngFor="let validation of messages_validation.idMembre">
+                            <p class="help-block" *ngIf="essaiForm.get('idMembre').hasError(validation.type)">
+                              {{ validation.message }}
+                            </p>
+                          </ng-container>
+                        </div>
+                      </div>
+                    </ion-col>
+
+                    <!--Champ-->
+                    <ion-col>
+                      <div id="idChamp" class="form-group has-feedback">
+                        <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONCHAMP' | translate}}</label>
+                        <select class="select2 form-control" data-allow-clear="1">
+                          <option></option>
+                          <option *ngFor="let c of champData" [value]=c.id >{{c.nom}}</option>
+                        </select>
+
+                        <div class="formio-errors invalid-feedback">
+                          <ng-container *ngFor="let validation of messages_validation.idChamp">
+                            <p class="help-block" *ngIf="essaiForm.get('idChamp').hasError(validation.type)">
+                              {{ validation.message }}
+                            </p>
+                          </ng-container>
+                        </div>
+                      </div>
+                    </ion-col>
+                  </ion-row>
                           
                   <!--br>
                   <ion-row>
@@ -500,7 +546,7 @@
 
 
                 </div> 
-                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Next" />
+                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Suivant" />
             </fieldset>
 
             <ng-container *ngFor="let f of formulaireData">
@@ -520,8 +566,8 @@
                     </div>
                        
                 </div> 
-                <input type="button" [hidden]="!(formioFormsData[f.formData.code] && formioFormsData[f.formData.code].submit)" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Next" /> 
-                <input type="button" name="previous" class="previous action-button-previous" value="Previous" />
+                <input type="button" [hidden]="!(formioFormsData[f.formData.code] && formioFormsData[f.formData.code].submit)" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Suivant" /> 
+                <input type="button" name="previous" class="previous action-button-previous" value="Précédent" />
               </fieldset>
             </ng-container>
             <!--fieldset>
@@ -535,15 +581,15 @@
                         </div>
                     </div> <label class="fieldlabels">Upload Your Photo:</label> <input type="file" name="pic" accept="image/*"> <label class="fieldlabels">Upload Signature Photo:</label> <input type="file" name="pic" accept="image/*">
                 </div> 
-                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Next" /> 
-                <input type="button" name="previous" class="previous action-button-previous" value="Previous" />
+                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Suivant" /> 
+                <input type="button" name="previous" class="previous action-button-previous" value="Précédent" />
             </fieldset-->
             
             <fieldset>
                 <div class="form-card">
                     <div class="row">
                         <div class="col-7">
-                            <h2 class="fs-title">Finish:</h2>
+                            <h2 class="fs-title">Terminer:</h2>
                         </div>
                         <div class="col-5">
                             <h2 class="steps">Etape {{etapeCourante}} - {{nbEtapes}}</h2>
@@ -555,7 +601,7 @@
                     </div> <br><br>
                     <div class="row justify-content-center">
                         <div class="col-7 text-center">
-                            <h5 class="purple-text text-center">You Have Successfully Signed Up</h5>
+                            <h5 class="purple-text text-center">Bravo! Vous avez terminé avec succès.</h5>
                         </div>
                     </div>
                 </div>

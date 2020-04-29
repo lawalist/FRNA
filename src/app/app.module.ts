@@ -41,6 +41,10 @@ import { Crop } from '@ionic-native/crop/ngx';
 import { Camera } from '@ionic-native/camera/ngx';
 import { ProjetPageModule } from './recherche/projet/projet.module';
 import { FormulaireProtocolePageModule } from './recherche/formulaire-protocole/formulaire-protocole.module';
+import { MembrePageModule } from './institution/membre/membre.module';
+import { ChampPageModule } from './institution/champ/champ.module';
+import { EssaiPageModule } from './recherche/essai/essai.module';
+import { ProtocolePageModule } from './recherche/protocole/protocole.module';
 
 
 //Activé angular en mode production
@@ -74,7 +78,11 @@ export function HttpLoaderFactory(http: HttpClient) {
     PartenairePageModule,
     UnionPageModule,
     OpPageModule,
+    MembrePageModule,
+    ChampPageModule,
+    EssaiPageModule,
     ProjetPageModule,
+    ProtocolePageModule,
     FormulaireProtocolePageModule
   ],
   providers: [

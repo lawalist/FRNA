@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
 
 @Component({
   selector: 'app-bd-locale',
@@ -7,9 +8,17 @@ import { Component, OnInit } from '@angular/core';
 })
 export class BDLocalePage implements OnInit {
 
-  constructor() { }
+  constructor(private servicePouchdb: PouchdbService) { }
 
   ngOnInit() {
+  }
+
+  destroyDBs(){
+    this.servicePouchdb.destroyDB().then((res) => {
+      alert("BD réinitialisée avec succes")
+    }).catch((err) => {
+      alert('err suppression BD '+err)
+    });
   }
 
 }

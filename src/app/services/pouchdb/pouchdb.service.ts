@@ -50,7 +50,8 @@ export class PouchdbService {
         plural: 'essais',
         relations: {
           'protocole': {belongsTo: 'protocole'},
-          'membre': {belongsTo: 'membre'}
+          'membre': {belongsTo: 'membre'},
+          'champ': {belongsTo: 'champ'}
         }
       },
       {
@@ -69,8 +70,8 @@ export class PouchdbService {
         }
       },
       {
-        singular: 'formulaire-protocole',
-        plural: 'formulaire-protocoles',
+        singular: 'formulaireprotocole',
+        plural: 'formulaireprotocoles',
         relations: {
           'protocole': {belongsTo: 'protocole'}
         }
@@ -206,10 +207,15 @@ export class PouchdbService {
         }
       },
       {
+        singular: 'typesole',
+        plural: 'typesoles'
+      },
+      {
         singular: 'champ',
         plural: 'champs',
         relations: {
-          'membre': {belongsTo: 'membre'}
+          'membre': {belongsTo: 'membre'},
+          'typesole': {belongsTo: 'typesole'}
         }
       }
     ]);
@@ -1295,5 +1301,8 @@ export class PouchdbService {
     return Id
   }
 
+  destroyDB(){
+    return this.localDB.destroy()
+  }
 
 }

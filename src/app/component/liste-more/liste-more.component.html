@@ -3,11 +3,11 @@
     <ion-label>{{'GENERAL.SELECTION_MULTIPLE' | translate}}</ion-label>
   </ion-item>
   
-  <ion-item *ngIf='options.estModeCocherElemListe && (options.dataLength !== options.seletedIndexesLength)' title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectAll')">
+  <ion-item *ngIf='options.estModeCocherElemListe && (options.dataLength !== options.selectedIndexesLength)' title="{{'GENERAL.SELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectAll')">
     <ion-label>{{'GENERAL.SELECTIONNER_TOUS' | translate}}</ion-label>
   </ion-item>
-  
-  <ion-item *ngIf='options.estModeCocherElemListe &&  options.seletedIndexesLength > 0' title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectNon')">
+
+  <ion-item *ngIf='options.estModeCocherElemListe &&  options.selectedIndexesLength > 0' title="{{'GENERAL.DESELECTIONNER_TOUS' | translate}}" button (click)="choix('listSelectNon')">
     <ion-label>{{'GENERAL.DESELECTIONNER_TOUS' | translate}}</ion-label>
   </ion-item>
 

@@ -24,6 +24,8 @@ import { isObject } from 'util';
 import { isDefined } from '@angular/compiler/src/util';
 import { UnionPage } from '../union/union.page';
 import { OpPage } from '../op/op.page';
+import { MembrePage } from '../membre/membre.page';
+import { ProjetPage } from 'src/app/recherche/projet/projet.page';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 //declare var JSONToTHMLTable: any;
@@ -53,8 +55,8 @@ export class MonInstitutionPage implements OnInit {
   communeData: any = [];
   localiteData: any = [];
   categoriePartenaire = [];
-  secteurs = [];
-  domaines = [];
+  secteurPublics = [];
+  secteurActivites = [];
   unPartenaire: any;
   unPartenaireDoc: any;
   partenaireHTMLTable: any;
@@ -71,7 +73,7 @@ export class MonInstitutionPage implements OnInit {
   doModification: boolean = false;
   estModeCocherElemListe: boolean = false;
   rechargerListeMobile: boolean = false;
-  colonnes = ['nom', 'numero', 'categorie', 'secteur', 'domaine', 'dateCreation', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomSiege', 'codeSiege', 'latitude', 'longitude']
+  colonnes = ['nom', 'numero', 'categorie', 'secteurPublic', 'secteurActivite', 'dateCreation', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomSiege', 'codeSiege', 'latitude', 'longitude']
 
   messages_validation = {
     'numero': [
@@ -84,10 +86,10 @@ export class MonInstitutionPage implements OnInit {
     'categorie': [
       { type: 'required', message: '' }
     ],
-    'domaine': [
+    'secteurActivite': [
       { type: 'required', message: '' }
     ],
-    'secteur': [
+    'secteurPublic': [
       { type: 'required', message: '' }
     ],
 
@@ -141,14 +143,14 @@ export class MonInstitutionPage implements OnInit {
         return 0;
       });
 
-      //secteurs 
+      //secteurPublics 
       for(let i = 1; i <= 3; i++){
-        this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+i).subscribe((res: string) => {
-          this.secteurs.push({'id': i, 'val': res});
+        this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+i).subscribe((res: string) => {
+          this.secteurPublics.push({'id': i, 'val': res});
         });
       }
 
-      this.secteurs.sort((a, b) => {
+      this.secteurPublics.sort((a, b) => {
         if (a.val < b.val) {
           return -1;
         }
@@ -158,14 +160,14 @@ export class MonInstitutionPage implements OnInit {
         return 0;
       });
 
-      //domaines 
-      for(let i = 1; i <= 7; i++){
-        this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+i).subscribe((res: string) => {
-          this.domaines.push({'id': i, 'val': res});
+      //secteurActivites 
+      for(let i = 1; i <= 21; i++){
+        this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+i).subscribe((res: string) => {
+          this.secteurActivites.push({'id': i, 'val': res});
         });
       }
 
-      this.domaines.sort((a, b) => {
+      this.secteurActivites.sort((a, b) => {
         if (a.val < b.val) {
           return -1;
         }
@@ -245,12 +247,18 @@ export class MonInstitutionPage implements OnInit {
           if(id == 'idPays'){
             self.setCodeAndNomPays(self.partenaireForm.value[id]);
             self.setSelectRequredError(id, id)
+            self.departementData = [];
+            self.communeData = [];
+            self.localiteData = [];
           }else if(id == 'idRegion'){
             self.setCodeAndNomRegion(self.partenaireForm.value[id]);
             self.setSelectRequredError(id, id)
+            self.communeData = [];
+            self.localiteData = [];
           }else if(id == 'idDepartement'){
             self.setCodeAndNomDepartement(self.partenaireForm.value[id]);
             self.setSelectRequredError(id, id)
+            self.localiteData = [];
           }else if(id == 'idCommune'){
             self.setCodeAndNomCommune(self.partenaireForm.value[id]);
             self.setSelectRequredError(id, id)
@@ -320,8 +328,8 @@ export class MonInstitutionPage implements OnInit {
       nom: [null, Validators.required],
       numero: [null, Validators.required],
       categorie: [null, Validators.required],
-      secteur: [null, Validators.required],
-      domaine: [null, Validators.required],
+      secteurPublic: [null, Validators.required],
+      secteurActivite: [null, Validators.required],
       dateCreation: [null],   
       nomPays: [null, Validators.required],
       codePays: [null, Validators.required],
@@ -404,8 +412,8 @@ export class MonInstitutionPage implements OnInit {
       nom: [p.nom, Validators.required],
       numero: [p.numero, Validators.required],
       categorie: [p.categorie, Validators.required],
-      secteur: [p.secteur, Validators.required],
-      domaine: [p.domaine, Validators.required], 
+      secteurPublic: [p.secteurPublic, Validators.required],
+      secteurActivite: [p.secteurActivite, Validators.required], 
       dateCreation: [p.dateCreation],  
       nomPays: [nomPays, Validators.required],
       codePays: [codePays, Validators.required],
@@ -450,8 +458,8 @@ export class MonInstitutionPage implements OnInit {
     this.getPays();
     this.initForm();
     this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
-    this.initSelect2('secteur', this.translate.instant('PARTENAIRE_PAGE.SECTEUR'));
-    this.initSelect2('domaine', this.translate.instant('PARTENAIRE_PAGE.DOMAINE'));
+    this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
+    this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
     this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
     this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
     this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
@@ -500,8 +508,8 @@ export class MonInstitutionPage implements OnInit {
           this.editForm(res);
 
           this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
-          this.initSelect2('secteur', this.translate.instant('PARTENAIRE_PAGE.SECTEUR'));
-          this.initSelect2('domaine', this.translate.instant('PARTENAIRE_PAGE.DOMAINE'));
+          this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
+          this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
           this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
           this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
           this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
@@ -509,8 +517,8 @@ export class MonInstitutionPage implements OnInit {
           this.initSelect2('idSiege', this.translate.instant('PARTENAIRE_PAGE.SELECTIONSIEGE'));
 
           this.setSelect2DefaultValue('categorie', pDoc.formData.categorie)
-          this.setSelect2DefaultValue('secteur', pDoc.formData.secteur)
-          this.setSelect2DefaultValue('domaine', pDoc.formData.domaine)
+          this.setSelect2DefaultValue('secteurPublic', pDoc.formData.secteurPublic)
+          this.setSelect2DefaultValue('secteurActivite', pDoc.formData.secteurActivite)
           /*$('#numero input').ready(()=>{
             $('#numero input').attr('disabled', true)
           });*/
@@ -1616,12 +1624,12 @@ export class MonInstitutionPage implements OnInit {
               p.formData.categorie = res;
             });
       
-            this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+p.formData.secteur).subscribe((res: string) => {
-              p.formData.secteur = res;
+            this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+              p.formData.secteurPublic = res;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+p.formData.domaine).subscribe((res: string) => {
-              p.formData.domaine = res;
+            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+              p.formData.secteurActivite = res;
             });
 
             //chargement des relation localité
@@ -1968,6 +1976,10 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.unPartenaire.id);
+        }else if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.unPartenaire.id);
+        }else if(dataReturned !== null && dataReturned.data == 'projet') {
+          this.presentProjet(this.unPartenaire.id);
         }/*else if(dataReturned !== null && dataReturned.data == 'partenaire') {
           
         }else if(dataReturned !== null && dataReturned.data == 'partenaire') {
@@ -1996,6 +2008,10 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.selectedIndexes[0]);
         }else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.selectedIndexes[0]);
+        }else if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.selectedIndexes[0]);
+        }else if(dataReturned !== null && dataReturned.data == 'projet') {
+          this.presentProjet(this.selectedIndexes[0]);
         }
         /*if(dataReturned !== null && dataReturned.data == 'commune') {
           this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
@@ -2024,6 +2040,10 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.unPartenaire.id);
+        } else if(dataReturned !== null && dataReturned.data == 'membre') {
+          this.presentMembre(this.unPartenaire.id);
+        } else if(dataReturned !== null && dataReturned.data == 'projet') {
+          this.presentProjet(this.unPartenaire.id);
         }
         /*if(dataReturned !== null && dataReturned.data == 'commune') {
           this.presentCommune(this.departementsData[this.selectedIndexes[0]].codeDepartement);
@@ -2055,6 +2075,25 @@ export class MonInstitutionPage implements OnInit {
       return await modal.present();
     }
   
+    async presentMembre(idPartenaire){
+      const modal = await this.modalController.create({
+        component: MembrePage,
+        componentProps: { idPartenaire: idPartenaire },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+  
+    async presentProjet(idPartenaire){
+      const modal = await this.modalController.create({
+        component: ProjetPage,
+        componentProps: { idPartenaire: idPartenaire },
+        mode: 'ios',
+        cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
 
     onSubmit(){
       let formData = this.partenaireForm.value;
@@ -2115,18 +2154,18 @@ export class MonInstitutionPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let partenaireData = {id: res.id, ...partenaire.formData, ...partenaire.formioData, ...partenaire.security};
+          let partenaireData = {id: res.partenaires[0].id, ...partenaire.formData, ...partenaire.formioData, ...partenaire.security};
           
           this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+partenaireData.categorie).subscribe((res: string) => {
             partenaireData.categorie = res;
           });
     
-          this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+partenaireData.secteur).subscribe((res: string) => {
-            partenaireData.secteur = res;
+          this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+partenaireData.secteurPublic).subscribe((res: string) => {
+            partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+partenaireData.domaine).subscribe((res: string) => {
-            partenaireData.domaine = res;
+          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+            partenaireData.secteurActivite = res;
           });
 
           this.infos(partenaireData)
@@ -2181,12 +2220,12 @@ export class MonInstitutionPage implements OnInit {
             partenaireData.categorie = res;
           });
     
-          this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+partenaireData.secteur).subscribe((res: string) => {
-            partenaireData.secteur = res;
+          this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+partenaireData.secteurPublic).subscribe((res: string) => {
+            partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+partenaireData.domaine).subscribe((res: string) => {
-            partenaireData.domaine = res;
+          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+            partenaireData.secteurActivite = res;
           });
           
           this.action = 'infos';
@@ -2282,12 +2321,12 @@ export class MonInstitutionPage implements OnInit {
               res.partenaires[0].formData.categorie = res2;
             });
       
-            this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+res.partenaires[0].formData.secteur).subscribe((res2: string) => {
-              res.partenaires[0].formData.secteur = res2;
+            this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+res.partenaires[0].formData.secteurPublic).subscribe((res2: string) => {
+              res.partenaires[0].formData.secteurPublic = res2;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+res.partenaires[0].formData.domaine).subscribe((res2: string) => {
-              res.partenaires[0].formData.domaine = res;
+            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+res.partenaires[0].formData.secteurActivite).subscribe((res2: string) => {
+              res.partenaires[0].formData.secteurActivite = res;
             });
 
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'nomPays', res.pays[0].formData.nom, 6); 
@@ -2333,12 +2372,12 @@ export class MonInstitutionPage implements OnInit {
                   p.formData.categorie = res;
                 });
           
-                this.translate.get('PARTENAIRE_PAGE.SECTEURS.'+p.formData.secteur).subscribe((res: string) => {
-                  p.formData.secteur = res;
+                this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+                  p.formData.secteurPublic = res;
                 });
                 
-                this.translate.get('PARTENAIRE_PAGE.DOMAINES.'+p.formData.domaine).subscribe((res: string) => {
-                  p.formData.domaine = res;
+                this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                  p.formData.secteurActivite = res;
                 });
                 
                 //chargement des relation localité
@@ -2830,14 +2869,14 @@ export class MonInstitutionPage implements OnInit {
         this.messages_validation.categorie[0].message = res;
       });
 
-       //autre type secteur
-       this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.SECTEUR.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.secteur[0].message = res;
+       //autre type secteurPublic
+       this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.SECTEURPUBLIC.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.secteurPublic[0].message = res;
       });
 
-      //autre type domaine
-      this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.DOMAINE.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.domaine[0].message = res;
+      //autre type secteurActivite
+      this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.SECTEURACTIVITE.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.secteurActivite[0].message = res;
       });
 
       //code pays

@@ -104,7 +104,7 @@ export var global = {
     },
     dataTable: true,
     peutExporterDonnees: true,
-    mobile: true,
+    mobile: false,
     selectedIndexes: [],
     estConnecte: false,
     remoteSaved: null,

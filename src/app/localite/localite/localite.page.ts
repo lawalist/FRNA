@@ -213,8 +213,11 @@ export class LocalitePage implements OnInit {
           self.localiteForm.controls[id].setValue(e.params.data.id)
           if(id == 'idPays'){
             self.setCodeAndNomPays(self.localiteForm.value[id]);
+            self.departementData = [];
+            self.communeData = [];
           }else if(id == 'idRegion'){
             self.setCodeAndNomRegion(self.localiteForm.value[id]);
+            self.communeData = [];
           }else if(id == 'idDepartement'){
             self.setCodeAndNomDepartement(self.localiteForm.value[id]);
           }else if(id == 'idCommune'){
@@ -729,7 +732,7 @@ export class LocalitePage implements OnInit {
           //this.setSelect2DefaultValue('codeRegion', l.codeRegion)
           //this.setSelect2DefaultValue('codeDepartement', l.codeDepartement)
           //this.setSelect2DefaultValue('codeCommune', l.codeCommune)
-          this.setSelect2DefaultValue('type', l.type)
+          this.setSelect2DefaultValue('type', res.localites[0].formData.type)
 
           /*$('#numero input').ready(()=>{
             $('#numero input').attr('disabled', true)
@@ -1284,7 +1287,7 @@ export class LocalitePage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let localiteData = {id: res.id, ...localite.formData, ...localite.formioData, ...localite.security};
+          let localiteData = {id: res.localites[0].id, ...localite.formData, ...localite.formioData, ...localite.security};
           //this.unions = union;
           this.translate.get('LOCALITE_PAGE.CHOIXTYPE.'+localiteData.type).subscribe((res: string) => {
             localiteData.type = res;

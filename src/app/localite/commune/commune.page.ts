@@ -1228,7 +1228,7 @@ export class CommunePage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let communeData = {id: res.id, ...commune.formData, ...commune.formioData, ...commune.security};
+          let communeData = {id: res.communes[0].id, ...commune.formData, ...commune.formioData, ...commune.security};
           //this.unions = union;
           this.action = 'liste';
 
@@ -1612,9 +1612,9 @@ export class CommunePage implements OnInit {
             if(!this.mobile){
               $('#commune').ready(()=>{
                 if(global.langue == 'en'){
-                  this.communeHTMLTable = createDataTable("commune", this.colonnes, this.communesData, null, this.translate, global.peutExporterDonnees);
+                  this.communeHTMLTable = createDataTable("commune", this.colonnes, communesData, null, this.translate, global.peutExporterDonnees);
                 }else{
-                  this.communeHTMLTable = createDataTable("commune", this.colonnes, this.communesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.communeHTMLTable = createDataTable("commune", this.colonnes, communesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
                 }
                 this.attacheEventToDataTable(this.communeHTMLTable.datatable);
               });
@@ -1713,7 +1713,7 @@ export class CommunePage implements OnInit {
             res.communes[0].formData = this.addItemToObjectAtSpecificPosition(res.communes[0].formData, 'nomDepartement', res.departements[0].formData.nom, 4);    
             res.communes[0].formData = this.addItemToObjectAtSpecificPosition(res.communes[0].formData, 'codeDepartement', res.departements[0].formData.code, 5);
             
-            this.uneCommune = {id: res.id, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, ...res.communes[0].formData, ...res.communes[0].formioData, ...res.communes[0].security};
+            this.uneCommune = {id: res.communes[0].id, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, ...res.communes[0].formData, ...res.communes[0].formioData, ...res.communes[0].security};
             this.infos(this.uneCommune);
           }
         }).catch((err) => {
@@ -1986,6 +1986,7 @@ export class CommunePage implements OnInit {
 
     getRegionParPays(idPays){
       this.regionData = [];
+      this.departementData = [];
       if(this.idRegion && this.idRegion != ''){
         this.servicePouchdb.findRelationalDocByTypeAndID('region', this.idRegion).then((res) => {
           if(res && res.regions && res.regions[0]){
@@ -2091,6 +2092,7 @@ export class CommunePage implements OnInit {
           if(idPays == p.id){
             this.communeForm.controls.codePays.setValue(p.code);
             this.communeForm.controls.nomPays.setValue(p.nom);
+            
             this.communeForm.controls.idRegion.setValue(null);
             this.communeForm.controls.codeRegion.setValue(null);
             this.communeForm.controls.nomRegion.setValue(null);
@@ -2098,6 +2100,7 @@ export class CommunePage implements OnInit {
             this.communeForm.controls.idDepartement.setValue(null);
             this.communeForm.controls.codeDepartement.setValue(null);
             this.communeForm.controls.nomDepartement.setValue(null);
+            
             this.communeForm.controls.code.setValue(null);
             this.communeForm.controls.numero.setValue(null);
 
@@ -2113,6 +2116,7 @@ export class CommunePage implements OnInit {
         this.communeForm.controls.idDepartement.setValue(null);
         this.communeForm.controls.nomDepartement.setValue(null);
         this.communeForm.controls.codeDepartement.setValue(null);
+
         this.communeForm.controls.code.setValue(null);
         this.communeForm.controls.numero.setValue(null);
       }

@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar> 
-    <ion-buttons slot="start">
+    <ion-buttons *ngIf="!idMembre" slot="start">
       <ion-menu-button *ngIf="!mobile || (mobile && action != 'infos' && action != 'modifier' && action != 'ajouter')"></ion-menu-button>
       <ion-button *ngIf="mobile && action != 'liste' && action != 'corbeille' && action != 'archives' && action != 'partages' && action != 'conflits'" ion-button icon-only  (click)="retour()">
         <ion-icon name="arrow-back"></ion-icon>
@@ -26,7 +26,7 @@
     <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
     <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!idMembre && mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
       <ion-button ion-button icon-only  (click)="openRelationMembre($event)">
         <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
       </ion-button>
@@ -55,7 +55,7 @@
       </ion-button>
     </ion-buttons>
  
-    <ion-buttons *ngIf="(idMembre || idUnion || idPartenaire)" slot="end">
+    <ion-buttons *ngIf="(idMembre || idUnion || idOp || idPartenaire)" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -260,13 +260,16 @@
       <ng-container *ngIf="membresData && membresData.length > 0">
         <ion-virtual-scroll [items]="membresData">
           <ion-item-sliding *virtualItem="let p; let i =index">
-            <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
-              <ion-label>
-                <h2 text-capitalize><!--strong>{{'MEMBRE_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
-                <h3 text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomUnion}}</h3>
+            <ion-item ion-long-press [interval]="400" (onPressing)="active()">
+              <ion-avatar slot="start">
+                <img [src]=sanitizer.bypassSecurityTrustUrl(p.photo) imageViewer />
+              </ion-avatar>
+              <ion-label (click)="infos(p)">
+                <h2 ion-text-capitalize><!--strong>{{'MEMBRE_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
+                <h3 ion-text-capitalize *ngIf="p.niveau && p.niveau == '1'">{{p.nomUnion}}</h3>
 
-                <!--h2 text-capitalize>{{p.matricule}}</h2-->
-                <p text-capitalize><!--strong>{{'MEMBRE_PAGE.NUMERO' | translate}}:</strong-->{{p.nomLieuHabitation}}</p>
+                <!--h2 ion-text-capitalize>{{p.matricule}}</h2-->
+                <p ion-text-capitalize><!--strong>{{'MEMBRE_PAGE.NUMERO' | translate}}:</strong-->{{p.nomLieuHabitation}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
@@ -299,9 +302,9 @@
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
       
-      <div *ngIf="!idPartenaire && !idUnion" class="table-responsive" id="membre"></div>
+      <div *ngIf="!idPartenaire && !idUnion && !idOp" class="table-responsive" id="membre"></div>
 
-      <div *ngIf="idPartenaire || idUnion" class="table-responsive" id="membre-relation"></div>
+      <div *ngIf="idPartenaire || idUnion || idOp" class="table-responsive" id="membre-relation"></div>
 
       <!--Si le tableau est vide>
       <ion-list *ngIf="!membresData || !membresData.length > 0" lines="none">        

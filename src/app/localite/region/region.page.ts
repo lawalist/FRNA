@@ -1149,7 +1149,7 @@ export class RegionPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let regionData = {id: res.id, ...region.formData, ...region.formioData, ...region.security};
+          let regionData = {id: res.regions[0].id, ...region.formData, ...region.formioData, ...region.security};
           //this.unions = union;
           this.action = 'liste';
 
