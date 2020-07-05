@@ -24,8 +24,9 @@ import { isObject } from 'util';
 import { isDefined } from '@angular/compiler/src/util';
 import { UnionPage } from '../union/union.page';
 import { OpPage } from '../op/op.page';
-import { MembrePage } from '../membre/membre.page';
+import { PersonnesPage } from '../personnes/personnes.page';
 import { ProjetPage } from 'src/app/recherche/projet/projet.page';
+import * as moment from 'moment';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 //declare var JSONToTHMLTable: any;
@@ -43,6 +44,8 @@ declare var cordova: any;
 export class MonInstitutionPage implements OnInit {
   @Input() idPartenaire: string;
 
+  global = global;
+  start: any;
   partenaireForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -124,10 +127,22 @@ export class MonInstitutionPage implements OnInit {
       this.translateChoixNiveau();
     }
 
+    controlAccesModele(idMenu, droit){
+      if(global.estModeTeste || global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1){
+        return true;
+      }else {
+        for(let p of global.info_user.permissionsAccesModel){
+          if(p.modele === idMenu && p[droit]){
+            return true;
+          }
+        }
+        return false;
+      }
+    }
 
     translateChoixNiveau(){
       //catégories 
-      for(let i = 1; i <= 8; i++){
+      for(let i = 1; i <= 12; i++){
         this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+i).subscribe((res: string) => {
           this.categoriePartenaire.push({'id': i, 'val': res});
         });
@@ -144,7 +159,7 @@ export class MonInstitutionPage implements OnInit {
       });
 
       //secteurPublics 
-      for(let i = 1; i <= 3; i++){
+      for(let i = 1; i <= 4; i++){
         this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+i).subscribe((res: string) => {
           this.secteurPublics.push({'id': i, 'val': res});
         });
@@ -161,7 +176,7 @@ export class MonInstitutionPage implements OnInit {
       });
 
       //secteurActivites 
-      for(let i = 1; i <= 21; i++){
+      /*for(let i = 1; i <= 21; i++){
         this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+i).subscribe((res: string) => {
           this.secteurActivites.push({'id': i, 'val': res});
         });
@@ -175,7 +190,7 @@ export class MonInstitutionPage implements OnInit {
           return 1;
         }
         return 0;
-      });
+      });*/
     }
 
 
@@ -331,6 +346,8 @@ export class MonInstitutionPage implements OnInit {
       secteurPublic: [null, Validators.required],
       secteurActivite: [null, Validators.required],
       dateCreation: [null],   
+      telephone: [null],
+      email: [null],
       nomPays: [null, Validators.required],
       codePays: [null, Validators.required],
       idPays: [null, Validators.required],
@@ -346,6 +363,7 @@ export class MonInstitutionPage implements OnInit {
       nomSiege: [null, Validators.required],
       codeSiege: [null, Validators.required],
       idSiege: [null, Validators.required],
+      adresse: [null],
       latitude: [null],
       longitude: [null],
     });
@@ -432,6 +450,9 @@ export class MonInstitutionPage implements OnInit {
       idSiege: [idSiege, Validators.required],
       latitude: [p.latitude],
       longitude: [p.latitude],
+      telephone: [p.telephone],
+      email: [p.email],
+      adresse: [p.adresse],
     });
 
     this.validerNumero();
@@ -455,11 +476,12 @@ export class MonInstitutionPage implements OnInit {
 
   ajouter(){
     this.doModification = false;
+    this.start = moment().toISOString();
     this.getPays();
     this.initForm();
     this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
     this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
-    this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
+    //this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
     this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
     this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
     this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
@@ -470,85 +492,90 @@ export class MonInstitutionPage implements OnInit {
   }
 
   infos(p){
-    if(!this.mobile){
-      this.unPartenaire = p;
-      this.action = 'infos';
-    }else  if(this.mobile && !this.estModeCocherElemListe){
-      this.unPartenaire = p;
-      this.action = 'infos';
+    if(global.controlAccesModele('mon-institution', 'lecture')){
+      if(!this.mobile){
+        this.unPartenaire = p;
+        this.action = 'infos';
+      }else  if(this.mobile && !this.estModeCocherElemListe){
+        this.unPartenaire = p;
+        this.action = 'infos';
+      }
     }
+    
   }
 
 
   modifier(partenaire){
-    //console.log(partenaire)
-    if(!this.idPartenaire){
-      let id;
-      if(isObject(partenaire)){
-        id = partenaire.id;
-      }else{
-        id = partenaire;
-      }
-
-      this.doModification = true;
-      this.servicePouchdb.findRelationalDocByID('partenaire', id).then((res) => {
-        if(res && res.partenaires[0]){
-          let pDoc = res.partenaires[0];
-          this.getPays();
-          //console.log(pDoc)
-          if(pDoc.pays)
-            this.getRegionParPays(pDoc.pays);
-          if(pDoc.region)
-            this.getDepartementParRegion(pDoc.region);
-          if(pDoc.departement)
-            this.getCommuneParDepartement(pDoc.departement);
-          if(pDoc.commune)
-            this.getLocaliteParCommune(pDoc.commune);
-            
-          this.editForm(res);
-
-          this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
-          this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
-          this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
-          this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
-          this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
-          this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
-          this.initSelect2('idCommune', this.translate.instant('PARTENAIRE_PAGE.SELECTIONCOMMUNE'));
-          this.initSelect2('idSiege', this.translate.instant('PARTENAIRE_PAGE.SELECTIONSIEGE'));
-
-          this.setSelect2DefaultValue('categorie', pDoc.formData.categorie)
-          this.setSelect2DefaultValue('secteurPublic', pDoc.formData.secteurPublic)
-          this.setSelect2DefaultValue('secteurActivite', pDoc.formData.secteurActivite)
-          /*$('#numero input').ready(()=>{
-            $('#numero input').attr('disabled', true)
-          });*/
-
-          //this.setSelect2DefaultValue('codePays', partenaire.codePays)
-          //this.setSelect2DefaultValue('codeRegion', partenaire.codeRegion)
-          //this.setSelect2DefaultValue('codeDepartement', partenaire.codeDepartement)
-          //this.setSelect2DefaultValue('codeCommune', partenaire.codeCommune)
-          //this.setSelect2DefaultValue('codeSiege', partenaire.codeSiege)
-          
-          this.unPartenaireDoc = pDoc;
-        
-          if(!isObject(partenaire)){
-            for(let p of this.partenairesData){
-              if(p.id == id){
-                this.unPartenaire = p;
-                break;
-              }
-            }
-          }else{
-            this.unPartenaire = partenaire;
-          }
-
-          this.action ='modifier';
+    if(global.controlAccesModele('mon-institution', 'modification')){
+      if(!this.idPartenaire){
+        let id;
+        if(isObject(partenaire)){
+          id = partenaire.id;
+        }else{
+          id = partenaire;
         }
-      }).catch((err) => {
-        alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-      })
-      
+  
+        this.doModification = true;
+        this.start = moment().toISOString();
+        this.servicePouchdb.findRelationalDocByID('partenaire', id).then((res) => {
+          if(res && res.partenaires[0]){
+            let pDoc = res.partenaires[0];
+            this.getPays();
+            //console.log(pDoc)
+            if(pDoc.pays)
+              this.getRegionParPays(pDoc.pays);
+            if(pDoc.region)
+              this.getDepartementParRegion(pDoc.region);
+            if(pDoc.departement)
+              this.getCommuneParDepartement(pDoc.departement);
+            if(pDoc.commune)
+              this.getLocaliteParCommune(pDoc.commune);
+              
+            this.editForm(res);
+  
+            this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
+            this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
+            //this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
+            this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
+            this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
+            this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
+            this.initSelect2('idCommune', this.translate.instant('PARTENAIRE_PAGE.SELECTIONCOMMUNE'));
+            this.initSelect2('idSiege', this.translate.instant('PARTENAIRE_PAGE.SELECTIONSIEGE'));
+  
+            this.setSelect2DefaultValue('categorie', pDoc.formData.categorie)
+            this.setSelect2DefaultValue('secteurPublic', pDoc.formData.secteurPublic)
+            //this.setSelect2DefaultValue('secteurActivite', pDoc.formData.secteurActivite)
+            /*$('#numero input').ready(()=>{
+              $('#numero input').attr('disabled', true)
+            });*/
+  
+            //this.setSelect2DefaultValue('codePays', partenaire.codePays)
+            //this.setSelect2DefaultValue('codeRegion', partenaire.codeRegion)
+            //this.setSelect2DefaultValue('codeDepartement', partenaire.codeDepartement)
+            //this.setSelect2DefaultValue('codeCommune', partenaire.codeCommune)
+            //this.setSelect2DefaultValue('codeSiege', partenaire.codeSiege)
+            
+            this.unPartenaireDoc = pDoc;
+          
+            if(!isObject(partenaire)){
+              for(let p of this.partenairesData){
+                if(p.id == id){
+                  this.unPartenaire = p;
+                  break;
+                }
+              }
+            }else{
+              this.unPartenaire = partenaire;
+            }
+  
+            this.action ='modifier';
+          }
+        }).catch((err) => {
+          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+        }) 
+      }  
     }
+    //console.log(partenaire)
     
   }
 
@@ -980,7 +1007,8 @@ export class MonInstitutionPage implements OnInit {
           "dataLength": this.partenairesData.length,
           "selectedIndexesLength": this.selectedIndexes.length,
           "styleAffichage": this.styleAffichage,
-          "action": this.action
+          "action": this.action,
+          idModele: 'mon-institution',
         }},
         animated: true,
         showBackdrop: true,
@@ -1024,14 +1052,15 @@ export class MonInstitutionPage implements OnInit {
       const popover = await this.popoverController.create({
         component: ListeActionComponent,
         event: ev,
-        translucent: true,
+        translucent: true, 
         componentProps: {//"options": {
           //"estModeCocherElemListe": this.estModeCocherElemListe,
           //"dataLength": this.partenairesData.length,
           //"selectedIndexesLength": this.selectedIndexes.length,
           //"styleAffichage": this.styleAffichage,
           "action": this.cacheAction,
-          "monInstitution": true
+          "monInstitution": true,
+          idModele: 'mon-institution',
       /*}*/},
         animated: true,
         showBackdrop: true,
@@ -1464,7 +1493,8 @@ export class MonInstitutionPage implements OnInit {
         component: ActionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'mon-institution',/*"id": "salu"*/},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1503,7 +1533,8 @@ export class MonInstitutionPage implements OnInit {
         component: ActionDatatableComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
+        componentProps: {
+          idModele: 'mon-institution', "action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1549,7 +1580,8 @@ export class MonInstitutionPage implements OnInit {
         component: SelectionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'mon-institution',/*"id": "salu"*/},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1570,7 +1602,8 @@ export class MonInstitutionPage implements OnInit {
         component: DatatableMoreComponent,
         event: ev,
         translucent: true,
-        componentProps: {action: this.action},
+        componentProps: {
+          idModele: 'mon-institution', action: this.action},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1628,9 +1661,9 @@ export class MonInstitutionPage implements OnInit {
               p.formData.secteurPublic = res;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+            /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
               p.formData.secteurActivite = res;
-            });
+            });*/
 
             //chargement des relation localité
             if(isDefined(paysIndex[p.pays])){
@@ -1775,7 +1808,8 @@ export class MonInstitutionPage implements OnInit {
         component: DatatableConstructComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "cacheAction": this.cacheAction},
+        componentProps: {
+          idModele: 'mon-institution', "action": this.action, "cacheAction": this.cacheAction},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1808,7 +1842,8 @@ export class MonInstitutionPage implements OnInit {
     async presentDerniereModification(partenaire) {
       const modal = await this.modalController.create({
         component: DerniereModificationComponent,
-        componentProps: { _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
+        componentProps: { 
+          idModele: 'mon-institution', _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1965,7 +2000,8 @@ export class MonInstitutionPage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": this.unPartenaire.id},
+        componentProps: {
+          idModele: 'mon-institution', "idPartenaire": this.unPartenaire.id},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -1976,7 +2012,7 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.unPartenaire.id);
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
+        }else if(dataReturned !== null && dataReturned.data == 'personne') {
           this.presentMembre(this.unPartenaire.id);
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(this.unPartenaire.id);
@@ -1997,7 +2033,8 @@ export class MonInstitutionPage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": this.selectedIndexes[0]},
+        componentProps: {
+          idModele: 'mon-institution', "idPartenaire": this.selectedIndexes[0]},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -2008,7 +2045,7 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.selectedIndexes[0]);
         }else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.selectedIndexes[0]);
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
+        }else if(dataReturned !== null && dataReturned.data == 'personne') {
           this.presentMembre(this.selectedIndexes[0]);
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(this.selectedIndexes[0]);
@@ -2029,7 +2066,8 @@ export class MonInstitutionPage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": this.unPartenaire.id},
+        componentProps: {
+          idModele: 'mon-institution', "idPartenaire": this.unPartenaire.id},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -2040,7 +2078,7 @@ export class MonInstitutionPage implements OnInit {
           this.presentUnion(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.unPartenaire.id);
-        } else if(dataReturned !== null && dataReturned.data == 'membre') {
+        } else if(dataReturned !== null && dataReturned.data == 'personne') {
           this.presentMembre(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(this.unPartenaire.id);
@@ -2058,7 +2096,8 @@ export class MonInstitutionPage implements OnInit {
     async presentUnion(idPartenaire){
       const modal = await this.modalController.create({
         component: UnionPage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {
+          idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2077,8 +2116,9 @@ export class MonInstitutionPage implements OnInit {
   
     async presentMembre(idPartenaire){
       const modal = await this.modalController.create({
-        component: MembrePage,
-        componentProps: { idPartenaire: idPartenaire },
+        component: PersonnesPage,
+        componentProps: {
+          idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2088,7 +2128,8 @@ export class MonInstitutionPage implements OnInit {
     async presentProjet(idPartenaire){
       const modal = await this.modalController.create({
         component: ProjetPage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {
+          idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2103,7 +2144,7 @@ export class MonInstitutionPage implements OnInit {
       
         let partenaire: any = {
           //_id: 'fuma:partenaire:'+data.numero,
-          //id: formData.numero,
+          id: 'EA33DF01-09C0-4199-B55F-BB6F72857A00',
           type: 'partenaire',
           pays: formData.idPays,
           region: formData.idRegion,
@@ -2115,10 +2156,20 @@ export class MonInstitutionPage implements OnInit {
           formioData: formioData,
           //pour garder les traces
           security: {
+            creation_start: this.start,
+            creation_end: moment().toISOString(),
             created_by: null,
             created_at: null,
-            updated_by: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
+            update_start: null,
+            update_end: null,
+            updated_by: null, 
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             archived: false,
             archived_by: null,
             archived_at: null,
@@ -2164,9 +2215,9 @@ export class MonInstitutionPage implements OnInit {
             partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+          /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
             partenaireData.secteurActivite = res;
-          });
+          });*/
 
           this.infos(partenaireData)
 
@@ -2192,6 +2243,8 @@ export class MonInstitutionPage implements OnInit {
         this.unPartenaireDoc.formioData = formioData;
 
         //this.unPartenaire = partenaireData;
+        this.unPartenaireDoc.security.update_start = this.start;
+        this.unPartenaireDoc.security.update_start = moment().toISOString();
         this.unPartenaireDoc.security = this.servicePouchdb.garderUpdateTrace(this.unPartenaireDoc.security);
 
         let doc = this.clone(this.unPartenaireDoc);
@@ -2224,9 +2277,9 @@ export class MonInstitutionPage implements OnInit {
             partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+          /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
             partenaireData.secteurActivite = res;
-          });
+          });*/
           
           this.action = 'infos';
           this.infos(partenaireData);
@@ -2325,9 +2378,9 @@ export class MonInstitutionPage implements OnInit {
               res.partenaires[0].formData.secteurPublic = res2;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+res.partenaires[0].formData.secteurActivite).subscribe((res2: string) => {
+            /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+res.partenaires[0].formData.secteurActivite).subscribe((res2: string) => {
               res.partenaires[0].formData.secteurActivite = res;
-            });
+            });*/
 
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'nomPays', res.pays[0].formData.nom, 6); 
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'codePays', res.pays[0].formData.code, 7);   
@@ -2376,9 +2429,9 @@ export class MonInstitutionPage implements OnInit {
                   p.formData.secteurPublic = res;
                 });
                 
-                this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
                   p.formData.secteurActivite = res;
-                });
+                });*/
                 
                 //chargement des relation localité
                 for(let i=0; i < res.pays.length; i++){
@@ -2875,9 +2928,9 @@ export class MonInstitutionPage implements OnInit {
       });
 
       //autre type secteurActivite
-      this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.SECTEURACTIVITE.REQUIRED').subscribe((res: string) => {
+      /*this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.SECTEURACTIVITE.REQUIRED').subscribe((res: string) => {
         this.messages_validation.secteurActivite[0].message = res;
-      });
+      });*/
 
       //code pays
       this.translate.get('PARTENAIRE_PAGE.MESSAGES_VALIDATION.CODEPAYS.REQUIRED').subscribe((res: string) => {

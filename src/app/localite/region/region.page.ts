@@ -38,6 +38,10 @@ export class RegionPage implements OnInit {
 
   @Input() idPays: string;
   @Input() idRegion: any;
+  @Input() filtreRegion: any;
+  @Input() filtrePays: any;
+
+  global = global;
   regionForm: FormGroup;
   action: string = 'liste';
   selectedPays:any;
@@ -551,33 +555,39 @@ export class RegionPage implements OnInit {
     }
   
     infos(p){
-      if(!this.estModeCocherElemListe){
-        this.uneRegion = p;
-        this.action = 'infos';
+      if(global.controlAccesModele('regions', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.uneRegion = p;
+          this.action = 'infos';
+        }
       }
     }
 
   
     modifier(r){
-      this.doModification = true;
-      this.servicePouchdb.findRelationalDocByID('region', r.id).then((res) => {
-        if(res && res.regions){
-          //let rDoc = res.regions[0];
-          this.getPays();
-          this.editForm(res);
-          this.initSelect2('idPays', this.translate.instant('REGION_PAGE.SELECTIONPAYS'));
-          //this.setSelect2DefaultValue('codePays', r.codePays)
-          /*$('#numero input').ready(()=>{
-            $('#numero input').attr('disabled', true)
-          });*/
-
-          this.uneRegion = r;
-          this.uneRegionDoc = res.regions[0];
-          this.action ='modifier';
+      if(!this.filtreRegion){
+        if(global.controlAccesModele('regions', 'modification')){
+          this.doModification = true;
+          this.servicePouchdb.findRelationalDocByID('region', r.id).then((res) => {
+            if(res && res.regions){
+              //let rDoc = res.regions[0];
+              this.getPays();
+              this.editForm(res);
+              this.initSelect2('idPays', this.translate.instant('REGION_PAGE.SELECTIONPAYS'));
+              //this.setSelect2DefaultValue('codePays', r.codePays)
+              /*$('#numero input').ready(()=>{
+                $('#numero input').attr('disabled', true)
+              });*/
+    
+              this.uneRegion = r;
+              this.uneRegionDoc = res.regions[0];
+              this.action ='modifier';
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          })
         }
-      }).catch((err) => {
-        alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-      })
+      }
     }
 
     getPosition(){
@@ -1129,8 +1139,14 @@ export class RegionPage implements OnInit {
           security: {
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             deleted: false,
             deleted_by: null,
             deleted_at: null,
@@ -1329,25 +1345,37 @@ export class RegionPage implements OnInit {
   
     doRefresh(event) {
       //this.servicePouchdb.getLocalDocById('fuma:region').then((region)
-      if(this.idPays && this.idPays != ''){       
+      if((this.idPays && this.idPays != '') || this.filtreRegion){       
         this.servicePouchdb.findRelationalDocHasMany('region', 'pays', this.idPays).then((res) => {
           if(res && res.regions){
             let regionsData = [];
             this.allRegionsData = [];
 
             for(let r of res.regions){
-              r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[0].formData.nom, 0);    
-              r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[0].formData.code, 1); 
-              this.regionsData.push({id: r.id, idPays: res.pays[0].id, ...r.formData, ...r.formioData, ...r.security})
+              if(this.filtreRegion){
+                if((this.filtreRegion.indexOf(r.id) === -1) && (this.filtrePays.indexOf(r.pays))){
+                  r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[0].formData.nom, 0);    
+                  r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[0].formData.code, 1); 
+                  this.regionsData.push({id: r.id, idPays: res.pays[0].id, ...r.formData, ...r.formioData, ...r.security})    
+                }
+              }else{
+                r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[0].formData.nom, 0);    
+                r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[0].formData.code, 1); 
+                this.regionsData.push({id: r.id, idPays: res.pays[0].id, ...r.formData, ...r.formioData, ...r.security})  
+              }
             }
 
             //si non mobile ou mobile + mode tableau et 
             if(!this.mobile){
+              let expor = global.peutExporterDonnees;
+              if(this.filtreRegion){
+                expor = false;
+              }
               $('#region-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, null, this.translate, global.peutExporterDonnees);
+                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, null, this.translate, expor);
                 }else{
-                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, global.dataTable_fr, this.translate, expor);
                 }
 
                 this.attacheEventToDataTable(this.regionHTMLTable.datatable);
@@ -1536,36 +1564,60 @@ export class RegionPage implements OnInit {
           this.allRegionsData = [];
           console.log(err)
         });
-      }else if(this.idPays && this.idPays != ''){ 
+      }else if((this.idPays && this.idPays != '') || this.filtreRegion){ 
         this.servicePouchdb.findRelationalDocHasMany('region', 'pays', this.idPays).then((res) => {
           if(res && res.regions){
             let regionsData = [];
             this.allRegionsData = [];
             let paysIndex = [];
             for(let r of res.regions){
-              if(isDefined(paysIndex[r.pays])){
-                r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[paysIndex[r.pays]].formData.nom, 0);
-                r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[paysIndex[r.pays]].formData.code, 1);       
+              if(this.filtreRegion){
+                if((this.filtreRegion.indexOf(r.id) === -1) && this.filtrePays.indexOf(r.pays)){
+                  if(isDefined(paysIndex[r.pays])){
+                    r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[paysIndex[r.pays]].formData.nom, 0);
+                    r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[paysIndex[r.pays]].formData.code, 1);       
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == r.pays){
+                        r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                        r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[i].formData.code, 1);
+                        paysIndex[r.pays] = i;
+                        break;
+                      }
+                    }
+                  }
+                  regionsData.push({id: r.id, idPays: this.idPays, ...r.formData, ...r.formioData, ...r.security})
+                }
               }else{
-                for(let i=0; i < res.pays.length; i++){
-                  if(res.pays[i].id == r.pays){
-                    r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[i].formData.nom, 0);
-                    r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[i].formData.code, 1);
-                    paysIndex[r.pays] = i;
-                    break;
+                if(isDefined(paysIndex[r.pays])){
+                  r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[paysIndex[r.pays]].formData.nom, 0);
+                  r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[paysIndex[r.pays]].formData.code, 1);       
+                }else{
+                  for(let i=0; i < res.pays.length; i++){
+                    if(res.pays[i].id == r.pays){
+                      r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                      r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[i].formData.code, 1);
+                      paysIndex[r.pays] = i;
+                      break;
+                    }
                   }
                 }
+                regionsData.push({id: r.id, idPays: this.idPays, ...r.formData, ...r.formioData, ...r.security})
               }
-              regionsData.push({id: r.id, idPays: this.idPays, ...r.formData, ...r.formioData, ...r.security})
+              
             }
 
             //si non mobile ou mobile + mode tableau et 
             if(!this.mobile){
+              let expor = global.peutExporterDonnees;
+              if(this.filtreRegion){
+                expor = false;
+              }
               $('#region-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, null, this.translate, global.peutExporterDonnees);
+                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, null, this.translate, expor);
                 }else{
-                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.regionHTMLTable = createDataTable("region-pays", this.colonnes, regionsData, global.dataTable_fr, this.translate, expor);
                 }
 
                 this.attacheEventToDataTable(this.regionHTMLTable.datatable);
@@ -1788,7 +1840,7 @@ export class RegionPage implements OnInit {
       });
       
       //traduitre les collonnes de la table la table
-      this.translateDataTableCollumn();
+      ///this.translateDataTableCollumn();
     }
   
     translateDataTableCollumn(){
@@ -2041,8 +2093,19 @@ export class RegionPage implements OnInit {
       
     }
   
-    async close(){
+    /*async close(){
       await this.modalController.dismiss();
+    }*/
+
+    async close(){
+      await this.modalController.dismiss({filtreRegion: this.filtreRegion});
+    }
+
+    async valider() {
+      //this.filtreRegion = [];
+      this.filtreRegion = this.filtreRegion.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtreRegion: this.filtreRegion});
     }
     
     ionViewDidEnter(){ 

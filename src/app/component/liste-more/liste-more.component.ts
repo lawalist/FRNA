@@ -11,8 +11,12 @@ export class ListeMoreComponent implements OnInit {
 
   options = {};
   peutExporterDonnees = global.peutExporterDonnees;
+  idModele: any;
+  global = global;
+  
   constructor(private popoverController: PopoverController, private navParams: NavParams) {
     this.options = this.navParams.data.options;
+    this.idModele = this.navParams.data.options.idModele;
    }
 
   ngOnInit() {}

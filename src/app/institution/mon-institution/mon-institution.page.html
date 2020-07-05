@@ -34,7 +34,8 @@
     <!--Si infos-->
     <ng-container *ngIf="action == 'infos'">
         <ion-buttons slot="start" style="padding-left: 5px !important">
-          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unPartenaire.archived && !unPartenaire.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(unPartenaire)">
+          
+          <ion-button [disabled]="!global.controlAccesModele('mon-institution', 'modification')" class="hid-boutons-petit-ecran" *ngIf="!unPartenaire.archived && !unPartenaire.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(unPartenaire)">
             <ion-icon name="create"></ion-icon>
           </ion-button>
 
@@ -44,7 +45,7 @@
           </ion-button>
 
 
-          <ion-button class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(unPartenaire)">
+          <ion-button [disabled]="!global.controlAccesModele('mon-institution', 'suppression')" class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(unPartenaire)">
             <ion-icon name="trash"></ion-icon>
           </ion-button>
           
@@ -95,6 +96,8 @@
   <ion-card *ngIf="action == 'infos'">
     <ion-card-content>
       <ion-grid  (dblclick)="modifier(unPartenaire)">
+        <ion-row ><ion-col><h2><strong>ID:</strong></h2></ion-col><ion-col>{{unPartenaire.id}}</ion-col></ion-row>
+        <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'PARTENAIRE_PAGE.NOM' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.nom}}</ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'PARTENAIRE_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.numero}}</ion-col></ion-row>
@@ -107,6 +110,10 @@
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'PARTENAIRE_PAGE.DATECREATION' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.dateCreation}}</ion-col></ion-row>
         <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.TELEPHONE' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.telephone}}</ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.EMAIL' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.email}}</ion-col></ion-row>
+        <div class="hr"></div>
 
         <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(unPartenaire.idPays)">{{unPartenaire.nomPays}}</a> </ion-col></ion-row>
         <div class="hr"></div>
@@ -117,6 +124,8 @@
         <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(unPartenaire.idCommune)">{{unPartenaire.nomCommune}}</a> </ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'GENERAL.SIEGE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentLocalite(unPartenaire.idSiege)">{{unPartenaire.nomSiege}}</a> </ion-col></ion-row>
+        <div class="hr"></div>
+        <ion-row ><ion-col><h2><strong>{{'GENERAL.ADRESSE' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.adresse}}</ion-col></ion-row>
         <div class="hr"></div>
         <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{unPartenaire.latitude}}</ion-col></ion-row>
         <div class="hr"></div>
@@ -218,7 +227,19 @@
           <ion-col>
             <div id="secteurActivite" class="form-group has-feedback">
               <label class="control-label field-required">{{'PARTENAIRE_PAGE.SECTEURACTIVITE' | translate}}</label>
-              <select class="select2 form-control" data-allow-clear="1">
+              <input ion-input formControlName="secteurActivite" type="text" class="form-control" placeholder="{{'PARTENAIRE_PAGE.SECTEURACTIVITEPLACEH' | translate}}" (keyup)="setInputRequredError('secteurActivite', 'secteurActivite')" required>
+                
+              <div class="formio-errors invalid-feedback">
+                <ng-container *ngFor="let validation of messages_validation.secteurActivite">
+                  <p class="help-block" *ngIf="partenaireForm.get('secteurActivite').hasError(validation.type) && (partenaireForm.get('secteurActivite').dirty || partenaireForm.get('secteurActivite').touched)">
+                    {{ validation.message }}
+                  </p>
+                </ng-container>
+              </div>
+              
+              
+              
+              <!--select class="select2 form-control" data-allow-clear="1">
                 <option></option>
                 <option *ngFor="let d of secteurActivites" [value]=d.id >{{d.val}}</option>
               </select>
@@ -230,7 +251,7 @@
                     {{ validation.message }}
                   </p>
                 </ng-container>
-              </div>
+              </div-->
             </div>
           </ion-col>
         </ion-row>
@@ -240,6 +261,22 @@
             <div id="dateCreation" class="form-group has-feedback">
               <label>{{'PARTENAIRE_PAGE.DATECREATION' | translate}}</label>
               <input ion-input formControlName="dateCreation" placeholder="{{'PARTENAIRE_PAGE.DATECREATION' | translate}}" class="form-control" type="date">
+            </div>
+          </ion-col>
+        </ion-row>
+
+        <ion-row>
+          <ion-col>
+            <div id="telephone" class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.TELEPHONE' | translate}}</label>
+              <input ion-input formControlName="telephone" type="text"  class="form-control" placeholder="{{'GENERAL.TELEPHONE' | translate}}">
+            </div>
+          </ion-col>
+
+          <ion-col>
+            <div id="email" class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.EMAIL' | translate}}</label>
+              <input ion-input formControlName="email" type="text"  class="form-control" placeholder="{{'GENERAL.EMAIL' | translate}}">
             </div>
           </ion-col>
         </ion-row>
@@ -342,6 +379,14 @@
           </ion-col>
         </ion-row>
         
+        <ion-row>
+          <ion-col>
+            <div id="adresse" class="form-group has-feedback">
+              <label class="control-label">{{'GENERAL.ADRESSE' | translate}}</label>
+              <textarea ion-textarea formControlName="adresse" type="text"  class="form-control" placeholder="{{'GENERAL.ADRESSE' | translate}}" row="6"></textarea>
+            </div>
+          </ion-col>
+        </ion-row>
         
         <!--Coordonnées géographiques-->
         <ion-row>
@@ -392,11 +437,11 @@
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="mobile && !idPartenaire && action == 'infos' && cacheAction != 'archives'" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="global.controlAccesModele('mon-institution', 'modification') && mobile && !idPartenaire && action == 'infos' && cacheAction != 'archives'" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(unPartenaire)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="!mobile && !idPartenaire && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unPartenaire)" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="global.controlAccesModele('mon-institution', 'modification') && !mobile && !idPartenaire && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unPartenaire)" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="create"></ion-icon>
     </ion-fab-button>

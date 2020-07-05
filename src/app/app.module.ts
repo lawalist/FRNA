@@ -39,12 +39,16 @@ import { RelationsPartenaireComponent } from './component/relations-partenaire/r
 import { PhotoViewer } from '@ionic-native/photo-viewer/ngx';
 import { Crop } from '@ionic-native/crop/ngx';
 import { Camera } from '@ionic-native/camera/ngx';
+import { Sim } from '@ionic-native/sim/ngx';
+import { Device } from '@ionic-native/device/ngx';
 import { ProjetPageModule } from './recherche/projet/projet.module';
 import { FormulaireProtocolePageModule } from './recherche/formulaire-protocole/formulaire-protocole.module';
-import { MembrePageModule } from './institution/membre/membre.module';
+import { PersonnesPageModule } from './institution/personnes/personnes.module';
 import { ChampPageModule } from './institution/champ/champ.module';
 import { EssaiPageModule } from './recherche/essai/essai.module';
 import { ProtocolePageModule } from './recherche/protocole/protocole.module';
+import { ConnexionPageModule } from './utilisateur/connexion/connexion.module';
+import { ProfilPageModule } from './utilisateur/profil/profil.module';
 
 
 //Activé angular en mode production
@@ -78,12 +82,14 @@ export function HttpLoaderFactory(http: HttpClient) {
     PartenairePageModule,
     UnionPageModule,
     OpPageModule,
-    MembrePageModule,
+    PersonnesPageModule,
     ChampPageModule,
     EssaiPageModule,
     ProjetPageModule,
     ProtocolePageModule,
-    FormulaireProtocolePageModule
+    FormulaireProtocolePageModule,
+    ConnexionPageModule,
+    ProfilPageModule
   ],
   providers: [
     StatusBar,
@@ -91,6 +97,8 @@ export function HttpLoaderFactory(http: HttpClient) {
     PhotoViewer,
     Crop,
     Camera,
+    Sim,
+    Device,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
   ],
   bootstrap: [AppComponent]

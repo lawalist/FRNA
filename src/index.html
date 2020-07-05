@@ -33,7 +33,7 @@
 
   <!--link href="./assets/external/datatable/css/bootstrap.min.css" rel="stylesheet" type="text/css" /->
   <link rel='stylesheet' href='./assets/external/formiojs/css/bootstrap-4.3.1.min.css'-->
-  <link rel='stylesheet' href='./assets/external/formiojs/css/formiojs@4.9.8.full.min.css'>
+  <link rel='stylesheet' href='./assets/external/formiojs/css/formiojs@4.10.5.full.min.css'>
 
   <link href="./assets/external/select2/select2.min.css" rel="stylesheet" type="text/css"/>
  
@@ -43,7 +43,7 @@
 
  
   <!-- DataTables css -->
-  
+  <!--link href="./assets/external/datatable/css/b4/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css"/-->
   <link href="./assets/external/datatable/css/b4/dataTables.bootstrap4.min.css" rel="stylesheet" type="text/css"/>
   <link href="./assets/external/datatable/css/b4/select.bootstrap4.min.css" rel="stylesheet" type="text/css"/>  
   <link href="./assets/external/datatable/css/b4/buttons.bootstrap4.min.css" rel="stylesheet" type="text/css"/>  
@@ -64,18 +64,19 @@
     if (typeof module === 'object') {
       window.module = module; 
       module = undefined;
+      window.process.browser = true;
     }
   </script>
 
   
-  <script src="./assets/external/JSONToTHMLTable/jquery-3.4.1.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/jquery-3.5.1.js"></script>
 
   <script src="./assets/external/bootstrap-4.4.1/js/popper.min.js"></script>
   <!--script src="./assets/external/datatable/js/b4/bootstrap.min.js"></script-->
   <script src="./assets/external/bootstrap-4.4.1/js/bootstrap.min.js"></script>
 
   <!--formio-->
-  <script src='./assets/external/formiojs/js/formiojs@4.9.8.full.min.js'></script>
+  <script src='./assets/external/formiojs/js/formiojs@4.10.5.full.min.js'></script>
   <script type="text/javascript">Formio.icons = 'fontawesome';</script>
   
   <script src="./assets/external/bootstrap-4.4.1/js/bootstrap-datepicker.min.js"></script>
@@ -110,7 +111,7 @@
 
   <!--Datatable-->
   <script src="./assets/external/datatable/js/b4/multiple-select.min.js"></script>
-  <script src="./assets/external/datatable/js/b4/jquery.dataTables.min.js"></script>
+  <script src="./assets/external/datatable/js/b4/jquery.dataTables.min.js"></script> 
   <script src="./assets/external/datatable/js/b4/dataTables.bootstrap4.min.js"></script>
   <script src="./assets/external/datatable/js/b4/dataTables.select.min.js"></script>
   <script src="./assets/external/datatable/js/b4/dataTables.buttons.min.js"></script>

@@ -11,6 +11,8 @@ export class DatatableMoreComponent implements OnInit {
 
   retournedAction: any;
   mobile = global.mobile;
+  global = global;
+
   constructor(private popoverController: PopoverController, private navParams: NavParams) {
     this.retournedAction = this.navParams.data.action;
    }

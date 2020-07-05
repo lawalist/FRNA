@@ -2,28 +2,35 @@
   <!--ion-item *ngIf="cacheAction == 'liste'" title="{{'GENERAL.MODIFIER' | translate}}" button (click)="choix('modifier')">
     <ion-label>{{'GENERAL.MODIFIER' | translate}}</ion-label>
   </ion-item-->
+  <ion-item *ngIf="user" title="{{'GENERAL.CHANGER_MDPASSE' | translate}}" button (click)="choix('mdpasse')">
+    <ion-label>{{'GENERAL.CHANGER_MDPASSE' | translate}}</ion-label>
+  </ion-item>
 
-  <ion-item *ngIf="cacheAction == 'archives' && retournedAction != 'infos' && !limite" title="{{'GENERAL.DESARCHIVER' | translate}}" button (click)="choix('desarchiver')">
+  <ion-item *ngIf="user && user == 'admin'" title="{{'GENERAL.CHANGER_IDENTIFIANT' | translate}}" button (click)="choix('identifiant')">
+    <ion-label>{{'GENERAL.CHANGER_IDENTIFIANT' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'archivage')" *ngIf="cacheAction == 'archives' && retournedAction != 'infos' && !limite" title="{{'GENERAL.DESARCHIVER' | translate}}" button (click)="choix('desarchiver')">
     <ion-label>{{'GENERAL.DESARCHIVER' | translate}}</ion-label>
   </ion-item>
   
-  <ion-item *ngIf="cacheAction == 'liste'  && retournedAction != 'infos' && !limite" title="{{'GENERAL.ARCHIVER' | translate}}" button (click)="choix('archiver')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'archivage')" *ngIf="cacheAction == 'liste'  && retournedAction != 'infos' && !limite" title="{{'GENERAL.ARCHIVER' | translate}}" button (click)="choix('archiver')">
     <ion-label>{{'GENERAL.ARCHIVER' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="cacheAction == 'corbeille' && retournedAction != 'infos' && !limite" title="{{'GENERAL.RESTAURER' | translate}}" button (click)="choix('restaurer')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'suppression')" *ngIf="cacheAction == 'corbeille' && retournedAction != 'infos' && !limite" title="{{'GENERAL.RESTAURER' | translate}}" button (click)="choix('restaurer')">
     <ion-label>{{'GENERAL.RESTAURER' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="cacheAction != 'corbeille' && !localite" title="{{'GENERAL.PARTAGER' | translate}}" button (click)="choix('partager')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'partage')" *ngIf="cacheAction != 'corbeille' && !localite && !user" title="{{'GENERAL.PARTAGER' | translate}}" button (click)="choix('partager')">
     <ion-label>{{'GENERAL.PARTAGER' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item title="{{'GENERAL.DERNIERE_MODIFICATION' | translate}}" button (click)="choix('derniereModification')">
+  <ion-item *ngIf="!user" title="{{'GENERAL.DERNIERE_MODIFICATION' | translate}}" button (click)="choix('derniereModification')">
     <ion-label>{{'GENERAL.DERNIERE_MODIFICATION' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="cacheAction != 'archives' && retournedAction != 'infos'" title="{{'GENERAL.SUPPRIMER' | translate}}" button (click)="choix('supprimer')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'suppression')" *ngIf="cacheAction != 'archives' && retournedAction != 'infos' && (!user || (user && user == 'admin'))" title="{{'GENERAL.SUPPRIMER' | translate}}" button (click)="choix('supprimer')">
     <ion-label color="danger">{{'GENERAL.SUPPRIMER' | translate}}</ion-label>
   </ion-item>
 </ion-list>

@@ -40,6 +40,34 @@ export var global = {
         //Cette fonction sera aussi utilisée pour les autorisations pour la gestion des Unions, Ops, localité, les variété, les protocoles
         return (roles.indexOf('moderateur') !== -1) || (roles.indexOf('_admin') !== -1) || (roles.indexOf('admin') !== -1)
     },
+
+    controlAccesModele(idMenu, droit){
+        if(global.estModeTeste || global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1){
+        return true;
+        }else {
+        for(let p of global.info_user.permissionsAccesModel){
+            if(p.modele === idMenu && p[droit]){
+            return true;
+            }
+        }
+        return false;
+        }
+    },
+
+    testerAccesMenu(idMenu){
+        //console.log(global.info_user.roles)
+        if(global.estModeTeste || global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1){
+          return true;
+        }else {
+          for(let p of global.info_user.permissionsAccesModel){
+            if(p.modele === idMenu){
+              return true;
+            }
+          }
+          return false;
+        }
+        //return true
+      },
     
     premierLancement: true,
     langue: 'fr',
@@ -105,10 +133,16 @@ export var global = {
     dataTable: true,
     peutExporterDonnees: true,
     mobile: false,
+    enLigne: false,
     selectedIndexes: [],
     estConnecte: false,
+    estModeTeste: true,
     remoteSaved: null,
     //info_user: null,
+    conf_serveur: {
+      domaine: '',
+      bd: ''
+    },
     info_user: {
       name: 'default',
       codes_unions: [],
@@ -116,7 +150,24 @@ export var global = {
       codes_protocoles: [],
       sites: [],
       annees_essais: [],
-      roles: []
+      roles: [],
+      groupes: [],
+      permissionsAccesModel: [],
+      accessDonnes: {
+        exporter: false,
+        importer: false,
+        inclureDonneesDependantes: false,
+        pays: [],
+        regions: [],
+        departements: [],
+        communes: [],
+        partenaires: [],
+        unions: [],
+        ops: [],
+        personnes: [],
+        projets: [],
+        protocoles: []
+      }
     },
     info_connexion: null,
     config_app: {
@@ -125,9 +176,4 @@ export var global = {
         code_structure: null,
 
     },
-    info_db:{
-        ip: '@ip:5984',
-        nom_db: 'nom_db',// 'fuma_frn_app',
-        mode_connexion: 'ofline_online'
-    } 
 }

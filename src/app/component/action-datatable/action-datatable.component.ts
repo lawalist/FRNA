@@ -14,10 +14,14 @@ export class ActionDatatableComponent implements OnInit {
   retournedAction: any;
   recherchePlus: any;
   filterAjouter: any;
+  idModele: any;
+  global = global;
+  
   constructor(private popoverController: PopoverController, private navParams: NavParams) { 
     this.retournedAction = this.navParams.data.action;
     this.recherchePlus = this.navParams.data.recherchePlus;
     this.filterAjouter = this.navParams.data.filterAjouter;
+    this.idModele = this.navParams.data.idModele;
   }
 
   ngOnInit() {}

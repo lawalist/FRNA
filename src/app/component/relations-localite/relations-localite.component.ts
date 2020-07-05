@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { global } from '../../globale/variable';
+import { NavParams, PopoverController } from '@ionic/angular';
 
 @Component({
   selector: 'app-relations-localite',
@@ -7,8 +9,12 @@ import { Component, OnInit } from '@angular/core';
 })
 export class RelationsLocaliteComponent implements OnInit {
 
-  constructor() { }
+  global = global;
+  constructor(private navParams: NavParams, private popoverController: PopoverController) { }
 
   ngOnInit() {}
 
+  async choix(c) {
+    await this.popoverController.dismiss(c);
+  }
 }

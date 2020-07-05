@@ -8,12 +8,12 @@
     <ion-label color="primary">{{'GENERAL.AFFICHER' | translate}}</ion-label>
   </ion-item>
   
-  <ion-item button (click)="modifier()" detail="true">
+  <ion-item button [disabled]="!global.controlAccesModele(idModele, 'modification')" (click)="modifier()" detail="true">
     <ion-icon name="create" color="primary"></ion-icon>
     <ion-label color="primary">{{'GENERAL.MODIFIER' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item button *ngIf="parager" (click)="partager()" detail="true">
+  <ion-item button [disabled]="!global.controlAccesModele(idModele, 'partage')" (click)="partager()" detail="true">
     <ion-icon name="share" color="primary" ></ion-icon>
     <ion-label color="primary">{{'GENERAL.PARTAGER' | translate}}</ion-label>
   </ion-item>
@@ -23,7 +23,7 @@
     <ion-label color="primary">{{'GENERAL.NOUVEAU' | translate}}</ion-label>
   </ion-item-->
 
-  <ion-item button (click)="supprimer()" detail="true">
+  <ion-item button [disabled]="!global.controlAccesModele(idModele, 'suppression')" (click)="supprimer()" detail="true">
     <ion-icon name="trash" color="danger"></ion-icon>
     <ion-label color="danger">{{'GENERAL.SUPPRIMER' | translate}}</ion-label>
   </ion-item>

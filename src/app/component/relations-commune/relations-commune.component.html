@@ -1,5 +1,9 @@
 <ion-list>
-  <ion-item button (click)="localite()" detail="true">
+  <ion-item button *ngIf="global.testerAccesMenu('localites')" (click)="localite()" detail="true">
     <ion-label>{{'GENERAL.LOCALITES' | translate}}</ion-label>
+  </ion-item>
+
+  <ion-item *ngIf="global.testerAccesMenu('essais')" title="{{'GENERAL.ESSAIS' | translate}}" button (click)="choix('essais')" detail="true">
+    <ion-label>{{'GENERAL.ESSAIS' | translate}}</ion-label>
   </ion-item>
 </ion-list>

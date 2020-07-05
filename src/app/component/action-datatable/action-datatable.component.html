@@ -20,19 +20,19 @@
     <ion-label>{{'GENERAL.LISTE_PRINCIPALE' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="action != 'archives'" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix1('archives')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'archivage')" *ngIf="action != 'archives'" title="{{'GENERAL.ARCHIVES' | translate}}" button (click)="choix1('archives')">
     <ion-label>{{'GENERAL.ARCHIVES' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="action != 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix1('corbeille')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'suppression')" *ngIf="action != 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" button (click)="choix1('corbeille')">
     <ion-label>{{'GENERAL.CORBEILLE' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="action != 'partages'" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix1('partages')">
+  <ion-item [disabled]="!global.controlAccesModele(idModele, 'partage')" *ngIf="action != 'partages'" title="{{'GENERAL.PARTAGES' | translate}}" button (click)="choix1('partages')">
     <ion-label>{{'GENERAL.PARTAGES' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item *ngIf="action != 'conflits'" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix1('conflits')">
+  <ion-item  *ngIf="action != 'conflits'" title="{{'GENERAL.GESTION_DES_CONFLITS' | translate}}" button (click)="choix1('conflits')">
     <ion-label>{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-label>
   </ion-item>
 

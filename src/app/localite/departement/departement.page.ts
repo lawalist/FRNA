@@ -37,6 +37,10 @@ export class DepartementPage implements OnInit {
   @Input() idPays: string;
   @Input() idRegion: string;
   @Input() idDepartement: string;
+  @Input() filtreDepartement: any;
+  @Input() filtreRegions: any;
+
+  global = global;
   departementForm: FormGroup;
   action: string = 'liste';
   departements: any;
@@ -586,36 +590,43 @@ export class DepartementPage implements OnInit {
     }
   
     infos(d){
-      if(!this.estModeCocherElemListe){
-        this.unDepartement = d;
-        this.action = 'infos';
+      if(global.controlAccesModele('departements', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.unDepartement = d;
+          this.action = 'infos';
+        }
       }
+      
     }
 
   
     modifier(d){
-      this.doModification = true;
-      this.servicePouchdb.findRelationalDocByID('departement', d.id).then((res) => {
-        if(res && res.departements){
-          this.getPays();
-          this.getRegionParPays(d.idPays);
-          this.editForm(res);
-          this.initSelect2('idPays', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONPAYS'));
-          this.initSelect2('idRegion', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONREGION'));
-          //.setSelect2DefaultValue('codePays', d.codePays)
-          //this.setSelect2DefaultValue('codeRegion', d.codeRegion)
-          /*$('#numero input').ready(()=>{
-            $('#numero input').attr('disabled', true)
-          });*/
-
-          this.uneDepartementDoc = res.departements[0];
-          this.unDepartement = d;
-          this.action ='modifier';
-        }
-      }).catch((err) => {
-        alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-      })
-
+      if(!this.filtreDepartement){
+        if(global.controlAccesModele('departements', 'modification')){
+          this.doModification = true;
+          this.servicePouchdb.findRelationalDocByID('departement', d.id).then((res) => {
+            if(res && res.departements){
+              this.getPays();
+              this.getRegionParPays(d.idPays);
+              this.editForm(res);
+              this.initSelect2('idPays', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('DEPARTEMENT_PAGE.SELECTIONREGION'));
+              //.setSelect2DefaultValue('codePays', d.codePays)
+              //this.setSelect2DefaultValue('codeRegion', d.codeRegion)
+              /*$('#numero input').ready(()=>{
+                $('#numero input').attr('disabled', true)
+              });*/
+    
+              this.uneDepartementDoc = res.departements[0];
+              this.unDepartement = d;
+              this.action ='modifier';
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          })  
+        }  
+      }
+      
       
       //this.unDepartement = d;
       //this.action ='modifier';
@@ -1160,8 +1171,14 @@ export class DepartementPage implements OnInit {
           security: {
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             deleted: false,
             deleted_by: null,
             deleted_at: null,
@@ -1364,7 +1381,7 @@ export class DepartementPage implements OnInit {
   
     doRefresh(event) {
       //this.servicePouchdb.getLocalDocById('fuma:departement').then((departement)
-      if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+      if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')  || this.filtreDepartement){
         let type;
         let idType;
         if(this.idRegion){
@@ -1384,48 +1401,91 @@ export class DepartementPage implements OnInit {
             let idPays;
             let idRegion;
             for(let d of res.departements){
-              if(isDefined(paysIndex[d.pays])){
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
-                idPays = res.pays[paysIndex[d.pays]].id;
+              if(this.filtreDepartement){
+                if((this.filtreDepartement.indexOf(d.id) === -1) && (this.filtreRegions.indexOf(d.region))){
+                  if(isDefined(paysIndex[d.pays])){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                    idPays = res.pays[paysIndex[d.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == d.pays){
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                        paysIndex[d.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
+                    }
+                  }
+    
+                  if(isDefined(regionIndex[d.region])){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                    idRegion = res.regions[regionIndex[d.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == d.region){
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                        regionIndex[d.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
+                }
               }else{
-                for(let i=0; i < res.pays.length; i++){
-                  if(res.pays[i].id == d.pays){
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
-                    paysIndex[d.pays] = i;
-                    idPays = res.pays[i].id;
-                    break;
+                if(isDefined(paysIndex[d.pays])){
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                  idPays = res.pays[paysIndex[d.pays]].id;
+                }else{
+                  for(let i=0; i < res.pays.length; i++){
+                    if(res.pays[i].id == d.pays){
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                      paysIndex[d.pays] = i;
+                      idPays = res.pays[i].id;
+                      break;
+                    }
                   }
                 }
-              }
-
-              if(isDefined(regionIndex[d.region])){
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
-                idRegion = res.regions[regionIndex[d.region]].id;
-              }else{
-                for(let i=0; i < res.regions.length; i++){
-                  if(res.regions[i].id == d.region){
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
-                    regionIndex[d.region] = i;
-                    idRegion = res.regions[i].id;
-                    break;
+  
+                if(isDefined(regionIndex[d.region])){
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                  idRegion = res.regions[regionIndex[d.region]].id;
+                }else{
+                  for(let i=0; i < res.regions.length; i++){
+                    if(res.regions[i].id == d.region){
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                      regionIndex[d.region] = i;
+                      idRegion = res.regions[i].id;
+                      break;
+                    }
                   }
                 }
+                
+                departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
               }
               
-              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
             }
 
             //si non mobile ou mobile + mode tableau et 
             if(!this.mobile){
+              let expor = global.peutExporterDonnees;
+              if(this.filtreDepartement){
+                expor = false;
+              }
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, expor);
                 }else{
-                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, expor);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
@@ -1620,7 +1680,7 @@ export class DepartementPage implements OnInit {
           this.allDepartementsData = [];
           console.log(err)
         });
-      }else if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '')){
+      }else if((this.idPays && this.idPays != '') || (this.idRegion && this.idRegion != '') || this.filtreDepartement){
         let type;
         let idType;
         if(this.idRegion){
@@ -1640,49 +1700,93 @@ export class DepartementPage implements OnInit {
             let idPays;
             let idRegion;
             for(let d of res.departements){
-              if(isDefined(paysIndex[d.pays])){
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
-                idPays = res.pays[paysIndex[d.pays]].id;
+              if(this.filtreDepartement){
+                if((this.filtreDepartement.indexOf(d.id) === -1) && this.filtreRegions.indexOf(d.region)){
+                  if(isDefined(paysIndex[d.pays])){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                    idPays = res.pays[paysIndex[d.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == d.pays){
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                        paysIndex[d.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
+                    }
+                  }
+    
+                  if(isDefined(regionIndex[d.region])){
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                    idRegion = res.regions[regionIndex[d.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == d.region){
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                        d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                        regionIndex[d.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
+                    }
+                  }
+    
+    
+                  departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
+                }
               }else{
-                for(let i=0; i < res.pays.length; i++){
-                  if(res.pays[i].id == d.pays){
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
-                    paysIndex[d.pays] = i;
-                    idPays = res.pays[i].id;
-                    break;
+                if(isDefined(paysIndex[d.pays])){
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
+                  idPays = res.pays[paysIndex[d.pays]].id;
+                }else{
+                  for(let i=0; i < res.pays.length; i++){
+                    if(res.pays[i].id == d.pays){
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[i].formData.nom, 0);
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[i].formData.code, 1);
+                      paysIndex[d.pays] = i;
+                      idPays = res.pays[i].id;
+                      break;
+                    }
                   }
                 }
-              }
-
-              if(isDefined(regionIndex[d.region])){
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
-                d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
-                idRegion = res.regions[regionIndex[d.region]].id;
-              }else{
-                for(let i=0; i < res.regions.length; i++){
-                  if(res.regions[i].id == d.region){
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
-                    d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
-                    regionIndex[d.region] = i;
-                    idRegion = res.regions[i].id;
-                    break;
+  
+                if(isDefined(regionIndex[d.region])){
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[regionIndex[d.region]].formData.nom, 2);
+                  d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[regionIndex[d.region]].formData.code, 3);
+                  idRegion = res.regions[regionIndex[d.region]].id;
+                }else{
+                  for(let i=0; i < res.regions.length; i++){
+                    if(res.regions[i].id == d.region){
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomRegion', res.regions[i].formData.nom, 2);
+                      d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codeRegion', res.regions[i].formData.code, 3);
+                      regionIndex[d.region] = i;
+                      idRegion = res.regions[i].id;
+                      break;
+                    }
                   }
                 }
+  
+  
+                departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
               }
-
-
-              departementsData.push({id: d.id, idPays: idPays, idRegion: idRegion, ...d.formData, ...d.formioData, ...d.security})
+              
             }
 
             //si non mobile ou mobile + mode tableau et 
             if(!this.mobile){
+              let expor = global.peutExporterDonnees;
+              if(this.filtreDepartement){
+                expor = false;
+              }
               $('#departement-pays').ready(()=>{
                 if(global.langue == 'en'){
-                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, null, this.translate, expor);
                 }else{
-                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.departementHTMLTable = createDataTable("departement-pays", this.colonnes, departementsData, global.dataTable_fr, this.translate, expor);
                 }
                 this.attacheEventToDataTable(this.departementHTMLTable.datatable);
               });
@@ -2009,7 +2113,7 @@ export class DepartementPage implements OnInit {
         //console.log(datatable.row(this).data()[0]);
       });
       //traduitre les collonnes de la table la table
-      this.translateDataTableCollumn();
+      ///this.translateDataTableCollumn();
     }
   
     translateDataTableCollumn(){
@@ -2266,8 +2370,19 @@ export class DepartementPage implements OnInit {
       
     }
   
-    async close(){
+    /*async close(){
       await this.modalController.dismiss();
+    }*/
+
+    async close(){
+      await this.modalController.dismiss({filtreDepartement: this.filtreDepartement});
+    }
+
+    async valider() {
+      //this.filtreDepartement = [];
+      this.filtreDepartement = this.filtreDepartement.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtreDepartement: this.filtreDepartement});
     }
     
     ionViewDidEnter(){ 

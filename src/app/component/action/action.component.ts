@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PopoverController, NavParams } from '@ionic/angular';
+import {global} from '../../globale/variable';
 
 @Component({
   selector: 'app-action',
@@ -8,9 +9,12 @@ import { PopoverController, NavParams } from '@ionic/angular';
 })
 export class ActionComponent implements OnInit {
   parager: boolean;
+  idModele: any;
+  global = global;
 
   constructor(private popoverController: PopoverController, private navParams: NavParams) {
     this.parager = this.navParams.data.parager;
+    this.idModele = this.navParams.data.idModele;
    }
 
   ngOnInit() {}

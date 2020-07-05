@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { PopoverController, NavParams, ModalController, NavController } from '@ionic/angular';
 import { Router } from '@angular/router';
+import { global } from '../../globale/variable';
 //import {RegionPage} from '../../localite/region/region.page'
 
 @Component({
@@ -11,6 +12,7 @@ import { Router } from '@angular/router';
 export class RelationsPaysComponent implements OnInit {
 
   codePays: string;
+  global = global;
   constructor(private popoverController: PopoverController, private modalController: ModalController, private router: Router, private navParams: NavParams, private navCtrl: NavController) { 
     this.codePays = this.navParams.data.codePays;
   }
@@ -23,6 +25,10 @@ export class RelationsPaysComponent implements OnInit {
     //this.router.navigateByUrl('/localite/regions/pays/'+this.codePays);
     await this.popoverController.dismiss("region");
     //this.presentModal(this.codePays)
+  }
+
+  async choix(c) {
+    await this.popoverController.dismiss(c);
   }
 
   /*async presentModal(codePays) {

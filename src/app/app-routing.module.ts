@@ -12,7 +12,8 @@ const routes: Routes = [
   { path: 'partenaires', loadChildren: './institution/partenaire/partenaire.module#PartenairePageModule' },
   { path: 'unions', loadChildren: './institution/union/union.module#UnionPageModule' },
   { path: 'ops', loadChildren: './institution/op/op.module#OpPageModule' },
-  { path: /*'institution/*/'membres', loadChildren: './institution/membre/membre.module#MembrePageModule' },
+  //{ path: /*'institution/*/'membres', loadChildren: './institution/membre/membre.module#MembrePageModule' },
+  { path: 'personnes', loadChildren: './institution/personnes/personnes.module#PersonnesPageModule' },
   { path: /*configuration/*/'champ', loadChildren: './institution/champ/champ.module#ChampPageModule' },
   
   { path: /*recherche/*/'projets', loadChildren: './recherche/projet/projet.module#ProjetPageModule' },
@@ -22,7 +23,7 @@ const routes: Routes = [
   { path: 'pluviometrie', loadChildren: './recherche/pluviometrie/pluviometrie.module#PluviometriePageModule' },
   { path: 'typologie', loadChildren: './recherche/typologie/typologie.module#TypologiePageModule' },
   //{ path: 'formulaire', loadChildren: './recherche/formulaire/formulaire.module#FormulairePageModule' },
-  //{ path: 'formulaire-protocole', loadChildren: './recherche/formulaire-protocole/formulaire-protocole.module#FormulaireProtocolePageModule' },
+  { path: 'formulaire-protocole', loadChildren: './recherche/formulaire-protocole/formulaire-protocole.module#FormulaireProtocolePageModule' },
   
   { path: /*rapports/*/'restitution', loadChildren: './rapports/restitution/restitution.module#RestitutionPageModule' },
   { path: 'statistiques', loadChildren: './rapports/statistiques/statistiques.module#StatistiquesPageModule' },
@@ -42,14 +43,18 @@ const routes: Routes = [
   { path: 'profession', loadChildren: './configuration/profession/profession.module#ProfessionPageModule' },
   { path: 'ethnie', loadChildren: './configuration/ethnie/ethnie.module#EthniePageModule' },
   { path: 'type-sole', loadChildren: './configuration/type-sole/type-sole.module#TypeSolePageModule' },
-  
-
+  { path: 'conf-serveur', loadChildren: './configuration/conf-serveur/conf-serveur.module#ConfServeurPageModule' },
   
   { path: /*administration/*/'modules', loadChildren: './administration/modules/modules.module#ModulesPageModule' },
+  { path: 'groupes', loadChildren: './administration/groupes/groupes.module#GroupesPageModule' },
   { path: 'utilisateurs', loadChildren: './administration/utilisateurs/utilisateurs.module#UtilisateursPageModule' },
   { path: 'serveur', loadChildren: './administration/serveur/serveur.module#ServeurPageModule' },
   { path: 'bd-locale', loadChildren: './administration/bd-locale/bd-locale.module#BDLocalePageModule' },
   
+  { path: 'connexion', loadChildren: './utilisateur/connexion/connexion.module#ConnexionPageModule' },
+  { path: 'profil', loadChildren: './utilisateur/profil/profil.module#ProfilPageModule' },
+  { path: 'changer-md-passe', loadChildren: './utilisateur/changer-md-passe/changer-md-passe.module#ChangerMdPassePageModule' },
+   
 ];
 
 @NgModule({

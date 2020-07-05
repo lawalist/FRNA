@@ -526,6 +526,17 @@ export class TableauDeBordPage implements OnInit {
  
 
   ngOnInit() {
+    /*this.servicePouchdb.connexion('admin', 'admin').then((res) => {
+      console.log(res);
+      this.servicePouchdb.getAllUsers('http://localhost:5984', 'admin', 'admin').then((res) => {
+        console.log(res);
+      }).catch((err) => {
+        console.log(err)
+      })
+
+    }).catch((err) => {
+      console.log(err);
+    })*/
     /*let a = ['2','3']
     let b = ['2','4']
     let c = ['5','4']

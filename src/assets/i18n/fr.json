@@ -5,10 +5,16 @@
         "TERMINER": "Terminer",
         "SECURITE": "Sécurité",
         "GENERAL": "Général",
+        "EDITER": "Editer",
+        "TELEPHONE": "Téléphone",
+        "ADRESSE": "Adresse",
+        "EMAIL": "E-mail",
         "INFOS_GENERAL": "Informations générales",
         "PLUS_DE_OPTIONS": "Plus d'options",
         "RECHERGER_ANNULER": "Recharger/Annuler",
         "OK": "Ok",
+        "OUI": "Oui",
+        "NON": "Non",
         "FERMER": "Fermer",
         "RETOUR": "Retour",
         "EXPORTER": "Exporter",
@@ -24,7 +30,7 @@
         "CAMERA": "Caméra",
         "GALLERIE": "Gallérie",
         "PRENDREPHOTO": "Prendre un photo",
-        "CROPPHTOT": "Recadrer l'image",
+        "CROPPHOTO": "Recadrer l'image",
         "GESTION_DES_CONFLITS": "Gestion des conflits",
         "LISTE_PRINCIPALE": "Liste principale",
         "AFFICHER": "Afficher",
@@ -35,6 +41,8 @@
         "ARCHIVES": "Archives",
         "ARCHIVER": "Archiver",
         "DESARCHIVER": "Désarchiver",
+        "CHANGER_MDPASSE": "Changer mot de passe",
+        "CHANGER_IDENTIFIANT": "Changer identifiant",
         "ENREGISTREMENT_NOT_FOUND": "Enregistrement inexistant",
         "MODIFICATION_IMPOSSIBLE": "Modification impossible",
         "AFFICHER_ENREGISTRMENT": "Afficher cet enregistrement",
@@ -58,6 +66,7 @@
         "NOUVEAU": "Nouveau",
         "PARTAGER": "Partager",
         "PARTAGES": "Partagés",
+        "GROUPE": "Groupe",
         "RECHERCHER": "Rechercher",
         "MODE_TABLEAU": "Mode tableau",
         "ACTION": "Action",
@@ -78,19 +87,26 @@
         "LIEUHABITATION":"Lieu d'habitation",
         "FEDERATION": "Fédération",
         "INSTITUTION": "Institution",
+        "PARTENAIRES": "Partenaires",
         "PROJET": "Projet",
+        "PROJETS": "Projets",
         "UNION": "Union",
+        "UNIONS": "Unions",
         "OP": "OP",
         "OPS": "OPs",
         "ESSAIS": "Collecte de données",
         "CHAMPS": "Champs",
         "CHAMP": "Champ",
-        "MEMBRE": "Membre",
-        "MEMBRES": "Membres",
+        "PERSONNE": "Personne",
+        "PERSONNES": "Personnes",
         "PROTOCOLE": "Protocole",
         "PROTOCOLES": "Protocoles",
         "FORMULAIRE": "Formulaire",
+        "FORMULAIRES": "Formulaires",
         "INFORMATION": "Information",
+        "PROFIL": "Profil",
+        "DECONNEXION": "Deconnexion",
+        "CONNEXION": "Connexion",
         "DERNIERE_MODIFICATION": "Dernière modification...",
         "ALERT_EXPORTER": "Exporter les données!",
         "ALERT_EXPORTER_MESSAGE": "Veuillez choisir le format",
@@ -154,7 +170,7 @@
             "PARTENAIRES": "Partenaires",
             "UNIONS": "Unions",
             "OPS": "OPs",
-            "MEMBRES": "Membres",
+            "PERSONNES": "Personnes",
             "CHAMP": "Champ"
         },
         "RECHERCHE": {
@@ -173,6 +189,7 @@
             "STATISTIQUES": "Statistiques"
         },
         "LOCALITES": {
+            "HABITATIONS": "Habitations",
             "LOCALITES": "Localités",
             "PAYS": "Pays",
             "REGIONS": "Régions",
@@ -184,15 +201,17 @@
             "PARTENAIRE": "Partenaire",
             "UNION": "Unions",
             "OP": "OP",
-            "MEMBRE": "Membres",
+            "PERSONNE": "Personnes",
             "PROFESSION": "Professions",
             "ETHNIE": "Ethnies",
-            "TYPESOLE": "Types de soles"
+            "TYPESOLE": "Types de soles",
+            "SERVEUR": "Serveur"
         },
         "ADMINISTRATION": {
             "ADMINISTRATION": "Administration",
             "MODULES": "Modules",
             "UTILISATEURS": "Utilisateurs",
+            "GROUPES": "Groupes",
             "LOCALITES": "Localités",
             "SERVEUR": "Serveur",
             "BASE_DE_DONNEES_LOCALE": "Base de données locale"
@@ -469,10 +488,15 @@
             "5": "Université", 
             "6": "Confédération",
             "7": "Entreprise",
-            "8": "Société"
+            "8": "Société",
+            "9": "Institution de recherche",
+            "10": "Autre",
+            "11": "Union",
+            "12": "OP"
         },
         "DATECREATION": "Date de création",
         "SECTEURACTIVITE": "Secteur d'activité",
+        "SECTEURACTIVITEPLACEH": "Agriculture, Transformation, ...",
         "SECTEURACTIVITES": {
             "1": "Agriculture, sylviculture et pêche",
             "2": "Activités extractives",  
@@ -500,7 +524,8 @@
         "SECTEURPUBLICS": {
            "1": "Privé", 
            "2": "Etat", 
-           "3": "Sémi-privé"
+           "3": "Sémi-privé",
+           "4": "Autre"
         },
         "CODEPAYS": "Code pays",
         "NOMPAYS": "Nom pays",
@@ -536,8 +561,8 @@
             "CATEGORIE": {
                 "REQUIRED": "La catégorie est requise."
             },
-            "SECTEUR": {
-                "REQUIRED": "Le secteur est requis."
+            "SECTEURACTIVITE": {
+                "REQUIRED": "Le secteur d'activité est requis."
             },
             "DOMAINE": {
                 "REQUIRED": "Le domaine est requis."
@@ -707,17 +732,26 @@
             }
         }
     },
-    "MEMBRE_PAGE": {
-        "TITRE_LISTE": "Membres",
-        "TITRE_AJOUTER": "Ajouter un membre",
-        "TITRE_INFO": "Infos membre",
-        "TITRE_MODIFIER": "Modifier un membre",
+    "PERSONNE_PAGE": {
+        "TITRE_LISTE": "Personnes",
+        "TITRE_AJOUTER": "Ajouter une personne",
+        "TITRE_INFO": "Infos personne",
+        "TITRE_MODIFIER": "Modifier une personne",
         "CODE": "Code",
         "MATRICULE": "Matricule",
         "NOM": "Nom",
-        "PRENOM": "Préom",
+        "PRENOM": "Prénom",
         "SURNOM": "Surnom",
         "SEXE": "Sexe",
+        "CATEGORIE": "Catégorie",
+        "CATEGORIES": {
+            "1": "Producteur",
+            "2": "Employé", 
+            "3": "Partenaire", 
+            "4": "Institution", 
+            "5": "Consultant", 
+            "6": "Autre"
+        },
         "DATENAISSANCE": "Date de naissance",
         "AGE": "Age",
         "ETATCIVIL": "Etat civil",
@@ -784,12 +818,6 @@
         "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une op",
         "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une op",
         "MESSAGES_VALIDATION": {
-            "CODE": {
-                "REQUIRED": "Le code est requis.",
-                "MINLENGTH": "Le code doit comporter au moins 2 lettres majuscules.",
-                "MAXLENGTH": "Le code doit comporter au plus 3 lettres majuscules.",
-                "PATTERN": "Le code ne doit contenir que des lettres majuscules."
-            },
             "MATRICULE": {
                 "REQUIRED": "Le matricule est requis.",
                 "UNIQUEMATRICULEPARTENAIRE": "Le matricule a été déjà pris."
@@ -799,6 +827,9 @@
             },
             "PRENOM": {
                 "REQUIRED": "Le prénom est requis."
+            },
+            "CATEGORIE": {
+                "REQUIRED": "La catégorie est requise."
             },
             "SEXE": {
                 "REQUIRED": "Le sexe est requis."
@@ -873,6 +904,116 @@
             }
         }
     },
+    "CONFSERVEUR_PAGE": {
+        "TITRE": "Serveur",
+        "DOMAINE": "Adrèsse serveur",
+        "DOMAINEPLACEH": "https://@IP:5984 ou https://fumagaskiya.ne",
+        "BD": "Base de données",
+        "BDPLACEH": "frna_db",
+        "INFOENREG": " Informations enregistrées avec succès",
+        "MESSAGES_ERREUR": {
+            "BD_NOT_EXISTE": "Problème de connexion ou la base de données n'existe pas"
+        },
+        "MESSAGES_VALIDATION": {
+            "DOMAINE": {
+                "REQUIRED": "Le domaine est requis."
+            },
+            "BD": {
+                "REQUIRED": "La base de données est requise."
+            }
+        }
+    },
+    "GROUPE_PAGE": {
+        "TITRE_LISTE": "Groupes",
+        "TITRE_AJOUTER": "Ajouter un groupe",
+        "TITRE_INFO": "Infos groupe",
+        "TITRE_MODIFIER": "Modifier un groupe",
+        "CODE": "Code",
+        "NOM": "Nom",
+        "DESCRIPTION": "Description",
+        "PERMISSIONSACCES": "Permissions d'accès au modèle",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un groupe",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un groupe",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom est requis.",
+                "UNIQUE": "Le groupe existe déjà."
+            }
+        }
+    },
+    "UTILISATEUR_PAGE": {
+        "TITRE_LISTE": "Utilisateurs",
+        "TITRE_AJOUTER": "Ajouter un utilisateur",
+        "TITRE_INFO": "Infos utilisateur",
+        "TITRE_MODIFIER": "Modifier un utilisateur",
+        "TITRE_MODIFIER_MDPASSE": "Changer mot de passe",
+        "TITRE_MODIFIER_IDENTIFIANT": "Changer identifiant",
+        "IDENTIFIANT": "Identifiant",
+        "NOM": "Nom",
+        "MDPASSE": "Mot de passe",
+        "EMAIL": "Email",
+        "ACTIF": "Actif",
+        "GROUPES": "Groupes",
+        "ROLES": "Rôles",
+        "PERMISSIONSACCES": "Permissions d'accès aux données",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un utilisateur",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un utilisateur",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom d'utilisateur est requis."
+            },
+            "MDPASSE": {
+                "REQUIRED": "Le mot de passe est requis."
+            },
+            "IDENTIFIANT": {
+                "REQUIRED": "L'identifiant est requis.",
+                "UNIQUE": "L'utilisateur existe déjà."
+            }
+        }
+    },
+    "CONNEXION_PAGE": {
+        "TITRE_LISTE": "Connexion",
+        "IDENTIFIANT": "Identifiant",
+        "MDPASSE": "Mot de passe",
+        "FORMULAIRE_AJOUT": "Formulaire de connexion",
+        "MESSAGES_VALIDATION": {
+            "MDPASSE": {
+                "REQUIRED": "Le mot de passe est requis."
+            },
+            "IDENTIFIANT": {
+                "REQUIRED": "L'identifiant est requis."
+            }
+        },
+        "MESSAGE_AUTH": {
+            "1": "Nom d'utilisateur ou mot de passe incorrecte.",
+            "2": "Une erreur est survenue veuillez vérifier votre connexion au serveur.",
+            "SUCCES": "Connexion terminée avec succès"
+        }
+    },
+    "PROFIL_PAGE": {
+        "TITRE_INFO": "Profil",
+        "TITRE_MODIFIER": "Modifier compte",
+        "IDENTIFIANT": "Identifiant",
+        "NOM": "Nom",
+        "MDPASSE": "Mot de passe",
+        "EMAIL": "Email",
+        "ACTIF": "Actif",
+        "GROUPES": "Groupes",
+        "ROLES": "Rôles",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification de compte",
+        "MESSAGES_VALIDATION": {
+            "NOM": {
+                "REQUIRED": "Le nom d'utilisateur est requis."
+            },
+            "MDPASSE": {
+                "REQUIRED": "Le mot de passe est requis."
+            },
+            "IDENTIFIANT": {
+                "REQUIRED": "L'identifiant est requis.",
+                "UNIQUE": "L'utilisateur existe déjà."
+            }
+        }
+    },
     "TYPESOLE_PAGE": {
         "TITRE_LISTE": "Types de soles",
         "TITRE_AJOUTER": "Ajouter un type de sole",
@@ -908,9 +1049,10 @@
             "5": "Location", 
             "6": "Prêt"
         },
-        "NUMERO_MEMBRE": "Numéro membre",
-        "NOM_MEMBRE": "Nom membre",
+        "NUMERO_PERSONNE": "Numéro personne",
+        "NOM_PERSONNE": "Nom personne",
         "DATEACQUISITION": "Date d'acquisition",
+        "NOTITREFONCIER": "Numéro titre foncier",
         "CODEPAYS": "Code pays",
         "NOMPAYS": "Nom pays",
         "CODEREGION": "Code région",
@@ -921,7 +1063,7 @@
         "NOMCOMMUNET": "Nom commune",
         "CODESIEGE": "Code siège",
         "NOMSIEGE": "Nom siège",
-        "SELECTIONMEMBRE": "Membre",
+        "SELECTIONPERSONNE": "Personne",
         "SELECTIONPAYS": "Pays",
         "SELECTIONREGION": "Région",
         "SELECTIONDEPARTEMENT": "Département",
@@ -950,8 +1092,8 @@
             "NIVEAU": {
                 "REQUIRED": "Ce champ est requis."
             },
-            "NUMERO_MEMBRE": {
-                "REQUIRED": "Le membre est requise."
+            "NUMERO_PERSONNE": {
+                "REQUIRED": "La personne est requise."
             },
             "TYPE_SOLE": {
                 "REQUIRED": "Le type de sole est requise."
@@ -1024,6 +1166,18 @@
         "ANNEE": "Année",
         "DATEDEBUT": "Date début",
         "DATEFIN": "Date fin",
+        "NIVEAUCOLLECTE": "Niveau collecte de données",
+        "CHOIXNIVEAUCOLLECTE": {
+            "pays": "Pays",
+            "region": "Region",
+            "commune": "Commune",
+            "departement": "Departement",
+            "localite": "Localité",
+            "union": "Union",
+            "op": "OP",
+            "personne": "Personne",
+            "champ": "Champ"
+        },
         "SELECTIONINSTITUTION": "Sélectionner l'institution",
         "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
         "SELECTIONPROJET": "Sélectionner le projet",
@@ -1040,14 +1194,19 @@
             "NUMERO_PROJET": {
                 "REQUIRED": "Le projet est requis."
             },
+            "NIVEAU_COLLECTE": {
+                "REQUIRED": "Le niveau de collecte est requis."
+            },
             "NUMERO_INSTITUTION": {
                 "REQUIRED": "L'institution est requise."
             },
             "DATE_DEBUT": {
-                "REQUIRED": "La date de début est requise."
+                "REQUIRED": "La date de début est requise.",
+                "DATEDEBUTINVALIDE": "La date de début est invalide."
             },
             "DATE_FIN": {
-                "REQUIRED": "La date de fin est requise."
+                "REQUIRED": "La date de fin est requise.",
+                "DATEFININVALIDE": "La date de fin est invalide."
             }
         }
     },
@@ -1084,13 +1243,34 @@
         "NOM_PROJET": "Nom projet",
         "NUMERO_INSTITUTION": "Numéro institution",
         "NOM_INSTITUTION": "Nom institution",
-        "ANNEE": "Date collecte",
+        "NUMERO_OP": "Numéro op",
+        "NOM_OP": "Nom op",
+        "NUMERO_UNION": "Numéro union",
+        "NOM_UNION": "Nom union",
+        "DATECOLLECTE": "Date collecte",
         "SELECTIONINSTITUTION": "Sélectionner l'institution",
+        "SELECTIONOP": "Sélectionner l'op",
+        "SELECTIONUNION": "Sélectionner l'union",
         "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
         "SELECTIONPROJET": "Sélectionner le projet",
         "SELECTIONPROTOCOLE": "Sélectionner le protocole",
-        "SELECTIONMEMBRE": "Sélectionner le membre",
+        "SELECTIONPERSONNE": "Sélectionner la personne",
         "SELECTIONCHAMP": "Sélectionner le champ",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "CODECOMMUNE": "Code commune",
+        "NOMCOMMUNET": "Nom commune",
+        "CODELOCALITE": "Code localité",
+        "NOMLOCALITE": "Nom localité",
+        "SELECTIONPAYS": "Sélectionner le pays",
+        "SELECTIONREGION": "Sélectionner la région",
+        "SELECTIONDEPARTEMENT": "Sélectionner le département",
+        "SELECTIONCOMMUNE": "Sélectionner la commune",
+        "SELECTIONLOCALITE": "Sélectionner la localité",
         "FORMULAIRE_AJOUT": "Formulaire de collecte",
         "FORMULAIRE_MODIFICATION": "Formulaire de collecte",
         "MESSAGES_VALIDATION": {
@@ -1102,10 +1282,33 @@
             },
             "NUMERO_INSTITUTION": {
                 "REQUIRED": "L'institution est requise."
-            },"MATRICULE_MEMBRE": {
-                "REQUIRED": "Le membre est requise."
-            },"CODE_CHAMP": {
+            },
+            "MATRICULE_PERSONNE": {
+                "REQUIRED": "La personne est requise."
+            },
+            "CODE_CHAMP": {
                 "REQUIRED": "Le champ est requise."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le département est requis."
+            },
+            "CODECOMMUNE": {
+                "REQUIRED": "La commune est requise."
+            },
+            "CODELOCALITE": {
+                "REQUIRED": "La localité est requise."
+            },
+            "NUMERO_UNION": {
+                "REQUIRED": "L'union est requise."
+            },
+            "NUMERO_OP": {
+                "REQUIRED": "L'op est requise."
             }
         }
     }

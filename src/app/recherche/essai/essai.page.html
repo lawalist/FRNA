@@ -48,7 +48,7 @@
       </ion-button>
     </ion-buttons>
  
-    <ion-buttons *ngIf="(idEssai || idProjet || idPartenaire || idProtocole || idMembre || idChamp)" slot="end">
+    <ion-buttons *ngIf="(idEssai || idProjet || idPartenaire || idProtocole || idPersonne || idChamp)" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -74,11 +74,11 @@
           <ion-icon name="checkbox"></ion-icon>
         </ion-button>
 
-        <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_ESSAITIONS' | translate}}" (click)="selectionPopover($event)">
+        <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
           <i style="font-size: 18px" class="fa fa-caret-down"></i>
         </ion-button>
 
-        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
+        <ion-button [disabled]="!global.controlAccesModele('essais', 'lecture')" title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
           <ion-icon name="refresh"></ion-icon>
         </ion-button>
 
@@ -109,19 +109,19 @@
           <ion-icon name="ios-undo"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getEssaisByType('archives')">
+        <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('essais', 'archivage')" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getEssaisByType('archives')">
           <ion-icon name="archive"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getEssaisByType('corbeille')">
+        <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('essais', 'suppression')" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getEssaisByType('corbeille')">
           <ion-icon name="trash"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_ESSAITIONS' | translate}}" (click)="datatableMorePopover($event)">
+        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableMorePopover($event)">
           <ion-icon name="more"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_ESSAITIONS ' | translate}}" (click)="actionDatatablePopover($event)">
+        <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS ' | translate}}" (click)="actionDatatablePopover($event)">
           <ion-icon name="more"></ion-icon>
         </ion-button>
         
@@ -129,11 +129,11 @@
 
       <!--Action pour selection-->
       <ion-buttons slot="end" style="padding-right: 5px !important">
-        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
+        <ion-button [disabled]="!global.controlAccesModele('essais', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
+        <ion-button [disabled]="!global.controlAccesModele('essais', 'modification')" class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
           <ion-icon  name="create"></ion-icon>
         </ion-button>
 
@@ -154,32 +154,32 @@
             <ion-icon name="arrow-back"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'modification')" class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
             <ion-icon name="create"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'archivage')" class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
             <ion-icon name="md-archive"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" *ngIf="unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'archivage')" class="hid-boutons-petit-ecran" *ngIf="unEssai.archived && !unEssai.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
             <ion-icon name="ios-archive"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && unEssai.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'suppression')" class="hid-boutons-petit-ecran" *ngIf="!unEssai.archived && unEssai.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
             <!--ion-icon name="trash"></ion-icon-->
             <i style="font-size: 22px" class="mdi mdi-backup-restore"></i>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!unEssai.archived && !unEssai.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'suppression')" class="hid-boutons-petit-ecran" color="danger" *ngIf="!unEssai.archived && !unEssai.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
             <ion-icon name="trash"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!unEssai.archived && unEssai.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
+          <ion-button [disabled]="!global.controlAccesModele('essais', 'suppression')" class="hid-boutons-petit-ecran" color="danger" *ngIf="!unEssai.archived && unEssai.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
             <ion-icon name="trash"></ion-icon>
           </ion-button>
           
-          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_ESSAITIONS' | translate}}" (click)="datatableConstructPopover($event)">
+          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
             <ion-icon name="more"></ion-icon>
           </ion-button>
 
@@ -249,18 +249,18 @@
                 <h3 ion-text-capitalize>{{p.nomProjet}}</h3>
 
                 <!--h2 ion-text-capitalize>{{p.numero}}</h2-->
-                <p ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong-->{{p.nomSiege}}</p>
+                <p ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong-->{{p.nomLocalite}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
     
-            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+            <ion-item-options [hidden]="estModeCocherElemListe  || !global.controlAccesModele('essais', 'modification')" side="start">
               <ion-item-option (click)="modifier(p)">
                 <ion-icon slot="icon-only" name="create"></ion-icon>
               </ion-item-option>
             </ion-item-options> 
     
-            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+            <ion-item-options [hidden]="estModeCocherElemListe || !global.controlAccesModele('essais', 'suppression')" side="end">
               <ion-item-option color="danger" (click)="supprimer(p)">
                 <ion-icon slot="icon-only" name="trash"></ion-icon>
               </ion-item-option>
@@ -281,9 +281,9 @@
   <!--Mode tableau-->
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
-      <div *ngIf="!idChamp && !idMembre && !idPartenaire && !idProjet && !idProtocole" class="table-responsive" id="essai"></div>
+      <div *ngIf="!idChamp && !idPersonne && !idPartenaire && !idProjet && !idProtocole" class="table-responsive" id="essai"></div>
 
-      <div *ngIf="idChamp || idMembre || idPartenaire || idProjet || idProtocole" class="table-responsive" id="essai-relation"></div>
+      <div *ngIf="idChamp || idPersonne || idPartenaire || idProjet || idProtocole" class="table-responsive" id="essai-relation"></div>
 
       <!--Si le tableau est vide>
       <ion-list *ngIf="!essaisData || !essaisData.length > 0" lines="none">        
@@ -317,7 +317,7 @@
             <div class="form-group">
               <ion-row ><ion-col><h2><strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong></h2></ion-col><ion-col>{{unEssai.numero}}</ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'ESSAI_PAGE.ANNEE' | translate}}:</strong></h2></ion-col><ion-col>{{unEssai.annee}}</ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'ESSAI_PAGE.DATECOLLECTE' | translate}}:</strong></h2></ion-col><ion-col>{{moment(unEssai.dateCollecte).format('DD-MM-YYYY')}}</ion-col></ion-row>
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.INSTITUTION' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentInstitution(unEssai.idInstitution)">{{unEssai.nomInstitution}}</a></ion-col></ion-row>
               <div class="hr"></div>
@@ -325,7 +325,7 @@
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.PROTOCOLE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentProtocole(unEssai.idProtocole)">{{unEssai.nomProtocole}}</a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row><ion-col><h2><strong>{{'GENERAL.MEMBRE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentMembre(unEssai.idMembre)">{{unEssai.nomMembre}}</a></ion-col></ion-row>
+              <ion-row><ion-col><h2><strong>{{'GENERAL.PERSONNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPersonne(unEssai.idPersonne)">{{unEssai.nomPersonne}}</a></ion-col></ion-row>
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.CHAMP' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentChamp(unEssai.idChamp)">{{unEssai.nomChamp}}</a></ion-col></ion-row>
 
@@ -354,11 +354,11 @@
               <ng-container *ngIf="unEssaiDoc && unEssaiDoc.essais && unEssaiDoc.essais[0] && unEssaiDoc.essais[0].security">
                 <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.created_by}}</ion-col></ion-row>
                 <div class="hr"></div>
-                <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.created_at | date: 'dd-MM-yyyy'}} {{unEssaiDoc.essais[0].security.created_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.CREATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{moment(unEssaiDoc.essais[0].security.created_at).format('DD-MM-YYYY, H:mm:ss')}}</ion-col></ion-row>
                 <div class="hr"></div>
                 <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.updated_by}}</ion-col></ion-row>
                 <div class="hr"></div>
-                <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.updated_at | date: 'dd-MM-yyyy'}} {{unEssaiDoc.essais[0].security.updated_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                <ion-row ><ion-col><h2><strong>{{'GENERAL.UPDATED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{moment(unEssaiDoc.essais[0].security.updated_at).format('DD-MM-YYYY, H:mm:ss')}}</ion-col></ion-row>
                 <div class="hr"></div>
                 <ion-row ><ion-col><h2><strong>{{'GENERAL.NOMBRE_DE_MISE_A_JOUR' | translate}}:</strong></h2></ion-col><ion-col>{{rev}}</ion-col></ion-row>
                 
@@ -366,7 +366,7 @@
                   <div class="hr"></div>
                   <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.archived_by}}</ion-col></ion-row>
                   <div class="hr"></div>
-                  <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.archived_at | date: 'dd-MM-yyyy'}} {{unEssaiDoc.essais[0].security.archived_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.ARCHIVED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{moment(unEssaiDoc.essais[0].security.archived_at).format('DD-MM-YYYY, H:mm:ss')}}</ion-col></ion-row>
                 </ng-container>
                 
                 
@@ -374,7 +374,7 @@
                   <div class="hr"></div>
                   <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_BY' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.deleted_by}}</ion-col></ion-row>
                   <div class="hr"></div>
-                  <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{unEssaiDoc.essais[0].security.deleted_at | date: 'dd-MM-yyyy'}} {{unEssaiDoc.essais[0].security.deleted_at | date: 'HH:mm:ss:ms'}}</ion-col></ion-row>  
+                  <ion-row ><ion-col><h2><strong>{{'GENERAL.DELETED_AT' | translate}}:</strong></h2></ion-col><ion-col>{{moment(unEssaiDoc.essais[0].security.deleted_at).format('DD-MM-YYYY, H:mm:ss')}}</ion-col></ion-row>  
                 </ng-container>
             
               </ng-container>
@@ -398,7 +398,7 @@
         <p>Fill all form field to go to next step</p-->
         <form [formGroup]="essaiForm" id="msform">
             <!-- progressbar -->
-            <ul id="progressbar">
+            <ul id="progressbar" class="hid-boutons-trop-petit-ecran">
                 <li class="active" id="personal" title="Informations générales"><strong>Infos</strong></li>
                 <ng-container *ngFor="let f of formulaireData; let i = index">
                   <li id="account" title="Formulaire de collecte"><strong>Formulaire <ng-container *ngIf="formulaireData.length > 1">{{i+1}}</ng-container></strong></li>
@@ -422,11 +422,11 @@
                     </div> 
                         
                   <ion-row>
-                    <!--Année-->
+                    <!--Date cCollecte-->
                     <ion-col>
-                      <div id="annee" class="form-group has-feedback">
-                        <label>{{'ESSAI_PAGE.ANNEE' | translate}}</label>
-                        <input ion-input [(ngModel)]="annee" value=annee [ngModelOptions]="{standalone: true}" data-provide="datepicker" type="text" class="form-control">
+                      <div id="dateCollecte" class="form-group has-feedback">
+                        <label>{{'ESSAI_PAGE.DATECOLLECTE' | translate}}</label>
+                        <input ion-input formControlName="dateCollecte" [value]="moment(essaiForm.controls.dateCollecte.value).format('DD-MM-YYYY')" data-provide="datepicker" type="text" class="form-control">
                         <div class="input-group-addon">
                           <span class="glyphicon glyphicon-th"></span>
                         </div>
@@ -434,7 +434,7 @@
                     </ion-col>
 
                     <!--Institution-->
-                    <ion-col>
+                    <!--ion-col>
                       <div id="idInstitution" class="form-group has-feedback">
                         <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONINSTITUTION' | translate}}</label>
                         <select class="select2 form-control" data-allow-clear="1">
@@ -450,7 +450,7 @@
                           </ng-container>
                         </div>
                       </div>
-                    </ion-col>
+                    </ion-col-->
                   </ion-row>
 
                   <ion-row>
@@ -494,45 +494,237 @@
                   </ion-row>
 
 
-                  <ion-row>
-                    <!--Membre-->
-                    <ion-col>
-                      <div id="idMembre" class="form-group has-feedback">
-                        <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONMEMBRE' | translate}}</label>
-                        <select class="select2 form-control" data-allow-clear="1">
-                          <option></option>
-                          <option *ngFor="let u of membreData" [value]=u.id >{{u.nom}}</option>
-                        </select>
+                  <fieldset class="field" *ngIf="essaiForm.controls.niveauCollecte.value && essaiForm.controls.niveauCollecte.value != ''">
+                    <legend class="leg"><strong>Niveau collecte de données:</strong> {{essaiForm.controls.niveauCollecte.value}}</legend>
 
-                        <div class="formio-errors invalid-feedback">
-                          <ng-container *ngFor="let validation of messages_validation.idMembre">
-                            <p class="help-block" *ngIf="essaiForm.get('idMembre').hasError(validation.type)">
-                              {{ validation.message }}
-                            </p>
-                          </ng-container>
+                    <!--Union - OP-->
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'union' || essaiForm.controls.niveauCollecte.value == 'op'">
+                      <!--union-->
+                      <ion-col>
+                        <div id="idUnion" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONUNION' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let u of unionData" [value]=u.id >{{u.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idUnion">
+                              <p class="help-block" *ngIf="essaiForm.get('idUnion').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
                         </div>
-                      </div>
-                    </ion-col>
-
-                    <!--Champ-->
-                    <ion-col>
-                      <div id="idChamp" class="form-group has-feedback">
-                        <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONCHAMP' | translate}}</label>
-                        <select class="select2 form-control" data-allow-clear="1">
-                          <option></option>
-                          <option *ngFor="let c of champData" [value]=c.id >{{c.nom}}</option>
-                        </select>
-
-                        <div class="formio-errors invalid-feedback">
-                          <ng-container *ngFor="let validation of messages_validation.idChamp">
-                            <p class="help-block" *ngIf="essaiForm.get('idChamp').hasError(validation.type)">
-                              {{ validation.message }}
-                            </p>
-                          </ng-container>
+                      </ion-col>
+  
+                      <!--OP-->
+                      <ion-col *ngIf="essaiForm.controls.niveauCollecte.value == 'op'">
+                        <div id="idOp" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONOP' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let o of opData" [value]=o.id >{{o.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idOp">
+                              <p class="help-block" *ngIf="essaiForm.get('idOp').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
                         </div>
-                      </div>
-                    </ion-col>
-                  </ion-row>
+                      </ion-col>
+                    </ion-row>
+
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'personne' || essaiForm.controls.niveauCollecte.value == 'champ'">
+                      <!--Personne-->
+                      <ion-col>
+                        <div id="idPersonne" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONPERSONNE' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let u of personneData" [value]=u.id >{{u.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idPersonne">
+                              <p class="help-block" *ngIf="essaiForm.get('idPersonne').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </ion-col>
+  
+                      <!--Champ-->
+                      <ion-col *ngIf="essaiForm.controls.niveauCollecte.value == 'champ'">
+                        <div id="idChamp" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONCHAMP' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let c of champData" [value]=c.id >{{c.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idChamp">
+                              <p class="help-block" *ngIf="essaiForm.get('idChamp').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </ion-col>
+                    </ion-row>
+  
+  
+                    <!--Habiation, si le protocole porte sur une habitation (pays, region, departement commune ou village-->
+  
+                    <!--Info pays et région-->
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'pays'">
+                      <!--Pays-->
+                      <ion-col>
+                        <div id="idPays" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONPAYS' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option>OP nom membre</option>
+                            <option *ngFor="let p of paysData" [value]=p.id >{{p.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idPays">
+                              <p class="help-block" *ngIf="essaiForm.get('idPays').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </ion-col>
+                    </ion-row>
+  
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'region' || essaiForm.controls.niveauCollecte.value == 'departement' || essaiForm.controls.niveauCollecte.value == 'commune' || essaiForm.controls.niveauCollecte.value == 'localite'">
+                      <!--Pays-->
+                      <ion-col>
+                        <div id="idPays" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONPAYS' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let p of paysData" [value]=p.id >{{p.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idPays">
+                              <p class="help-block" *ngIf="essaiForm.get('idPays').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </ion-col>
+                      <!--Région-->
+                      <ion-col>
+                        <div id="idRegion" class="form-group has-feedback">
+                            <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONREGION' | translate}}</label>
+                            <select class="select2 form-control" data-allow-clear="1">
+                              <option></option>
+                              <option *ngFor="let r of regionData" [value]=r.id >{{r.nom}}</option>
+                            </select>
+  
+                            <div class="formio-errors invalid-feedback">
+                              <ng-container *ngFor="let validation of messages_validation.idRegion">
+                                <p class="help-block" *ngIf="essaiForm.get('idRegion').hasError(validation.type)">
+                                  {{ validation.message }}
+                                </p>
+                              </ng-container>
+                            </div>
+                        </div>
+                      </ion-col>
+                    </ion-row>
+  
+                    <!--Département et commune-->
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'departement'">
+                      <ion-col>
+                        <!--Département-->
+                        <div id="idDepartement" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONDEPARTEMENT' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let d of departementData" [value]=d.id >{{d.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idDepartement">
+                              <p class="help-block" *ngIf="essaiForm.get('idDepartement').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>      
+                      </ion-col>
+                    </ion-row>
+  
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'commune' || essaiForm.controls.niveauCollecte.value == 'localite'">
+                      <ion-col>
+                        <!--Département-->
+                        <div id="idDepartement" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONDEPARTEMENT' | translate}}</label>
+                          <select class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let d of departementData" [value]=d.id >{{d.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idDepartement">
+                              <p class="help-block" *ngIf="essaiForm.get('idDepartement').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>      
+                      </ion-col>
+                      <ion-col>
+                        <!--Commune-->
+                        <div id="idCommune" class="form-group has-feedback">
+                          <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONCOMMUNE' | translate}}</label>
+                          <select  class="select2 form-control" data-allow-clear="1">
+                            <option></option>
+                            <option *ngFor="let c of communeData" [value]=c.id >{{c.nom}}</option>
+                          </select>
+  
+                          <div class="formio-errors invalid-feedback">
+                            <ng-container *ngFor="let validation of messages_validation.idCommune">
+                              <p class="help-block" *ngIf="essaiForm.get('idCommune').hasError(validation.type)">
+                                {{ validation.message }}
+                              </p>
+                            </ng-container>
+                          </div>
+                        </div>
+                      </ion-col>
+                    </ion-row>
+  
+                    <ion-row *ngIf="essaiForm.controls.niveauCollecte.value == 'localite'">
+                      <ion-col>
+                        <!--Siège -- localité-->
+                        <div id="idLocalite" class="form-group has-feedback">
+                            <label class="control-label field-required">{{'ESSAI_PAGE.SELECTIONLOCALITE' | translate}}</label>
+                            <select class="select2 form-control" data-allow-clear="1">
+                              <option></option>
+                              <option *ngFor="let l of localiteData" [value]=l.id >{{l.nom}}</option>
+                            </select>
+  
+                            <div class="formio-errors invalid-feedback">
+                              <ng-container *ngFor="let validation of messages_validation.idLocalite">
+                                <p class="help-block" *ngIf="essaiForm.get('idLocalite').hasError(validation.type)">
+                                  {{ validation.message }}
+                                </p>
+                              </ng-container>
+                            </div>
+                          </div>
+                      </ion-col>
+                    </ion-row>  
+                  </fieldset>        
+                
                           
                   <!--br>
                   <ion-row>
@@ -606,8 +798,8 @@
                     </div>
                 </div>
                 <div class="row justify-content-center">
-                  <input type="button" name="next" [disabled]="!essaiForm.valid" (click)="onSubmit()" class="next action-button m-l-5" value="{{'GENERAL.SAUVEGARDER' | translate}}" /> 
                   <input type="button" name="previous" class="previous action-button-previous m-l-5" (click)="annuler()" value="{{'GENERAL.ANNULER' | translate}}" />
+                  <input type="button" name="next" [disabled]="!essaiForm.valid" (click)="onSubmit()" class="next action-button m-l-5" value="{{'GENERAL.SAUVEGARDER' | translate}}" /> 
                 </div>
             </fieldset>
         </form>
@@ -617,24 +809,24 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="!mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!mobile && action == 'liste' && global.controlAccesModele('essais', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length && global.controlAccesModele('essais', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="mobile && !idEssai && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="mobile && !idEssai && action == 'infos' && cacheAction == 'liste' && global.controlAccesModele('essais', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(unEssai)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
   
-  <ion-fab *ngIf="!mobile && !idEssai && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unEssai)" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!mobile && !idEssai && action == 'infos' && cacheAction == 'liste' && global.controlAccesModele('essais', 'modification')" (click)="modifier(unEssai)" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="create"></ion-icon>
     </ion-fab-button>

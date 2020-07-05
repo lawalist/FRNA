@@ -34,6 +34,9 @@ declare var cordova: any;
 export class PaysPage implements OnInit {
 
   @Input() idPays: any;
+  @Input() filtrePays: any;
+
+  global = global;
   paysForm: FormGroup;
   action: string = 'liste';
   pays: any;
@@ -452,30 +455,35 @@ export class PaysPage implements OnInit {
   }
 
   infos(p){
-    if(!this.estModeCocherElemListe){
-      this.unPays = p;
-      this.action = 'infos';
+    if(global.controlAccesModele('pays', 'lecture')){
+      if(!this.estModeCocherElemListe){
+        this.unPays = p;
+        this.action = 'infos';
+      }
     }
     
   }
 
   modifier(p){
-
-    this.servicePouchdb.findRelationalDocByID('pays', p.id).then((res) => {
-      if(res && res.pays[0]){
-          this.editForm(p);
-          
-          /*$('#code input').ready(()=>{
-            $('#code input').attr('disabled', true)
-          });*/
-
-          this.unPays = p;
-          this.unPaysDoc =  res.pays[0];
-          this.action ='modifier';
-        }
-    }).catch((err) => {
-      alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-    })
+    if(!this.filtrePays){
+      if(global.controlAccesModele('pays', 'modification')){
+        this.servicePouchdb.findRelationalDocByID('pays', p.id).then((res) => {
+          if(res && res.pays[0]){
+              this.editForm(p);
+              
+              /*$('#code input').ready(()=>{
+                $('#code input').attr('disabled', true)
+              });*/
+    
+              this.unPays = p;
+              this.unPaysDoc =  res.pays[0];
+              this.action ='modifier';
+            }
+        }).catch((err) => {
+          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+        })
+      }
+    }
   }
 
   selectItem(index){
@@ -956,8 +964,14 @@ export class PaysPage implements OnInit {
         security: {
           created_by: null,
           created_at: null,
+          created_deviceid: null,
+          created_imei: null,
+          created_phonenumber: null,
           updated_by: null,
           updated_at: null,
+          updated_deviceid: null,
+          updated_imei: null,
+          updated_phonenumber: null,
           deleted: false,
           deleted_by: null,
           deleted_at: null,
@@ -1114,14 +1128,26 @@ export class PaysPage implements OnInit {
   }
 
   doRefresh(event) {
+    let id = 'pays';
+    if(this.filtrePays){
+      id = 'pays-relation';
+    }
+
     this.servicePouchdb.findAllRelationalDocByType('pays').then((res) => {
       if(res && res.pays){
         //this.pays = [...pays];
         let paysData = [];
         //var datas = [];
         for(let p of res.pays){
+          if(this.filtrePays){
+            //if(){
+            if(this.filtrePays.indexOf(p.id) === -1){
+              paysData.push({id: p.id, ...p.formData, ...p.formioData, ...p.security});
+            }
+          }else{
+            paysData.push({id: p.id, ...p.formData, ...p.formioData, ...p.security});
+          }
           //datas = datas.concat(d.data);
-          paysData.push({id: p.id, ...p.formData, ...p.formioData, ...p.security});
         }
 
 
@@ -1141,11 +1167,15 @@ export class PaysPage implements OnInit {
 
         } else {
           //si non mobile 
-          $('#pays').ready(()=>{
+          let expor = global.peutExporterDonnees;
+          if(this.filtrePays){
+            expor = false;
+          }
+          $('#'+id).ready(()=>{
             if(global.langue == 'en'){
-              this.paysHTMLTable = createDataTable("pays", this.colonnes, paysData, null, this.translate, global.peutExporterDonnees);
+              this.paysHTMLTable = createDataTable(id, this.colonnes, paysData, null, this.translate, expor);
             }else{
-              this.paysHTMLTable = createDataTable("pays", this.colonnes, paysData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+              this.paysHTMLTable = createDataTable(id, this.colonnes, paysData, global.dataTable_fr, this.translate, expor);
             }
      
             this.attacheEventToDataTable(this.paysHTMLTable.datatable);
@@ -1191,6 +1221,11 @@ export class PaysPage implements OnInit {
     this.paysData = [];
     this.allPaysData = [];
 
+    let id = 'pays';
+    if(this.filtrePays){
+      id = 'pays-relation';
+    }
+
     if(this.idPays && this.idPays != ''){
       this.servicePouchdb.findRelationalDocByTypeAndID('pays', this.idPays).then((res) => {
         if(res && res.pays){
@@ -1213,7 +1248,14 @@ export class PaysPage implements OnInit {
           //var datas = [];
           for(let p of res.pays){
             //datas = datas.concat(d.data);
-            paysData.push({id: p.id,...p.formData, ...p.formioData, ...p.security});
+            if(this.filtrePays){
+              if(this.filtrePays.indexOf(p.id) === -1){
+                paysData.push({id: p.id,...p.formData, ...p.formioData, ...p.security});
+              }
+            }else{
+              paysData.push({id: p.id,...p.formData, ...p.formioData, ...p.security});
+            }
+            
           }
 
           if(this.mobile){
@@ -1230,11 +1272,15 @@ export class PaysPage implements OnInit {
 
             this.allPaysData = [...this.paysData];
           } else{
-            $('#pays').ready(()=>{
+            let expor = global.peutExporterDonnees;
+            if(this.filtrePays){
+              expor = false;
+            }
+            $('#'+id).ready(()=>{
               if(global.langue == 'en'){
-                this.paysHTMLTable = createDataTable("pays", this.colonnes, paysData, null, this.translate, global.peutExporterDonnees);
+                this.paysHTMLTable = createDataTable(id, this.colonnes, paysData, null, this.translate, expor);
               }else{
-                this.paysHTMLTable = createDataTable("pays", this.colonnes, paysData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.paysHTMLTable = createDataTable(id, this.colonnes, paysData, global.dataTable_fr, this.translate, expor);
               }
              
               this.attacheEventToDataTable(this.paysHTMLTable.datatable);
@@ -1303,7 +1349,7 @@ export class PaysPage implements OnInit {
     });
     
     //traduitre les collonnes de la table la table
-    this.translateDataTableCollumn();
+    ///this.translateDataTableCollumn();
   }
 
   translateLangue(){
@@ -1648,8 +1694,19 @@ export class PaysPage implements OnInit {
     //this.paysData = temp;
     
   }
-  async close(){
+  /*async close(){
     await this.modalController.dismiss();
+  }*/
+
+  async close(){
+    await this.modalController.dismiss({filtrePays: this.filtrePays});
+  }
+
+  async valider() {
+    //this.filtrePays = [];
+    this.filtrePays = this.filtrePays.concat(this.selectedIndexes);
+
+    await this.modalController.dismiss({filtrePays: this.filtrePays});
   }
   
   ionViewDidEnter(){

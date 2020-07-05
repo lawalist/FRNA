@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PopoverController, NavParams, NavController } from '@ionic/angular';
+import { global } from '../../globale/variable';
 
 @Component({
   selector: 'app-relations-region',
@@ -10,6 +11,7 @@ export class RelationsRegionComponent implements OnInit {
 
   
   codeRegion: string;
+  global = global;
   constructor(private popoverController: PopoverController, private navParams: NavParams, private navCtrl: NavController) { 
     this.codeRegion = this.navParams.data.codeRegion;
   }
@@ -26,5 +28,8 @@ export class RelationsRegionComponent implements OnInit {
     await this.popoverController.dismiss('localite');
   }
 
+  async choix(c) {
+    await this.popoverController.dismiss(c);
+  }
 
 }

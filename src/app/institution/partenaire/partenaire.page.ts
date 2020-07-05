@@ -25,8 +25,9 @@ import { isObject } from 'util';
 import { isDefined } from '@angular/compiler/src/util';
 import { UnionPage } from '../union/union.page';
 import { OpPage } from '../op/op.page';
-import { MembrePage } from '../membre/membre.page';
+import { PersonnesPage } from '../personnes/personnes.page';
 import { ProjetPage } from 'src/app/recherche/projet/projet.page';
+import * as moment from 'moment';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var JSONToCSVAndTHMLTable: any;
@@ -43,7 +44,10 @@ declare var cordova: any;
 })
 export class PartenairePage implements OnInit {
   @Input() idPartenaire: string;
+  @Input() filtrePartenaire: any;
 
+  global = global;
+  start: any;
   partenaireForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -74,7 +78,7 @@ export class PartenairePage implements OnInit {
   doModification: boolean = false;
   estModeCocherElemListe: boolean = false;
   rechargerListeMobile: boolean = false;
-  colonnes = ['nom', 'numero', 'categorie', 'secteurPublic', 'secteurActivite', 'dateCreation', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomSiege', 'codeSiege', 'latitude', 'longitude']
+  colonnes = ['nom', 'numero', 'categorie', 'secteurPublic', 'secteurActivite', 'dateCreation', 'telephone', 'email', 'nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nomSiege', 'codeSiege', 'latitude', 'longitude']
 
   messages_validation = {
     'numero': [
@@ -127,7 +131,7 @@ export class PartenairePage implements OnInit {
 
     translateChoixNiveau(){
       //catégories 
-      for(let i = 1; i <= 8; i++){
+      for(let i = 1; i <= 12; i++){
         this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+i).subscribe((res: string) => {
           this.categoriePartenaire.push({'id': i, 'val': res});
         });
@@ -144,7 +148,7 @@ export class PartenairePage implements OnInit {
       });
 
       //secteurPublics 
-      for(let i = 1; i <= 3; i++){
+      for(let i = 1; i <= 4; i++){
         this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+i).subscribe((res: string) => {
           this.secteurPublics.push({'id': i, 'val': res});
         });
@@ -161,7 +165,7 @@ export class PartenairePage implements OnInit {
       });
 
       //secteurActivites 
-      for(let i = 1; i <= 21; i++){
+      /*for(let i = 1; i <= 21; i++){
         this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+i).subscribe((res: string) => {
           this.secteurActivites.push({'id': i, 'val': res});
         });
@@ -175,7 +179,7 @@ export class PartenairePage implements OnInit {
           return 1;
         }
         return 0;
-      });
+      });*/
     }
 
   
@@ -336,7 +340,9 @@ export class PartenairePage implements OnInit {
         categorie: [null, Validators.required],
         secteurPublic: [null, Validators.required],
         secteurActivite: [null, Validators.required],
-        dateCreation: [null],   
+        dateCreation: [null], 
+        telephone: [null],  
+        email: [null],
         nomPays: [null, Validators.required],
         codePays: [null, Validators.required],
         idPays: [null, Validators.required],
@@ -352,6 +358,7 @@ export class PartenairePage implements OnInit {
         nomSiege: [null, Validators.required],
         codeSiege: [null, Validators.required],
         idSiege: [null, Validators.required],
+        adresse: [null],
         latitude: [null],
         longitude: [null],
       });
@@ -437,6 +444,9 @@ export class PartenairePage implements OnInit {
         idSiege: [idSiege, Validators.required],
         latitude: [p.latitude],
         longitude: [p.latitude],
+        telephone: [p.telephone],
+        email: [p.email],
+        adresse: [p.adresse],
       });
 
       this.validerNumero();
@@ -460,11 +470,12 @@ export class PartenairePage implements OnInit {
   
     ajouter(){
       this.doModification = false;
+      this.start = moment().toISOString();
       this.getPays();
       this.initForm();
       this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'), true);
       this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'), true);
-      this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'), true);
+      //this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'), true);
       this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
       this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
       this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
@@ -475,85 +486,94 @@ export class PartenairePage implements OnInit {
     }
   
     infos(p){
-      if(!this.mobile){
-        this.unPartenaire = p;
-        this.action = 'infos';
-      }else  if(this.mobile && !this.estModeCocherElemListe){
-        this.unPartenaire = p;
-        this.action = 'infos';
+      if(global.controlAccesModele('partenaires', 'lecture')){
+        if(!this.mobile){
+          this.unPartenaire = p;
+          this.action = 'infos';
+        }else  if(this.mobile && !this.estModeCocherElemListe){
+          this.unPartenaire = p;
+          this.action = 'infos';
+        }
       }
+      
     }
 
   
     modifier(partenaire){
       //console.log(partenaire)
-      if(!this.idPartenaire){
-        let id;
-        if(isObject(partenaire)){
-          id = partenaire.id;
-        }else{
-          id = partenaire;
-        }
-
-        this.doModification = true;
-        this.servicePouchdb.findRelationalDocByID('partenaire', id).then((res) => {
-          if(res && res.partenaires[0]){
-            let pDoc = res.partenaires[0];
-            this.getPays();
-            //console.log(pDoc)
-            if(pDoc.pays)
-              this.getRegionParPays(pDoc.pays);
-            if(pDoc.region)
-              this.getDepartementParRegion(pDoc.region);
-            if(pDoc.departement)
-              this.getCommuneParDepartement(pDoc.departement);
-            if(pDoc.commune)
-              this.getLocaliteParCommune(pDoc.commune);
-              
-            this.editForm(res);
-
-            this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
-            this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
-            this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
-            this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
-            this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
-            this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
-            this.initSelect2('idCommune', this.translate.instant('PARTENAIRE_PAGE.SELECTIONCOMMUNE'));
-            this.initSelect2('idSiege', this.translate.instant('PARTENAIRE_PAGE.SELECTIONSIEGE'));
-
-            this.setSelect2DefaultValue('categorie', pDoc.formData.categorie)
-            this.setSelect2DefaultValue('secteurPublic', pDoc.formData.secteurPublic)
-            this.setSelect2DefaultValue('secteurActivite', pDoc.formData.secteurActivite)
-            /*$('#numero input').ready(()=>{
-              $('#numero input').attr('disabled', true)
-            });*/
-
-            //this.setSelect2DefaultValue('codePays', partenaire.codePays)
-            //this.setSelect2DefaultValue('codeRegion', partenaire.codeRegion)
-            //this.setSelect2DefaultValue('codeDepartement', partenaire.codeDepartement)
-            //this.setSelect2DefaultValue('codeCommune', partenaire.codeCommune)
-            //this.setSelect2DefaultValue('codeSiege', partenaire.codeSiege)
-            
-            this.unPartenaireDoc = pDoc;
-          
-            if(!isObject(partenaire)){
-              for(let p of this.partenairesData){
-                if(p.id == id){
-                  this.unPartenaire = p;
-                  break;
-                }
-              }
+      if(!this.filtrePartenaire){
+        if(global.controlAccesModele('partenaires', 'modification')){
+          if(!this.idPartenaire){
+            let id;
+            if(isObject(partenaire)){
+              id = partenaire.id;
             }else{
-              this.unPartenaire = partenaire;
+              id = partenaire;
             }
-
-            this.action ='modifier';
+    
+            this.doModification = true;
+            this.start = moment().toISOString();
+            this.servicePouchdb.findRelationalDocByID('partenaire', id).then((res) => {
+              if(res && res.partenaires[0]){
+                let pDoc = res.partenaires[0];
+                this.getPays();
+                //console.log(pDoc)
+                if(pDoc.pays)
+                  this.getRegionParPays(pDoc.pays);
+                if(pDoc.region)
+                  this.getDepartementParRegion(pDoc.region);
+                if(pDoc.departement)
+                  this.getCommuneParDepartement(pDoc.departement);
+                if(pDoc.commune)
+                  this.getLocaliteParCommune(pDoc.commune);
+                  
+                this.editForm(res);
+    
+                this.initSelect2('categorie', this.translate.instant('PARTENAIRE_PAGE.CATEGORIE'));
+                this.initSelect2('secteurPublic', this.translate.instant('PARTENAIRE_PAGE.SECTEURPUBLIC'));
+                //this.initSelect2('secteurActivite', this.translate.instant('PARTENAIRE_PAGE.SECTEURACTIVITE'));
+                this.initSelect2('idPays', this.translate.instant('PARTENAIRE_PAGE.SELECTIONPAYS'));
+                this.initSelect2('idRegion', this.translate.instant('PARTENAIRE_PAGE.SELECTIONREGION'));
+                this.initSelect2('idDepartement', this.translate.instant('PARTENAIRE_PAGE.SELECTIONDEPARTEMENT'));
+                this.initSelect2('idCommune', this.translate.instant('PARTENAIRE_PAGE.SELECTIONCOMMUNE'));
+                this.initSelect2('idSiege', this.translate.instant('PARTENAIRE_PAGE.SELECTIONSIEGE'));
+    
+                this.setSelect2DefaultValue('categorie', pDoc.formData.categorie)
+                this.setSelect2DefaultValue('secteurPublic', pDoc.formData.secteurPublic)
+                //this.setSelect2DefaultValue('secteurActivite', pDoc.formData.secteurActivite)
+                /*$('#numero input').ready(()=>{
+                  $('#numero input').attr('disabled', true)
+                });*/
+    
+                //this.setSelect2DefaultValue('codePays', partenaire.codePays)
+                //this.setSelect2DefaultValue('codeRegion', partenaire.codeRegion)
+                //this.setSelect2DefaultValue('codeDepartement', partenaire.codeDepartement)
+                //this.setSelect2DefaultValue('codeCommune', partenaire.codeCommune)
+                //this.setSelect2DefaultValue('codeSiege', partenaire.codeSiege)
+                
+                this.unPartenaireDoc = pDoc;
+              
+                if(!isObject(partenaire)){
+                  for(let p of this.partenairesData){
+                    if(p.id == id){
+                      this.unPartenaire = p;
+                      break;
+                    }
+                  }
+                }else{
+                  this.unPartenaire = partenaire;
+                }
+    
+                this.action ='modifier';
+              }
+            }).catch((err) => {
+              alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+            })
+            
           }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
-        
+        }  
       }
+      
       
     }
 
@@ -968,7 +988,8 @@ export class PartenairePage implements OnInit {
           "dataLength": this.partenairesData.length,
           "selectedIndexesLength": this.selectedIndexes.length,
           "styleAffichage": this.styleAffichage,
-          "action": this.action
+          "action": this.action,
+          idModele: 'partenaires'
         }},
         animated: true,
         showBackdrop: true,
@@ -1124,7 +1145,8 @@ export class PartenairePage implements OnInit {
           //"dataLength": this.partenairesData.length,
           //"selectedIndexesLength": this.selectedIndexes.length,
           //"styleAffichage": this.styleAffichage,
-          "action": this.cacheAction
+          "action": this.cacheAction,
+          idModele: 'partenaires'
       /*}*/},
         animated: true,
         showBackdrop: true,
@@ -1556,7 +1578,9 @@ export class PartenairePage implements OnInit {
         component: ActionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {/*"id": "salu"*/
+          idModele: 'partenaires'
+        },
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1595,7 +1619,8 @@ export class PartenairePage implements OnInit {
         component: ActionDatatableComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
+        componentProps: {
+          idModele: 'partenaires', "action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1641,7 +1666,9 @@ export class PartenairePage implements OnInit {
         component: SelectionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {/*"id": "salu"*/
+          idModele: 'partenaires'
+        },
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1662,7 +1689,8 @@ export class PartenairePage implements OnInit {
         component: DatatableMoreComponent,
         event: ev,
         translucent: true,
-        componentProps: {action: this.action},
+        componentProps: {action: this.action, 
+          idModele: 'partenaires'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1719,9 +1747,9 @@ export class PartenairePage implements OnInit {
               p.formData.secteurPublic = res;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+            /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
               p.formData.secteurActivite = res;
-            });
+            });*/
 
             //chargement des relation localité
             if(isDefined(paysIndex[p.pays])){
@@ -1866,7 +1894,9 @@ export class PartenairePage implements OnInit {
         component: DatatableConstructComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "cacheAction": this.cacheAction},
+        componentProps: {"action": this.action, "cacheAction": this.cacheAction, 
+          idModele: 'partenaires'
+        },
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1899,7 +1929,8 @@ export class PartenairePage implements OnInit {
     async presentDerniereModification(partenaire) {
       const modal = await this.modalController.create({
         component: DerniereModificationComponent,
-        componentProps: { _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
+        componentProps: { 
+          idModele: 'partenaires', _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -2056,7 +2087,8 @@ export class PartenairePage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": this.unPartenaire.id},
+        componentProps: {
+          idModele: 'partenaires', "idPartenaire": this.unPartenaire.id},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -2067,8 +2099,8 @@ export class PartenairePage implements OnInit {
           this.presentUnion(this.unPartenaire.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.unPartenaire.id);
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.presentMembre(this.unPartenaire.id);
+        }else if(dataReturned !== null && dataReturned.data == 'personne') {
+          this.presentPersonne(this.unPartenaire.id);
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(this.unPartenaire.id);
         }/*else if(dataReturned !== null && dataReturned.data == 'partenaire') {
@@ -2088,7 +2120,8 @@ export class PartenairePage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": this.selectedIndexes[0]},
+        componentProps: {
+          idModele: 'partenaires', "idPartenaire": this.selectedIndexes[0]},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -2099,8 +2132,8 @@ export class PartenairePage implements OnInit {
           this.presentUnion(this.selectedIndexes[0]);
         }else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(this.selectedIndexes[0]);
-        }else if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.presentMembre(this.selectedIndexes[0]);
+        }else if(dataReturned !== null && dataReturned.data == 'personne') {
+          this.presentPersonne(this.selectedIndexes[0]);
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(this.selectedIndexes[0]);
         }
@@ -2122,7 +2155,8 @@ export class PartenairePage implements OnInit {
         component: RelationsPartenaireComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idPartenaire": data.id},
+        componentProps: {
+          idModele: 'partenaires', "idPartenaire": data.id},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -2133,8 +2167,8 @@ export class PartenairePage implements OnInit {
           this.presentUnion(data.id);
         } else if(dataReturned !== null && dataReturned.data == 'OPs') {
           this.presentOP(data.id);
-        } else if(dataReturned !== null && dataReturned.data == 'membre') {
-          this.presentMembre(data.id);
+        } else if(dataReturned !== null && dataReturned.data == 'personne') {
+          this.presentPersonne(data.id);
         }else if(dataReturned !== null && dataReturned.data == 'projet') {
           this.presentProjet(data.id);
         }
@@ -2151,7 +2185,8 @@ export class PartenairePage implements OnInit {
     async presentUnion(idPartenaire){
       const modal = await this.modalController.create({
         component: UnionPage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {
+          idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2161,17 +2196,19 @@ export class PartenairePage implements OnInit {
     async presentOP(idPartenaire){
       const modal = await this.modalController.create({
         component: OpPage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {
+          idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
       return await modal.present();
     }
 
-    async presentMembre(idPartenaire){
+    async presentPersonne(idPartenaire){
       const modal = await this.modalController.create({
-        component: MembrePage,
-        componentProps: { idPartenaire: idPartenaire },
+        component: PersonnesPage,
+        componentProps: {
+          idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2181,7 +2218,8 @@ export class PartenairePage implements OnInit {
     async presentProjet(idPartenaire){
       const modal = await this.modalController.create({
         component: ProjetPage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {
+          idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2208,10 +2246,20 @@ export class PartenairePage implements OnInit {
           formioData: formioData,
           //pour garder les traces
           security: {
+            creation_start: this.start,
+            creation_end: moment().toISOString(),
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
+            update_start: null,
+            update_end: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             archived: false,
             archived_by: null,
             archived_at: null,
@@ -2259,9 +2307,9 @@ export class PartenairePage implements OnInit {
             partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+          /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
             partenaireData.secteurActivite = res;
-          });
+          });*/
 
           //this.partenaires.push(partenaire);
           this.action = 'liste';
@@ -2322,6 +2370,8 @@ export class PartenairePage implements OnInit {
         this.unPartenaireDoc.formioData = formioData;
 
         //this.unPartenaire = partenaireData;
+        this.unPartenaireDoc.security.update_start = this.start;
+        this.unPartenaireDoc.security.update_start = moment().toISOString();
         this.unPartenaireDoc.security = this.servicePouchdb.garderUpdateTrace(this.unPartenaireDoc.security);
 
         let doc = this.clone(this.unPartenaireDoc);
@@ -2354,9 +2404,9 @@ export class PartenairePage implements OnInit {
             partenaireData.secteurPublic = res;
           });
           
-          this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
+          /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+partenaireData.secteurActivite).subscribe((res: string) => {
             partenaireData.secteurActivite = res;
-          });
+          });*/
           
           this.action = 'infos';
           this.infos(partenaireData);
@@ -2453,6 +2503,11 @@ export class PartenairePage implements OnInit {
     }
   
     doRefresh(event) {
+      let id = 'partenaire';
+      if(this.filtrePartenaire){
+        id = 'partenaire-relation';
+      }
+
       if(this.action != 'conflits'){
         var deleted: any;
         var archived: any;
@@ -2492,107 +2547,213 @@ export class PartenairePage implements OnInit {
 
             //var datas = [];
             for(let p of res.partenaires){
-              if(!p.formData.monInstitution || (p.formData.monInstitution && this.action != 'liste')){
+              if(this.filtrePartenaire){
+                //if(){
+                if(this.filtrePartenaire.indexOf(p.id) === -1){
 
-                delete p.security['shared_history'];
-                this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
-                  p.formData.categorie = res;
-                });
-          
-                this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
-                  p.formData.secteurPublic = res;
-                });
+                  delete p.security['shared_history'];
+                  this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
+                    p.formData.categorie = res;
+                  });
+            
+                  this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+                    p.formData.secteurPublic = res;
+                  });
+                  
+                  /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                    p.formData.secteurActivite = res;
+                  });*/
+  
+                  //chargement des relation localité
+                  if(isDefined(paysIndex[p.pays])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
+                    idPays = res.pays[paysIndex[p.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == p.pays){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
+                        paysIndex[p.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
+                    }
+                  }
+  
+                  if(isDefined(regionIndex[p.region])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
+                    idRegion = res.regions[regionIndex[p.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == p.region){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
+                        regionIndex[p.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
+                    }
+                  }
+  
+                  
+                  if(isDefined(departementIndex[p.departement])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
+                    idDepartement = res.departements[departementIndex[p.departement]].id;
+                  }else{
+                    for(let i=0; i < res.departements.length; i++){
+                      if(res.departements[i].id == p.departement){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
+                        departementIndex[p.departement] = i;
+                        idDepartement = res.departements[departementIndex[p.departement]].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if(isDefined(communeIndex[p.commune])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
+                    idCommune = res.communes[communeIndex[p.commune]].id;
+                  }else{
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == p.commune){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
+                        communeIndex[p.commune] = i;
+                        idCommune = res.communes[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  
+                  if(isDefined(localiteIndex[p.localite])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
+                    idSiege = res.localites[localiteIndex[p.localite]].id;
+                  }else{
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == p.localite){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
+                        localiteIndex[p.localite] = i;
+                        idSiege = res.localites[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
                 
-                this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
-                  p.formData.secteurActivite = res;
-                });
+                }
+              }else {
+                if(!p.formData.monInstitution || (p.formData.monInstitution && this.action != 'liste')){
 
-                //chargement des relation localité
-                if(isDefined(paysIndex[p.pays])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
-                  idPays = res.pays[paysIndex[p.pays]].id;
-                }else{
-                  for(let i=0; i < res.pays.length; i++){
-                    if(res.pays[i].id == p.pays){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
-                      paysIndex[p.pays] = i;
-                      idPays = res.pays[i].id;
-                      break;
+                  delete p.security['shared_history'];
+                  this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
+                    p.formData.categorie = res;
+                  });
+            
+                  this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+                    p.formData.secteurPublic = res;
+                  });
+                  
+                  /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                    p.formData.secteurActivite = res;
+                  });*/
+  
+                  //chargement des relation localité
+                  if(isDefined(paysIndex[p.pays])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
+                    idPays = res.pays[paysIndex[p.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == p.pays){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
+                        paysIndex[p.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
                     }
                   }
-                }
-
-                if(isDefined(regionIndex[p.region])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
-                  idRegion = res.regions[regionIndex[p.region]].id;
-                }else{
-                  for(let i=0; i < res.regions.length; i++){
-                    if(res.regions[i].id == p.region){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
-                      regionIndex[p.region] = i;
-                      idRegion = res.regions[i].id;
-                      break;
+  
+                  if(isDefined(regionIndex[p.region])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
+                    idRegion = res.regions[regionIndex[p.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == p.region){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
+                        regionIndex[p.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
                     }
                   }
-                }
-
-                
-                if(isDefined(departementIndex[p.departement])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
-                  idDepartement = res.departements[departementIndex[p.departement]].id;
-                }else{
-                  for(let i=0; i < res.departements.length; i++){
-                    if(res.departements[i].id == p.departement){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
-                      departementIndex[p.departement] = i;
-                      idDepartement = res.departements[departementIndex[p.departement]].id;
-                      break;
+  
+                  
+                  if(isDefined(departementIndex[p.departement])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
+                    idDepartement = res.departements[departementIndex[p.departement]].id;
+                  }else{
+                    for(let i=0; i < res.departements.length; i++){
+                      if(res.departements[i].id == p.departement){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
+                        departementIndex[p.departement] = i;
+                        idDepartement = res.departements[departementIndex[p.departement]].id;
+                        break;
+                      }
                     }
                   }
-                }
-                
-                if(isDefined(communeIndex[p.commune])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
-                  idCommune = res.communes[communeIndex[p.commune]].id;
-                }else{
-                  for(let i=0; i < res.communes.length; i++){
-                    if(res.communes[i].id == p.commune){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
-                      communeIndex[p.commune] = i;
-                      idCommune = res.communes[i].id;
-                      break;
+                  
+                  if(isDefined(communeIndex[p.commune])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
+                    idCommune = res.communes[communeIndex[p.commune]].id;
+                  }else{
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == p.commune){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
+                        communeIndex[p.commune] = i;
+                        idCommune = res.communes[i].id;
+                        break;
+                      }
                     }
                   }
-                }
-                
-                
-                if(isDefined(localiteIndex[p.localite])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
-                  idSiege = res.localites[localiteIndex[p.localite]].id;
-                }else{
-                  for(let i=0; i < res.localites.length; i++){
-                    if(res.localites[i].id == p.localite){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
-                      localiteIndex[p.localite] = i;
-                      idSiege = res.localites[i].id;
-                      break;
+                  
+                  
+                  if(isDefined(localiteIndex[p.localite])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
+                    idSiege = res.localites[localiteIndex[p.localite]].id;
+                  }else{
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == p.localite){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
+                        localiteIndex[p.localite] = i;
+                        idSiege = res.localites[i].id;
+                        break;
+                      }
                     }
                   }
-                }
+                  
+                  partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
                 
-                partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
-              
+                }
               }
+              
             }
 
           //si mobile
@@ -2613,10 +2774,15 @@ export class PartenairePage implements OnInit {
             //si non mobile 
             //if(this.partenairesData.length > 0){
               //$('#partenaire').ready(()=>{
+                let expor = global.peutExporterDonnees;
+                if(this.filtrePartenaire){
+                  expor = false;
+                }
+
                 if(global.langue == 'en'){
-                  this.partenaireHTMLTable = createDataTable("partenaire", this.colonnes, partenairesData, null, this.translate, global.peutExporterDonnees);
+                  this.partenaireHTMLTable = createDataTable(id, this.colonnes, partenairesData, null, this.translate, expor);
                 }else{
-                  this.partenaireHTMLTable = createDataTable("partenaire", this.colonnes, partenairesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.partenaireHTMLTable = createDataTable(id, this.colonnes, partenairesData, global.dataTable_fr, this.translate, expor);
                 }
 
                 this.attacheEventToDataTable(this.partenaireHTMLTable.datatable);
@@ -2699,6 +2865,11 @@ export class PartenairePage implements OnInit {
   
     getPartenaire(){
       //tous les partenaires
+      let id = 'partenaire';
+      if(this.filtrePartenaire){
+        id = 'partenaire-relation';
+      }
+
       if(this.idPartenaire && this.idPartenaire != ''){
         this.servicePouchdb.findRelationalDocByID('partenaire', this.idPartenaire).then((res) => {
 
@@ -2712,9 +2883,9 @@ export class PartenairePage implements OnInit {
               res.partenaires[0].formData.secteurPublic = res2;
             });
             
-            this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+res.partenaires[0].formData.secteurActivite).subscribe((res2: string) => {
+            /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+res.partenaires[0].formData.secteurActivite).subscribe((res2: string) => {
               res.partenaires[0].formData.secteurActivite = res2;
-            });
+            });*/
 
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'nomPays', res.pays[0].formData.nom, 6); 
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'codePays', res.pays[0].formData.code, 7);   
@@ -2778,107 +2949,213 @@ export class PartenairePage implements OnInit {
 
             //var datas = [];
             for(let p of res.partenaires){
-              if(!p.formData.monInstitution || (p.formData.monInstitution && this.action != 'liste')){
 
-                delete p.security['shared_history'];
-                this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
-                  p.formData.categorie = res;
-                });
-          
-                this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
-                  p.formData.secteurPublic = res;
-                });
-                
-                this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
-                  p.formData.secteurActivite = res;
-                });
+              if(this.filtrePartenaire){
+                if(this.filtrePartenaire.indexOf(p.id) === -1){
 
-                //chargement des relation localité
-                if(isDefined(paysIndex[p.pays])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
-                  idPays = res.pays[paysIndex[p.pays]].id;
-                }else{
-                  for(let i=0; i < res.pays.length; i++){
-                    if(res.pays[i].id == p.pays){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
-                      paysIndex[p.pays] = i;
-                      idPays = res.pays[i].id;
-                      break;
-                    }
-                  }
-                }
+                  delete p.security['shared_history'];
+                  this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
+                    p.formData.categorie = res;
+                  });
+            
+                  this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+                    p.formData.secteurPublic = res;
+                  });
+                  
+                  /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                    p.formData.secteurActivite = res;
+                  });*/
 
-                if(isDefined(regionIndex[p.region])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
-                  idRegion = res.regions[regionIndex[p.region]].id;
-                }else{
-                  for(let i=0; i < res.regions.length; i++){
-                    if(res.regions[i].id == p.region){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
-                      regionIndex[p.region] = i;
-                      idRegion = res.regions[i].id;
-                      break;
+                  //chargement des relation localité
+                  if(isDefined(paysIndex[p.pays])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
+                    idPays = res.pays[paysIndex[p.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == p.pays){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
+                        paysIndex[p.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
                     }
                   }
-                }
 
-                
-                if(isDefined(departementIndex[p.departement])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
-                  idDepartement = res.departements[departementIndex[p.departement]].id;
-                }else{
-                  for(let i=0; i < res.departements.length; i++){
-                    if(res.departements[i].id == p.departement){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
-                      departementIndex[p.departement] = i;
-                      idDepartement = res.departements[i].id;
-                      break;
+                  if(isDefined(regionIndex[p.region])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
+                    idRegion = res.regions[regionIndex[p.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == p.region){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
+                        regionIndex[p.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
                     }
                   }
-                }
-                
-                if(isDefined(communeIndex[p.commune])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
-                  idCommune = res.communes[communeIndex[p.commune]].id;
-                }else{
-                  for(let i=0; i < res.communes.length; i++){
-                    if(res.communes[i].id == p.commune){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
-                      communeIndex[p.commune] = i;
-                      idCommune = res.communes[i].id;
-                      break;
+
+                  
+                  if(isDefined(departementIndex[p.departement])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
+                    idDepartement = res.departements[departementIndex[p.departement]].id;
+                  }else{
+                    for(let i=0; i < res.departements.length; i++){
+                      if(res.departements[i].id == p.departement){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
+                        departementIndex[p.departement] = i;
+                        idDepartement = res.departements[i].id;
+                        break;
+                      }
                     }
                   }
-                }
-                
-                
-                if(isDefined(localiteIndex[p.localite])){
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
-                  p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
-                  idSiege = res.localites[localiteIndex[p.localite]].id;
-                }else{
-                  for(let i=0; i < res.localites.length; i++){
-                    if(res.localites[i].id == p.localite){
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
-                      p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
-                      localiteIndex[p.localite] = i;
-                      idSiege = res.localites[i].id;
-                      break;
+                  
+                  if(isDefined(communeIndex[p.commune])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
+                    idCommune = res.communes[communeIndex[p.commune]].id;
+                  }else{
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == p.commune){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
+                        communeIndex[p.commune] = i;
+                        idCommune = res.communes[i].id;
+                        break;
+                      }
                     }
                   }
-                }
+                  
+                  
+                  if(isDefined(localiteIndex[p.localite])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
+                    idSiege = res.localites[localiteIndex[p.localite]].id;
+                  }else{
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == p.localite){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
+                        localiteIndex[p.localite] = i;
+                        idSiege = res.localites[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
                 
-                partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
-              
+                }
+              }else{
+                if(!p.formData.monInstitution || (p.formData.monInstitution && this.action != 'liste')){
+
+                  delete p.security['shared_history'];
+                  this.translate.get('PARTENAIRE_PAGE.CATEGORIES.'+p.formData.categorie).subscribe((res: string) => {
+                    p.formData.categorie = res;
+                  });
+            
+                  this.translate.get('PARTENAIRE_PAGE.SECTEURPUBLICS.'+p.formData.secteurPublic).subscribe((res: string) => {
+                    p.formData.secteurPublic = res;
+                  });
+                  
+                  /*this.translate.get('PARTENAIRE_PAGE.SECTEURACTIVITES.'+p.formData.secteurActivite).subscribe((res: string) => {
+                    p.formData.secteurActivite = res;
+                  });*/
+
+                  //chargement des relation localité
+                  if(isDefined(paysIndex[p.pays])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[paysIndex[p.pays]].formData.nom, 6);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[paysIndex[p.pays]].formData.code, 7);
+                    idPays = res.pays[paysIndex[p.pays]].id;
+                  }else{
+                    for(let i=0; i < res.pays.length; i++){
+                      if(res.pays[i].id == p.pays){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomPays', res.pays[i].formData.nom, 6);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codePays', res.pays[i].formData.code, 7);
+                        paysIndex[p.pays] = i;
+                        idPays = res.pays[i].id;
+                        break;
+                      }
+                    }
+                  }
+
+                  if(isDefined(regionIndex[p.region])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[regionIndex[p.region]].formData.nom, 8);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[regionIndex[p.region]].formData.code, 9);
+                    idRegion = res.regions[regionIndex[p.region]].id;
+                  }else{
+                    for(let i=0; i < res.regions.length; i++){
+                      if(res.regions[i].id == p.region){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomRegion', res.regions[i].formData.nom, 8);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeRegion', res.regions[i].formData.code, 9);
+                        regionIndex[p.region] = i;
+                        idRegion = res.regions[i].id;
+                        break;
+                      }
+                    }
+                  }
+
+                  
+                  if(isDefined(departementIndex[p.departement])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[departementIndex[p.departement]].formData.nom, 10);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[departementIndex[p.departement]].formData.code, 11);
+                    idDepartement = res.departements[departementIndex[p.departement]].id;
+                  }else{
+                    for(let i=0; i < res.departements.length; i++){
+                      if(res.departements[i].id == p.departement){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomDepartement', res.departements[i].formData.nom, 10);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeDepartement', res.departements[i].formData.code, 11);
+                        departementIndex[p.departement] = i;
+                        idDepartement = res.departements[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if(isDefined(communeIndex[p.commune])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[communeIndex[p.commune]].formData.nom, 12);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[communeIndex[p.commune]].formData.code, 13);
+                    idCommune = res.communes[communeIndex[p.commune]].id;
+                  }else{
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == p.commune){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomCommune', res.communes[i].formData.nom, 12);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeCommune', res.communes[i].formData.code, 13);
+                        communeIndex[p.commune] = i;
+                        idCommune = res.communes[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  
+                  if(isDefined(localiteIndex[p.localite])){
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[localiteIndex[p.localite]].formData.nom, 14);
+                    p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[localiteIndex[p.localite]].formData.code, 15);
+                    idSiege = res.localites[localiteIndex[p.localite]].id;
+                  }else{
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == p.localite){
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'nomSiege', res.localites[i].formData.nom, 14);
+                        p.formData = this.addItemToObjectAtSpecificPosition(p.formData, 'codeSiege', res.localites[i].formData.code, 15);
+                        localiteIndex[p.localite] = i;
+                        idSiege = res.localites[i].id;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
+                
+                }
               }
+              
             }
 
 
@@ -2901,10 +3178,15 @@ export class PartenairePage implements OnInit {
               //si non mobile ou mobile + mode tableau et 
               //if(this.partenairesData.length > 0){
               //$('#partenaire').ready(()=>{
+                let expor = global.peutExporterDonnees;
+                if(this.filtrePartenaire){
+                  expor = false;
+                }
+
                 if(global.langue == 'en'){
-                  this.partenaireHTMLTable = createDataTable("partenaire", this.colonnes, partenairesData, null, this.translate, global.peutExporterDonnees);
+                  this.partenaireHTMLTable = createDataTable(id, this.colonnes, partenairesData, null, this.translate, expor);
                 }else{
-                  this.partenaireHTMLTable = createDataTable("partenaire", this.colonnes, partenairesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.partenaireHTMLTable = createDataTable(id, this.colonnes, partenairesData, global.dataTable_fr, this.translate, expor);
                 }
 
                 this.attacheEventToDataTable(this.partenaireHTMLTable.datatable);
@@ -3561,7 +3843,14 @@ export class PartenairePage implements OnInit {
     }
     
     async close(){
-      await this.modalController.dismiss();
+      await this.modalController.dismiss({filtrePartenaire: this.filtrePartenaire});
+    }
+
+    async valider() {
+      //this.filtrePartenaire = [];
+      this.filtrePartenaire = this.filtrePartenaire.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtrePartenaire: this.filtrePartenaire});
     }
     
     ionViewDidEnter(){ 

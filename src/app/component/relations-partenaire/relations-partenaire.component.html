@@ -1,18 +1,18 @@
 <ion-list>
-  <ion-item button (click)="choix('Unions')" detail="true">
-    <ion-label>Unions</ion-label>
+  <ion-item button *ngIf="global.testerAccesMenu('unions')" (click)="choix('Unions')" detail="true">
+    <ion-label>{{'GENERAL.UNIONS' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item button (click)="choix('OPs')" detail="true">
-    <ion-label>OPs</ion-label>
+  <ion-item button *ngIf="global.testerAccesMenu('ops')" (click)="choix('OPs')" detail="true">
+    <ion-label>{{'GENERAL.OPS' | translate}}</ion-label>
+  </ion-item> 
+
+  <ion-item button *ngIf="global.testerAccesMenu('personnes')" (click)="choix('personne')" detail="true">
+    <ion-label>{{'GENERAL.PERSONNES' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item button (click)="choix('membre')" detail="true">
-    <ion-label>Membres</ion-label>
-  </ion-item>
-
-  <ion-item button (click)="choix('projet')" detail="true">
-    <ion-label>Projet</ion-label>
+  <ion-item button *ngIf="global.testerAccesMenu('projets')" (click)="choix('projet')" detail="true">
+    <ion-label>{{'GENERAL.PROJETS' | translate}}</ion-label>
   </ion-item>
 
 </ion-list>

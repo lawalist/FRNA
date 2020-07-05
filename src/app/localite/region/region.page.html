@@ -33,7 +33,7 @@
 
     <!--Si liste mobile-->
     <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
-      <ion-button *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
+      <ion-button [disabled]="!global.controlAccesModele('regions', 'suppression')" *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
                 
@@ -66,7 +66,7 @@
           <ion-icon name="checkbox"></ion-icon>
         </ion-button>
 
-        <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'lecture')" title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" slot="end" (click)="doRefresh()">
           <ion-icon name="refresh"></ion-icon>
         </ion-button>
 
@@ -90,11 +90,11 @@
 
       
       <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
-        <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
 
-        <ion-button title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemModifier()">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'modification')" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemModifier()">
           <ion-icon  name="create"></ion-icon>
         </ion-button>
 
@@ -102,7 +102,7 @@
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
         </ion-button>
 
-        <ion-button title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="selectedIndexes.length > 0" (click)="suppressionMultiple()">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'suppression')" title="{{'GENERAL.SUPPRIMER_ENREGISTRMENTS' | translate}}" slot="end" color="danger" *ngIf="selectedIndexes.length > 0" (click)="suppressionMultiple()">
           <ion-icon  name="trash"></ion-icon>
         </ion-button>
       </ion-buttons>
@@ -126,7 +126,7 @@
           <ion-icon name="arrow-back"></ion-icon>
         </ion-button>
  
-        <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(uneRegion)">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'lecture')" class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER' | translate}}" (click)="modifier(uneRegion)">
           <ion-icon name="create"></ion-icon>
         </ion-button>
 
@@ -135,7 +135,7 @@
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
         </ion-button>
 
-        <ion-button class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(uneRegion)">
+        <ion-button [disabled]="!global.controlAccesModele('regions', 'suppression')" class="hid-boutons-petit-ecran" color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="supprimer(uneRegion)">
           <ion-icon name="trash"></ion-icon>
         </ion-button>
 
@@ -196,13 +196,13 @@
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
     
-            <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+            <ion-item-options [hidden]="estModeCocherElemListe || !global.controlAccesModele('regions', 'modification')" side="start">
               <ion-item-option (click)="modifier(p)">
                 <ion-icon slot="icon-only" name="create"></ion-icon>
               </ion-item-option>
             </ion-item-options> 
     
-            <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+            <ion-item-options [hidden]="estModeCocherElemListe || !global.controlAccesModele('regions', 'suppression')" side="end">
               <ion-item-option color="danger" (click)="supprimer(p)">
                 <ion-icon slot="icon-only" name="trash"></ion-icon>
               </ion-item-option>
@@ -363,7 +363,7 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="action == 'liste' && global.controlAccesModele('regions', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
@@ -375,7 +375,7 @@
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!idRegion && action == 'infos'" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!idRegion && action == 'infos' && global.controlAccesModele('regions', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(uneRegion)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 

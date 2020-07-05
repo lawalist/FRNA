@@ -39,6 +39,8 @@ export class LocalitePage implements OnInit {
   @Input() idDepartement: string;
   @Input() idCommune: string;
   @Input() idLocalite: string;
+
+  global = global;
   localiteForm: FormGroup;
   action: string = 'liste';
   localites: any;
@@ -63,7 +65,7 @@ export class LocalitePage implements OnInit {
   estModeCocherElemListe: boolean = false;
   rechargerListeMobile = false;
   doModification: boolean = false;
-  colonnes = ['nomPays', 'codePays', 'nomRegion', 'codeRegion', 'nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nom', 'numero', 'code', 'type', 'autreType', 'latitude', 'longitude']
+  colonnes = ['nomPays', 'codePays', 'nomRegion', 'codeRegion','nomDepartement', 'codeDepartement', 'nomCommune', 'codeCommune', 'nom', 'numero', 'code', 'type', 'autreType', 'latitude', 'longitude']
 
   messages_validation = {
     'code': [
@@ -707,45 +709,50 @@ export class LocalitePage implements OnInit {
     }
   
     infos(l){
-      if(!this.estModeCocherElemListe){
-        this.unLocalite = l;
-        this.action = 'infos';
+      if(global.controlAccesModele('localites', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.unLocalite = l;
+          this.action = 'infos';
+        }
       }
+      
     }
 
   
     modifier(l){
-      this.doModification = true;
-      this.servicePouchdb.findRelationalDocByID('localite', l.id).then((res) => {
-        if(res && res.localites){
-          this.getPays();
-          this.getRegionParPays(l.idPays);
-          this.getDepartementParRegion(l.idRegion);
-          this.getCommuneParDepartement(l.idDepartement);
-          this.editForm(res);
-          this.initSelect2('idPays', this.translate.instant('LOCALITE_PAGE.SELECTIONPAYS'));
-          this.initSelect2('idRegion', this.translate.instant('LOCALITE_PAGE.SELECTIONREGION'));
-          this.initSelect2('idDepartement', this.translate.instant('LOCALITE_PAGE.SELECTIONDEPARTEMENT'));
-          this.initSelect2('idCommune', this.translate.instant('LOCALITE_PAGE.SELECTIONCOMMUNE'));
-          this.initSelect2('type', this.translate.instant('LOCALITE_PAGE.TYPE'));
-          //this.setSelect2DefaultValue('codePays', l.codePays)
-          //this.setSelect2DefaultValue('codeRegion', l.codeRegion)
-          //this.setSelect2DefaultValue('codeDepartement', l.codeDepartement)
-          //this.setSelect2DefaultValue('codeCommune', l.codeCommune)
-          this.setSelect2DefaultValue('type', res.localites[0].formData.type)
-
-          /*$('#numero input').ready(()=>{
-            $('#numero input').attr('disabled', true)
-          });*/
-          
-          this.unLocalite = l;
-          this.unLocaliteDoc = res.localites[0];
-          this.action ='modifier';
-        }
-      }).catch((err) => {
-        alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-      })
-
+      if(global.controlAccesModele('localites', 'modification')){
+        this.doModification = true;
+        this.servicePouchdb.findRelationalDocByID('localite', l.id).then((res) => {
+          if(res && res.localites){
+            this.getPays();
+            this.getRegionParPays(l.idPays);
+            this.getDepartementParRegion(l.idRegion);
+            this.getCommuneParDepartement(l.idDepartement);
+            this.editForm(res);
+            this.initSelect2('idPays', this.translate.instant('LOCALITE_PAGE.SELECTIONPAYS'));
+            this.initSelect2('idRegion', this.translate.instant('LOCALITE_PAGE.SELECTIONREGION'));
+            this.initSelect2('idDepartement', this.translate.instant('LOCALITE_PAGE.SELECTIONDEPARTEMENT'));
+            this.initSelect2('idCommune', this.translate.instant('LOCALITE_PAGE.SELECTIONCOMMUNE'));
+            this.initSelect2('type', this.translate.instant('LOCALITE_PAGE.TYPE'));
+            //this.setSelect2DefaultValue('codePays', l.codePays)
+            //this.setSelect2DefaultValue('codeRegion', l.codeRegion)
+            //this.setSelect2DefaultValue('codeDepartement', l.codeDepartement)
+            //this.setSelect2DefaultValue('codeCommune', l.codeCommune)
+            this.setSelect2DefaultValue('type', res.localites[0].formData.type)
+  
+            /*$('#numero input').ready(()=>{
+              $('#numero input').attr('disabled', true)
+            });*/
+            
+            this.unLocalite = l;
+            this.unLocaliteDoc = res.localites[0];
+            this.action ='modifier';
+          }
+        }).catch((err) => {
+          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+        })  
+      }
+      
       
     }
 
@@ -1258,8 +1265,14 @@ export class LocalitePage implements OnInit {
           security: {
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             deleted: false,
             deleted_by: null,
             deleted_at: null,
@@ -2516,7 +2529,7 @@ export class LocalitePage implements OnInit {
       });
       
       //traduitre les collonnes de la table la table
-      this.translateDataTableCollumn();
+      //this.translateDataTableCollumn();
     }
   
     translateDataTableCollumn(){

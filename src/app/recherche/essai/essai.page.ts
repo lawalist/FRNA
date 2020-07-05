@@ -22,12 +22,17 @@ import * as moment from 'moment';
 import { ProtocolePage } from '../protocole/protocole.page';
 
 import {customAlphabet} from 'nanoid';
-import { MembrePage } from 'src/app/institution/membre/membre.page';
+import { PersonnesPage } from 'src/app/institution/personnes/personnes.page';
 import { ChampPage } from 'src/app/institution/champ/champ.page';
 //Speed: 1000 IDs per hour/second
 //~4 million years needed, in order to have a 1% probability of at least one collision.
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 16)
-const keys = require('all-object-keys');
+import * as keys from 'all-object-keys';
+import { LocalitePage } from 'src/app/localite/localite/localite.page';
+import { CommunePage } from 'src/app/localite/commune/commune.page';
+import { DepartementPage } from 'src/app/localite/departement/departement.page';
+import { RegionPage } from 'src/app/localite/region/region.page';
+import { PaysPage } from 'src/app/localite/pays/pays.page';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -45,12 +50,22 @@ declare var Formio;
 export class EssaiPage implements OnInit {
 
   @Input() idEssai: string;
-  @Input() idMembre: string;
+  @Input() idPersonne: string;
   @Input() idPartenaire: string;
   @Input() idProjet: string;
   @Input() idProtocole: string;
   @Input() idChamp: string;
+  @Input() idPays: string;
+  @Input() idRegion: string;
+  @Input() idDepartement: string;
+  @Input() idCommune: string;
+  @Input() idLocalite: string;
+  @Input() idUnion: string;
+  @Input() idOp: string;
 
+  global = global;
+  start: any;
+  moment = moment;
   essaiForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -60,9 +75,16 @@ export class EssaiPage implements OnInit {
   institutionData: any = [];
   projetData: any = [];
   protocoleData: any = [];
-  membreData: any = [];
+  personneData: any = [];
   champData: any = [];
+  paysData: any = [];
+  regionData: any = [];
+  departementData: any = [];
+  communeData: any = [];
+  localiteData: any = [];
   formulaireData: any = [];
+  unionData: any = [];
+  opData: any = [];
   secteurs = ['Privé', 'Etat', 'Sémi-privé'];
   domaines = ['Agronamie', 'Santé', 'Environement', 'Gouvernement'];
   unEssai: any;
@@ -88,7 +110,7 @@ export class EssaiPage implements OnInit {
   etapeCourante = 1;
   rev = 0;
 
-  tmpColonnes = ['numero', 'annee', 'nomInstitution', 'numeroInstitution', 'nomProjet', 'numeroProjet', 'nomProtocole', 'numeroProtocole']
+  tmpColonnes = ['numero', 'dateCollecte', 'niveauCollecte', 'nomInstitution', 'numeroInstitution', 'nomProjet', 'numeroProjet', 'nomProtocole', 'numeroProtocole']
   colonnes = [];
 
   messages_validation = {
@@ -101,15 +123,33 @@ export class EssaiPage implements OnInit {
     'idProtocole': [
       { type: 'required', message: '' }
     ],
-    'idMembre': [
+    'idPersonne': [
       { type: 'required', message: '' }
     ],
     'idChamp': [
       { type: 'required', message: '' }
+    ],
+    'idPays': [
+      { type: 'required', message: '' }
+    ],
+    'idRegion': [
+      { type: 'required', message: '' }
+    ],
+    'idDepartement': [
+      { type: 'required', message: '' }
+    ],
+    'idCommune': [
+      { type: 'required', message: '' }
+    ],
+    'idLocalite': [
+      { type: 'required', message: '' }
+    ],'idUnion': [
+      { type: 'required', message: '' }
+    ],
+    'idOp': [
+      { type: 'required', message: '' }
     ]
   }
-
-  annee;
 
   
     constructor(private formBuilder: FormBuilder, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
@@ -268,23 +308,26 @@ export class EssaiPage implements OnInit {
   
     }
 
-    iniAnneDatePicker(id){
+    iniDateCollectePicker(id){
       var self = this;
-
       $(function () {
         
         $('#'+id+' input').datepicker({
-          minViewMode: 2,
+          //minViewMode: 2,
           autoclose: true,
-          //viewMode: 'years',
-          format: 'yyyy',
+          todayHighlight: true,
+          format: 'dd-mm-yyyy',
           language: global.langue
         }).on('changeDate', function(e) {
           // `e` here contains the extra attributes
           //console.log(e.date)
+          //console.log(e.date.toISOString())
           //console.log(new Date(new Date().getFullYear(), 0, 1))
-          self.annee = e.date.getFullYear();
-          self.essaiForm.controls.annee.setValue(e.date.getFullYear());
+          //let newDate = moment(e.date)
+          self.essaiForm.controls.dateCollecte.setValue(e.date.toISOString());
+          
+          self.essaiForm.controls.idInstitution.setValue(null);
+
           self.essaiForm.controls.idProjet.setValue(null);
           self.essaiForm.controls.numeroProjet.setValue(null);
           self.essaiForm.controls.nomProjet.setValue(null);
@@ -292,8 +335,14 @@ export class EssaiPage implements OnInit {
           self.essaiForm.controls.idProtocole.setValue(null);
           self.essaiForm.controls.numeroProtocole.setValue(null);
           self.essaiForm.controls.nomProtocole.setValue(null);
-          //console.log(numeroInstitution)
-          self.getProjetParInstitution(self.essaiForm.controls.idInstitution.value);
+          self.essaiForm.controls.niveauCollecte.setValue(null);
+          
+          //self.getProjetParInstitution(self.essaiForm.controls.idInstitution.value);
+          self.getProjetParDateCollecte(e.date.toISOString());
+          /*self.servicePouchdb.findRelationalDocProjetAndProtocoleForDataCollect('projet', null, e.date.toISOString(), false, false).then((res) => {
+            console.log(res)
+          })*/
+          //recuper les protocole dont la dateDebut <= dateCollecte et dateFin >= dateCollecte
           //$('#'+id+' input').datepicker('hide')
         });
       });
@@ -323,18 +372,47 @@ export class EssaiPage implements OnInit {
             self.setNumeroAndNomInstitution(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
           }else if(id == 'idProjet'){
+            //console.log('idProjet')
             self.setNumeroAndNomProjet(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
           } else if(id == 'idProtocole'){
             self.setNumeroAndNomProtocole(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
-          } else if(id == 'idMembre'){
-            self.setNumeroAndNomMembre(self.essaiForm.value[id]);
+          } else if(id == 'idPersonne'){
+            self.setNumeroAndNomPersonne(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
           } else if(id == 'idChamp'){
             self.setNumeroAndNomChamp(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
-          }          
+          } else if(id == 'idPays'){
+            self.departementData = [];
+            self.communeData = [];
+            self.localiteData = [];
+            self.setCodeAndNomPays(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idRegion'){
+            self.communeData = [];
+            self.localiteData = [];
+            self.setCodeAndNomRegion(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idDepartement'){
+            self.localiteData = [];
+            self.setCodeAndNomDepartement(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idCommune'){
+            self.setCodeAndNomCommune(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idLocalite'){
+            self.setCodeAndNomLocalite(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idUnion'){
+            self.setNumeroAndNomUnion(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+            self.opData = [];
+          }else if(id == 'idOp'){
+            self.setNumeroAndNomOp(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }         
         });
 
         $('#'+id+' select').on("select2:unselect", function (e) { 
@@ -351,6 +429,7 @@ export class EssaiPage implements OnInit {
             self.essaiForm.controls.idProtocole.setValue(null);
             self.essaiForm.controls.numeroProtocole.setValue(null);
             self.essaiForm.controls.nomProtocole.setValue(null);
+            self.essaiForm.controls.niveauCollecte.setValue(null);
             //self.setSelect2DefaultValue('numeroProjet', null);
             self.projetData = [];
             self.protocoleData = [];
@@ -364,6 +443,7 @@ export class EssaiPage implements OnInit {
             self.essaiForm.controls.idProtocole.setValue(null);
             self.essaiForm.controls.numeroProtocole.setValue(null);
             self.essaiForm.controls.nomProtocole.setValue(null);
+            self.essaiForm.controls.niveauCollecte.setValue(null);
             self.protocoleData = [];
             self.formulaireData = [];
             self.setSelectRequredError(id, id);
@@ -371,14 +451,15 @@ export class EssaiPage implements OnInit {
             self.essaiForm.controls.idProtocole.setValue(null);
             self.essaiForm.controls.numeroProtocole.setValue(null);
             self.essaiForm.controls.nomProtocole.setValue(null);
+            self.essaiForm.controls.niveauCollecte.setValue(null);
             self.formulaireData = [];
             self.setSelectRequredError(id, id);
             self.nbEtapes = 2;
             self.wizarAction();
-          }else if(id == 'idMembre'){
-            self.essaiForm.controls.idMembre.setValue(null);
-            self.essaiForm.controls.matriculeMembre.setValue(null);
-            self.essaiForm.controls.nomMembre.setValue(null);
+          }else if(id == 'idPersonne'){
+            self.essaiForm.controls.idPersonne.setValue(null);
+            self.essaiForm.controls.matriculePersonne.setValue(null);
+            self.essaiForm.controls.nomPersonne.setValue(null);
 
             self.essaiForm.controls.idChamp.setValue(null);
             self.essaiForm.controls.codeChamp.setValue(null);
@@ -391,6 +472,45 @@ export class EssaiPage implements OnInit {
             self.essaiForm.controls.codeChamp.setValue(null);
             self.essaiForm.controls.nomChamp.setValue(null);
             //self.champData = [];
+            self.setSelectRequredError(id, id);
+          }else if(id == 'idPays'){
+            self.setCodeAndNomPays(self.essaiForm.value[id]);
+            self.regionData = [];
+            self.departementData = [];
+            self.communeData = [];
+            self.localiteData = [];
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idRegion'){
+            self.setCodeAndNomRegion(self.essaiForm.value[id]);
+            self.departementData = [];
+            self.communeData = [];
+            self.localiteData = [];
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idDepartement'){
+            self.setCodeAndNomDepartement(self.essaiForm.value[id]);
+            self.communeData = [];
+            self.localiteData = [];
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idCommune'){
+            self.setCodeAndNomCommune(self.essaiForm.value[id]);
+            self.localiteData = [];
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idLocalite'){
+            self.setCodeAndNomLocalite(self.essaiForm.value[id]);
+            self.setSelectRequredError(id, id)
+          }else if(id == 'idUnion'){
+            self.essaiForm.controls.idUnion.setValue(null);
+            self.essaiForm.controls.numeroUnion.setValue(null);
+            self.essaiForm.controls.nomUnion.setValue(null);
+
+            self.essaiForm.controls.idOp.setValue(null);
+            self.essaiForm.controls.numeroOp.setValue(null);
+            self.essaiForm.controls.nomOp.setValue(null);
+            self.setSelectRequredError(id, id);
+          }else if(id == 'idOp'){
+            self.essaiForm.controls.idOp.setValue(null);
+            self.essaiForm.controls.numeroOp.setValue(null);
+            self.essaiForm.controls.nomOp.setValue(null);
             self.setSelectRequredError(id, id);
           }
         });
@@ -426,22 +546,44 @@ export class EssaiPage implements OnInit {
       //this.essaiForm = null;
       this.essaiForm = this.formBuilder.group({
         numero: ['DC-'+nanoid(), Validators.required],
-        annee: [""],
-        nomInstitution: [null, Validators.required],
-        numeroInstitution: [null, Validators.required],
+        dateCollecte: [moment().toISOString()],
+        //nomInstitution: [null, Validators.required],
+        //numeroInstitution: [null, Validators.required],
         idInstitution: [null, Validators.required],
         nomProjet: [null, Validators.required],
         numeroProjet: [null, Validators.required],
         idProjet: [null, Validators.required], 
         nomProtocole: [null, Validators.required],
+        niveauCollecte: [null, Validators.required],
         numeroProtocole: [null, Validators.required],
         idProtocole: [null, Validators.required],
-        nomMembre: [null, Validators.required],
-        matriculeMembre: [null, Validators.required],
-        idMembre: [null, Validators.required],
+        nomUnion: [null, Validators.required],
+        numeroUnion: [null, Validators.required],
+        idUnion: [null, Validators.required],
+        nomOp: [null, Validators.required],
+        numeroOp: [null, Validators.required],
+        idOp: [null, Validators.required],
+        nomPersonne: [null, Validators.required],
+        matriculePersonne: [null, Validators.required],
+        idPersonne: [null, Validators.required],
         nomChamp: [null, Validators.required],
         codeChamp: [null, Validators.required],
-        idChamp: [null, Validators.required], 
+        idChamp: [null, Validators.required],
+        nomPays: [null, Validators.required],
+        codePays: [null, Validators.required],
+        idPays: [null, Validators.required],
+        nomRegion: [null, Validators.required],
+        codeRegion: [null, Validators.required],
+        idRegion: [null, Validators.required],
+        nomDepartement: [null, Validators.required],
+        codeDepartement: [null, Validators.required],
+        idDepartement: [null, Validators.required],
+        nomCommune: [null, Validators.required],
+        codeCommune: [null, Validators.required],
+        idCommune: [null, Validators.required],
+        nomLocalite: [null, Validators.required],
+        codeLocalite: [null, Validators.required],
+        idLocalite: [null, Validators.required]
       });
 
       this.validerNumero();
@@ -450,8 +592,8 @@ export class EssaiPage implements OnInit {
     editForm(oDoc){
       let essai = oDoc.essais[0];
       let idInstitution;
-      let numeroInstitution;
-      let nomInstitution;
+      //let numeroInstitution;
+      //let nomInstitution;
       let idProjet;
       let numeroProjet;
       let nomProjet;
@@ -459,17 +601,26 @@ export class EssaiPage implements OnInit {
       let numeroProtocole;
       let nomProtocole;
 
-      let idMembre;
-      let matriculeMembre;
-      let nomMembre;
+      let idPersonne;
+      let matriculePersonne;
+      let nomPersonne;
       let idChamp;
       let codeChamp;
       let nomChamp;
+
+      let idPays, codePays, nomPays;
+      let idRegion, codeRegion, nomRegion;
+      let idDepartement, codeDepartement, nomDepartement;
+      let idCommune, codeCommune, nomCommune;
+      let codeLocalite, idLocalite, nomLocalite;
+      let idUnion, numeroUnion, nomUnion;
+      let idOp, numeroOp, nomOp;
+
       
       if(oDoc.partenaires && oDoc.partenaires[0]){
         idInstitution = oDoc.partenaires[0].id;
-        numeroInstitution = oDoc.partenaires[0].formData.numero;
-        nomInstitution = oDoc.partenaires[0].formData.nom;
+        //numeroInstitution = oDoc.partenaires[0].formData.numero;
+        //nomInstitution = oDoc.partenaires[0].formData.nom;
       }
 
       if(oDoc.projets[0]){
@@ -484,10 +635,22 @@ export class EssaiPage implements OnInit {
         nomProtocole = oDoc.protocoles[0].formData.nom;        
       }
 
-      if(oDoc.membres[0]){
-        idMembre = oDoc.membres[0].id;
-        matriculeMembre = oDoc.membres[0].formData.matricule;
-        nomMembre = oDoc.membres[0].formData.nom;        
+      if(oDoc.unions && oDoc.unions[0]){
+        idUnion = oDoc.unions[0].id;
+        numeroUnion = oDoc.unions[0].formData.numero;
+        nomUnion = oDoc.unions[0].formData.nom;
+      }
+
+      if(oDoc.ops && oDoc.ops[0]){
+        idOp = oDoc.ops[0].id;
+        numeroOp = oDoc.ops[0].formData.numero;
+        nomOp = oDoc.ops[0].formData.nom;
+      }
+
+      if(oDoc.personnes[0]){
+        idPersonne = oDoc.personnes[0].id;
+        matriculePersonne = oDoc.personnes[0].formData.matricule;
+        nomPersonne = oDoc.personnes[0].formData.nom;        
       }
 
       if(oDoc.champs[0]){
@@ -495,15 +658,47 @@ export class EssaiPage implements OnInit {
         codeChamp = oDoc.champs[0].formData.code;
         nomChamp = oDoc.champs[0].formData.nom;        
       }
+
+      if(oDoc.pays[0]){
+        idPays = oDoc.pays[0].id;
+        codePays = oDoc.pays[0].formData.code;
+        nomPays = oDoc.pays[0].formData.nom;
+      }
+
+      if(oDoc.regions[0]){
+        idRegion = oDoc.regions[0].id;
+        codeRegion = oDoc.regions[0].formData.code;
+        nomRegion = oDoc.regions[0].formData.nom;
+      }
+
+      if(oDoc.departements[0]){
+        idDepartement = oDoc.departements[0].id;
+        codeDepartement = oDoc.departements[0].formData.code;
+        nomDepartement = oDoc.departements[0].formData.nom;
+      }
+
+      if(oDoc.communes[0]){
+        idCommune = oDoc.communes[0].id;
+        codeCommune = oDoc.communes[0].formData.code;
+        nomCommune = oDoc.communes[0].formData.nom;
+      }
+
+      if(oDoc.localites[0]){
+        idLocalite = oDoc.localites[0].id;
+        codeLocalite = oDoc.localites[0].formData.code;
+        nomLocalite = oDoc.localites[0].formData.nom;
+      }
+
      
       //this.essaiForm = null;
       let u = essai.formData
 
       this.essaiForm = this.formBuilder.group({
         numero: [u.numero, Validators.required],
-        annee: [u.annee/*, Validators.required*/],
-        nomInstitution: [nomInstitution, Validators.required],
-        numeroInstitution: [numeroInstitution, Validators.required],
+        dateCollecte: [u.dateCollecte/*, Validators.required*/],
+        //nomInstitution: [nomInstitution, Validators.required],
+        //numeroInstitution: [numeroInstitution, Validators.required],
+        niveauCollecte: [u.niveauCollecte, Validators.required], 
         idInstitution: [idInstitution, Validators.required],
         nomProjet: [nomProjet, Validators.required], 
         numeroProjet: [numeroProjet, Validators.required],
@@ -511,12 +706,33 @@ export class EssaiPage implements OnInit {
         nomProtocole: [nomProtocole, Validators.required], 
         numeroProtocole: [numeroProtocole, Validators.required],
         idProtocole: [idProtocole, Validators.required],
-        nomMembre: [nomMembre, Validators.required], 
-        matriculeMembre: [matriculeMembre, Validators.required],
-        idMembre: [idMembre, Validators.required],
+        nomUnion: [nomUnion], 
+        numeroUnion: [numeroUnion],
+        idUnion: [idUnion],
+        nomOp: [nomOp],
+        numeroOp: [numeroOp],
+        idOp: [idOp],  
+        nomPersonne: [nomPersonne, Validators.required], 
+        matriculePersonne: [matriculePersonne, Validators.required],
+        idPersonne: [idPersonne, Validators.required],
         nomChamp: [nomChamp, Validators.required], 
         codeChamp: [codeChamp, Validators.required],
-        idChamp: [idChamp, Validators.required]
+        idChamp: [idChamp, Validators.required],
+        nomPays: [nomPays, Validators.required],
+        codePays: [codePays, Validators.required],
+        idPays: [idPays, Validators.required],
+        nomRegion: [nomRegion, Validators.required],
+        codeRegion: [codeRegion, Validators.required],
+        idRegion: [idRegion, Validators.required],
+        nomDepartement: [nomDepartement, Validators.required],
+        codeDepartement: [codeDepartement, Validators.required],
+        idDepartement: [idDepartement, Validators.required],
+        nomCommune: [nomCommune, Validators.required],
+        codeCommune: [codeCommune, Validators.required],
+        idCommune: [idCommune, Validators.required],
+        nomLocalite: [nomLocalite, Validators.required],
+        codeLocalite: [codeLocalite, Validators.required],
+        idLocalite: [idLocalite, Validators.required]
       });
 
       this.validerNumero();
@@ -524,15 +740,344 @@ export class EssaiPage implements OnInit {
     }
 
     validerNumero(){
-      let numeroControl = this.essaiForm.controls['numero'];
-      numeroControl.valueChanges.subscribe((value) => {
-        this.servicePouchdb.findRelationalDocByTypeAndNumero('essai', value).then((res) => {
-          if(res && res.essais && res.essais[0] && (this.action != 'modifier' || (this.action == 'modifier' && value != this.unEssai.numero))){
-            numeroControl.setErrors({uniqueNumeroEssai: true});
+      let niveauCollecteControl = this.essaiForm.controls['niveauCollecte'];
+      niveauCollecteControl.valueChanges.subscribe((value) => {
+        if(value && value != '' ){
+          if(value == 'union'){
+            this.essaiForm.controls['numeroUnion'].setValidators(Validators.required);
+            this.essaiForm.controls['nomUnion'].setValidators(Validators.required);
+            this.essaiForm.controls['idUnion'].setValidators(Validators.required);
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+            this.essaiForm.controls['idPays'].clearValidators();
+            this.essaiForm.controls['nomPays'].clearValidators();
+            this.essaiForm.controls['codePays'].clearValidators();
+            this.essaiForm.controls['nomRegion'].clearValidators();
+            this.essaiForm.controls['codeRegion'].clearValidators();
+            this.essaiForm.controls['idRegion'].clearValidators();
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+
+          }else if(value == 'op'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].setValidators(Validators.required);
+            this.essaiForm.controls['nomOp'].setValidators(Validators.required);
+            this.essaiForm.controls['idOp'].setValidators(Validators.required);
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+            this.essaiForm.controls['idPays'].clearValidators();
+            this.essaiForm.controls['nomPays'].clearValidators();
+            this.essaiForm.controls['codePays'].clearValidators();
+            this.essaiForm.controls['nomRegion'].clearValidators();
+            this.essaiForm.controls['codeRegion'].clearValidators();
+            this.essaiForm.controls['idRegion'].clearValidators();
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else if(value == 'personne'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPersonne'].setValidators(Validators.required);
+            this.essaiForm.controls['idPersonne'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+            this.essaiForm.controls['idPays'].clearValidators();
+            this.essaiForm.controls['nomPays'].clearValidators();
+            this.essaiForm.controls['codePays'].clearValidators();
+            this.essaiForm.controls['nomRegion'].clearValidators();
+            this.essaiForm.controls['codeRegion'].clearValidators();
+            this.essaiForm.controls['idRegion'].clearValidators();
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          } else if(value == 'champ'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPersonne'].setValidators(Validators.required);
+            this.essaiForm.controls['idPersonne'].setValidators(Validators.required);
+            this.essaiForm.controls['nomChamp'].setValidators(Validators.required);
+            this.essaiForm.controls['idChamp'].setValidators(Validators.required);
+            this.essaiForm.controls['codeChamp'].setValidators(Validators.required);
+
+            this.essaiForm.controls['idPays'].clearValidators();
+            this.essaiForm.controls['nomPays'].clearValidators();
+            this.essaiForm.controls['codePays'].clearValidators();
+            this.essaiForm.controls['nomRegion'].clearValidators();
+            this.essaiForm.controls['codeRegion'].clearValidators();
+            this.essaiForm.controls['idRegion'].clearValidators();
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else if(value == 'pays'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+
+            this.essaiForm.controls['idPays'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+            this.essaiForm.controls['codePays'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomRegion'].clearValidators();
+            this.essaiForm.controls['codeRegion'].clearValidators();
+            this.essaiForm.controls['idRegion'].clearValidators();
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else if(value == 'region'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+
+            this.essaiForm.controls['idPays'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+            this.essaiForm.controls['codePays'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomDepartement'].clearValidators();
+            this.essaiForm.controls['codeDepartement'].clearValidators();
+            this.essaiForm.controls['idDepartement'].clearValidators();
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else if(value == 'departement'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+
+            this.essaiForm.controls['idPays'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+            this.essaiForm.controls['codePays'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomCommune'].clearValidators();
+            this.essaiForm.controls['codeCommune'].clearValidators();
+            this.essaiForm.controls['idCommune'].clearValidators();
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else if(value == 'commune'){
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+
+            this.essaiForm.controls['idPays'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+            this.essaiForm.controls['codePays'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomCommune'].setValidators(Validators.required);
+            this.essaiForm.controls['codeCommune'].setValidators(Validators.required);
+            this.essaiForm.controls['idCommune'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomLocalite'].clearValidators();
+            this.essaiForm.controls['codeLocalite'].clearValidators();
+            this.essaiForm.controls['idLocalite'].clearValidators();
+          }else{
+            this.essaiForm.controls['numeroUnion'].clearValidators();
+            this.essaiForm.controls['nomUnion'].clearValidators();
+            this.essaiForm.controls['idUnion'].clearValidators();
+
+            this.essaiForm.controls['numeroOp'].clearValidators();
+            this.essaiForm.controls['nomOp'].clearValidators();
+            this.essaiForm.controls['idOp'].clearValidators();
+
+            this.essaiForm.controls['matriculePersonne'].clearValidators();
+            this.essaiForm.controls['nomPersonne'].clearValidators();
+            this.essaiForm.controls['idPersonne'].clearValidators();
+            this.essaiForm.controls['nomChamp'].clearValidators();
+            this.essaiForm.controls['idChamp'].clearValidators();
+            this.essaiForm.controls['codeChamp'].clearValidators();
+
+            this.essaiForm.controls['idPays'].setValidators(Validators.required);
+            this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+            this.essaiForm.controls['codePays'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+            this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+            this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+            this.essaiForm.controls['nomCommune'].setValidators(Validators.required);
+            this.essaiForm.controls['codeCommune'].setValidators(Validators.required);
+            this.essaiForm.controls['idCommune'].setValidators(Validators.required);
+            
+            this.essaiForm.controls['nomLocalite'].setValidators(Validators.required);
+            this.essaiForm.controls['codeLocalite'].setValidators(Validators.required);
+            this.essaiForm.controls['idLocalite'].setValidators(Validators.required);
           }
-        });
-      });      
-    
+        }else {
+          this.essaiForm.controls['numeroUnion'].setValidators(Validators.required);
+          this.essaiForm.controls['nomUnion'].setValidators(Validators.required);
+          this.essaiForm.controls['idUnion'].setValidators(Validators.required);
+
+          this.essaiForm.controls['numeroOp'].setValidators(Validators.required);
+          this.essaiForm.controls['nomOp'].setValidators(Validators.required);
+          this.essaiForm.controls['idOp'].setValidators(Validators.required);
+
+          this.essaiForm.controls['matriculePersonne'].setValidators(Validators.required);
+          this.essaiForm.controls['nomPersonne'].setValidators(Validators.required);
+          this.essaiForm.controls['idPersonne'].setValidators(Validators.required);
+
+          this.essaiForm.controls['nomChamp'].setValidators(Validators.required);
+          this.essaiForm.controls['codeChamp'].setValidators(Validators.required);
+          this.essaiForm.controls['idChamp'].setValidators(Validators.required);
+
+          this.essaiForm.controls['idPays'].setValidators(Validators.required);
+          this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+          this.essaiForm.controls['codePays'].setValidators(Validators.required);
+          
+          this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+          this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+          this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+          
+          this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+          this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+          this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+          this.essaiForm.controls['nomCommune'].setValidators(Validators.required);
+          this.essaiForm.controls['codeCommune'].setValidators(Validators.required);
+          this.essaiForm.controls['idCommune'].setValidators(Validators.required);
+          
+          this.essaiForm.controls['nomLocalite'].setValidators(Validators.required);
+          this.essaiForm.controls['codeLocalite'].setValidators(Validators.required);
+          this.essaiForm.controls['idLocalite'].setValidators(Validators.required);
+        }
+
+        console.log
+      });
     }
 
     contunier(e, target){
@@ -583,20 +1128,22 @@ export class EssaiPage implements OnInit {
       this.unEssai = null;
       this.nbEtapes = 2;
       this.formulaireData = [];
-      this.annee = (new Date).getFullYear();
+      this.doModification = false;
+      this.start = moment().toISOString();
+      
       if(this.idChamp && this.idChamp != ''){
         if(this.essaiHTMLTable && this.essaiHTMLTable.datatable && this.essaiHTMLTable.datatable.row(0) && this.essaiHTMLTable.datatable.row(0).data()){
-          this.idMembre = this.essaiHTMLTable.datatable.row(0).data().matriculeMembre;
+          this.idPersonne = this.essaiHTMLTable.datatable.row(0).data().idPersonne;
         }else{
           this.servicePouchdb.findRelationalDocByTypeAndID('champ', this.idChamp).then((res) => {
             if(res && res.champs){
-              this.idMembre = res.champs[0].membre;
+              this.idPersonne = res.champs[0].personne;
             }
           })
         }
       }else if(this.idProtocole && this.idProtocole != ''){
         if(this.essaiHTMLTable && this.essaiHTMLTable.datatable && this.essaiHTMLTable.datatable.row(0) && this.essaiHTMLTable.datatable.row(0).data()){
-          this.idPartenaire = this.essaiHTMLTable.datatable.row(0).data().numeroInstitution;
+          this.idPartenaire = this.essaiHTMLTable.datatable.row(0).data().idInstitution;
           this.idProjet = this.essaiHTMLTable.datatable.row(0).data().numeroProjet;
         }else{
           this.servicePouchdb.findRelationalDocByTypeAndID('protocole', this.idProtocole).then((res) => {
@@ -608,7 +1155,7 @@ export class EssaiPage implements OnInit {
         }
       }else if(this.idProjet && this.idProjet != ''){
         if(this.essaiHTMLTable && this.essaiHTMLTable.datatable && this.essaiHTMLTable.datatable.row(0) && this.essaiHTMLTable.datatable.row(0).data()){
-          this.idPartenaire = this.essaiHTMLTable.datatable.row(0).data().numeroInstitution;
+          this.idPartenaire = this.essaiHTMLTable.datatable.row(0).data().idInstitution;
         }else{
           this.servicePouchdb.findRelationalDocByTypeAndID('projet', this.idProjet).then((res) => {
             if(res && res.projets){
@@ -618,17 +1165,24 @@ export class EssaiPage implements OnInit {
         }
       }
   
-      this.getInstitution();
-      this.getMembre();
+      //this.getInstitution();
+      this.getProjetParDateCollecte(moment().toISOString());
+      
       //this.getProjet();
       this.initForm();
-      this.iniAnneDatePicker('annee');
+      this.iniDateCollectePicker('dateCollecte');
       this.initSelect2('idInstitution', this.translate.instant('ESSAI_PAGE.SELECTIONINSTITUTION'));
       this.initSelect2('idProjet', this.translate.instant('ESSAI_PAGE.SELECTIONPROJET'));
       this.initSelect2('idProtocole', this.translate.instant('ESSAI_PAGE.SELECTIONPROTOCOLE'));
-      this.initSelect2('idMembre', this.translate.instant('ESSAI_PAGE.SELECTIONMEMBRE'));
-      this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));
+      //this.initSelect2('idPersonne', this.translate.instant('ESSAI_PAGE.SELECTIONPERSONNE'));
+      //this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));
       
+      /*this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+      this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+      this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+      this.initSelect2('idCommune', this.translate.instant('ESSAI_PAGE.SELECTIONCOMMUNE'));
+      this.initSelect2('idLocalite', this.translate.instant('ESSAI_PAGE.SELECTIONLOCALITE'));
+      */
       //this.initSelect2('domaine', this.translate.instant('ESSAI_PAGE.DOMAINE'));
       
       this.action = 'ajouter';
@@ -636,109 +1190,157 @@ export class EssaiPage implements OnInit {
     }
   
     infos(u){
-      if(!this.estModeCocherElemListe){
-        this.unEssaiDoc = null;
-        this.unEssai = u;
-        let id;
-        
-        if(isObject(u)){
-          id = u.id;
-        }else{
-          id = u;
-        }
-
-        this.action = 'infos';
-        this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
+      if(global.controlAccesModele('essais', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.unEssaiDoc = null;
+          this.unEssai = u;
+          let id;
           
-          if(res && res.essais[0]){
-            this.unEssaiDoc = res;
-            this.rev = res.essais[0].rev.substring(0, res.essais[0].rev.indexOf('-'));
-            //console.log(this.unEssaiDoc.essais[0])
-            this.showFormioData(res.essais[0].protocole, res.essais[0])
+          if(isObject(u)){
+            id = u.id;
+          }else{
+            id = u;
           }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        });
-          
+  
+          this.action = 'infos';
+          this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
+            
+            if(res && res.essais[0]){
+              this.unEssaiDoc = res;
+              this.rev = res.essais[0].rev.substring(0, res.essais[0].rev.indexOf('-'));
+              //console.log(this.unEssaiDoc.essais[0])
+              this.showFormioData(res.essais[0].protocole, res.essais[0])
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          });
+            
+        }
       }
+      
     }
 
   
     modifier(essai){
       //console.log(essai)
-      this.nbEtapes = 2;
-      let id;
-      if(isObject(essai)){
-        id = essai.id;
-      }else{
-        id = essai;
-      }
-
-      this.doModification = true;
-      //si l'utilisateur est passé par infos pour faire la modificatin
-      if(this.action == 'infos' && this.unEssaiDoc){
-          this.editForm(this.clone(this.unEssaiDoc));
-          this.unEssaiDoc = this.unEssaiDoc.essais[0];
-
-          this.getInstitution();
-
-          this.getProjetParInstitution(this.unEssaiDoc.partenaire);
-          this.getProtocoleParProjet(this.unEssaiDoc.projet);
-          this.getMembre();
-          this.getChampParMembre(this.unEssaiDoc.membre);
-          //this.getFormulaireParProtocole(this.unEssaiDoc.protocole);
-          this.initFormioFromShow();
-
-          //this.editForm(res);
-          this.iniAnneDatePicker('annee');
-          this.initSelect2('idInstitution', this.translate.instant('ESSAI_PAGE.SELECTIONINSTITUTION'));
-          this.initSelect2('idProjet', this.translate.instant('ESSAI_PAGE.SELECTIONPROJET'));
-          this.initSelect2('idProtocole', this.translate.instant('ESSAI_PAGE.SELECTIONPROTOCOLE'));   
-          this.initSelect2('idMembre', this.translate.instant('ESSAI_PAGE.SELECTIONMEMBRE'));
-          this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));       
-         
-          this.action ='modifier';
-          this.wizarAction();
-      }else{
-        this.unEssaiDoc = null;
-        this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-        
-          if(res && res.essais[0]){
-            let oDoc = res.essais[0];
-            this.unEssaiDoc = oDoc;
-            this.editForm(res);
-            this.getInstitution();
+      if(global.controlAccesModele('essais', 'modification')){
+        this.nbEtapes = 2;
+        let id;
+        if(isObject(essai)){
+          id = essai.id;
+        }else{
+          id = essai;
+        }
   
-            this.getProjetParInstitution(this.unEssaiDoc.partenaire);
+        this.doModification = true;
+        this.start = moment().toISOString();
+        //si l'utilisateur est passé par infos pour faire la modificatin
+        if(this.action == 'infos' && this.unEssaiDoc){
+            this.editForm(this.clone(this.unEssaiDoc));
+            this.unEssaiDoc = this.unEssaiDoc.essais[0];
+  
+            //this.getInstitution();
+  
+            //this.getProjetParInstitution(this.unEssaiDoc.partenaire);
+            this.getProjetParDateCollecte(this.unEssaiDoc.formData.dateCollecte)
             this.getProtocoleParProjet(this.unEssaiDoc.projet);
-            this.getFormulaireParProtocole(this.unEssaiDoc.protocole);
-            this.getMembre();
-            this.getChampParMembre(this.unEssaiDoc.membre);
+            this.getPersonne();
+            this.getChampParPersonne(this.unEssaiDoc.personne);
+
+
+            this.getPays();
+              //console.log(pDoc)
+            if(this.unEssaiDoc.pays)
+              this.getRegionParPays(this.unEssaiDoc.pays);
+            if(this.unEssaiDoc.region)
+              this.getDepartementParRegion(this.unEssaiDoc.region);
+            if(this.unEssaiDoc.departement)
+              this.getCommuneParDepartement(this.unEssaiDoc.departement);
+            if(this.unEssaiDoc.commune)
+              this.getLocaliteParCommune(this.unEssaiDoc.commune);
             
-            this.iniAnneDatePicker('annee');
+
+            //this.getFormulaireParProtocole(this.unEssaiDoc.protocole);
+            this.initFormioFromShow();
+  
+            //this.editForm(res);
+            this.iniDateCollectePicker('dateCollecte');
             this.initSelect2('idInstitution', this.translate.instant('ESSAI_PAGE.SELECTIONINSTITUTION'));
             this.initSelect2('idProjet', this.translate.instant('ESSAI_PAGE.SELECTIONPROJET'));
-            this.initSelect2('idProtocole', this.translate.instant('ESSAI_PAGE.SELECTIONPROTOCOLE'));          
-            this.initSelect2('idMembre', this.translate.instant('ESSAI_PAGE.SELECTIONMEMBRE'));
+            this.initSelect2('idProtocole', this.translate.instant('ESSAI_PAGE.SELECTIONPROTOCOLE'));   
+            this.initSelect2('idPersonne', this.translate.instant('ESSAI_PAGE.SELECTIONPERSONNE'));
             this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));       
            
-            if(!isObject(essai)){
-              for(let u of this.essaisData){
-                if(u.id == id){
-                  this.unEssai = u;
-                  break;
-                }
-              }
-            }else{
-              this.unEssai = essai;
-            }
+            this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+            this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+            this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+            this.initSelect2('idCommune', this.translate.instant('ESSAI_PAGE.SELECTIONCOMMUNE'));
+            this.initSelect2('idLocalite', this.translate.instant('ESSAI_PAGE.SELECTIONLOCALITE'));
   
             this.action ='modifier';
             this.wizarAction();
-          }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
+        }else{
+          this.unEssaiDoc = null;
+          this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
+          
+            if(res && res.essais[0]){
+              let oDoc = res.essais[0];
+              this.unEssaiDoc = oDoc;
+              this.editForm(res);
+              //this.getInstitution();
+    
+              //this.getProjetParInstitution(this.unEssaiDoc.partenaire);
+              this.getProjetParDateCollecte(this.unEssaiDoc.formData.dateCollecte)
+              this.getProtocoleParProjet(this.unEssaiDoc.projet);
+              this.getFormulaireParProtocole(this.unEssaiDoc.protocole);
+              this.getPersonne();
+              this.getChampParPersonne(this.unEssaiDoc.personne);
+              
+              this.getPays();
+              //console.log(pDoc)
+              if(this.unEssaiDoc.pays)
+                this.getRegionParPays(this.unEssaiDoc.pays);
+              if(this.unEssaiDoc.region)
+                this.getDepartementParRegion(this.unEssaiDoc.region);
+              if(this.unEssaiDoc.departement)
+                this.getCommuneParDepartement(this.unEssaiDoc.departement);
+              if(this.unEssaiDoc.commune)
+                this.getLocaliteParCommune(this.unEssaiDoc.commune);
+              
+
+              this.iniDateCollectePicker('dateCollecte');
+              this.initSelect2('idInstitution', this.translate.instant('ESSAI_PAGE.SELECTIONINSTITUTION'));
+              this.initSelect2('idProjet', this.translate.instant('ESSAI_PAGE.SELECTIONPROJET'));
+              this.initSelect2('idProtocole', this.translate.instant('ESSAI_PAGE.SELECTIONPROTOCOLE'));          
+              this.initSelect2('idPersonne', this.translate.instant('ESSAI_PAGE.SELECTIONPERSONNE'));
+              this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));       
+             
+
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+              this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+              this.initSelect2('idCommune', this.translate.instant('ESSAI_PAGE.SELECTIONCOMMUNE'));
+              this.initSelect2('idLocalite', this.translate.instant('ESSAI_PAGE.SELECTIONLOCALITE'));
+  
+              if(!isObject(essai)){
+                for(let u of this.essaisData){
+                  if(u.id == id){
+                    this.unEssai = u;
+                    break;
+                  }
+                }
+              }else{
+                this.unEssai = essai;
+              }
+    
+              this.action ='modifier';
+              this.wizarAction();
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          })
+        }
+        
       }
       
     }
@@ -1008,7 +1610,8 @@ export class EssaiPage implements OnInit {
     async presentProtocole(idProtocole) {
       const modal = await this.modalController.create({
         component: ProtocolePage,
-        componentProps: { idProtocole: idProtocole },
+        componentProps: { 
+          idModele: 'essais', idProtocole: idProtocole },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1018,7 +1621,8 @@ export class EssaiPage implements OnInit {
     async presentProjet(idProjet) {
       const modal = await this.modalController.create({
         component: ProjetPage,
-        componentProps: { idProjet: idProjet },
+        componentProps: { 
+          idModele: 'essais', idProjet: idProjet },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1028,17 +1632,19 @@ export class EssaiPage implements OnInit {
     async presentInstitution(idPartenaire) {
       const modal = await this.modalController.create({
         component: PartenairePage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: { 
+          idModele: 'essais', idPartenaire: idPartenaire },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
       return await modal.present();
     }
 
-    async presentMembre(idMembre) {
+    async presentPersonne(idPersonne) {
       const modal = await this.modalController.create({
-        component: MembrePage,
-        componentProps: { idMembre: idMembre },
+        component: PersonnesPage,
+        componentProps: {
+          idModele: 'essais', idPersonne: idPersonne },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1048,12 +1654,67 @@ export class EssaiPage implements OnInit {
     async presentChamp(idChamp) {
       const modal = await this.modalController.create({
         component: ChampPage,
-        componentProps: { idChamp: idChamp },
+        componentProps: { 
+          idModele: 'essais', idChamp: idChamp },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
       return await modal.present();
     }
+
+
+    
+    async presentPays(idPays) {
+      const modal = await this.modalController.create({
+        component: PaysPage,
+        componentProps: { idPays: idPays },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+  
+    async presentRegion(idRegion) {
+      const modal = await this.modalController.create({
+        component: RegionPage,
+        componentProps: { idRegion: idRegion },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    async presentDepartement(idDepartement) {
+      const modal = await this.modalController.create({
+        component: DepartementPage,
+        componentProps: { idDepartement: idDepartement },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    async presentCommune(idCommune) {
+      const modal = await this.modalController.create({
+        component: CommunePage,
+        componentProps: { idCommune: idCommune },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+
+    async presentLocalite(idLocalite) {
+      const modal = await this.modalController.create({
+        component: LocalitePage,
+        componentProps: { idLocalite: idLocalite },
+        mode: 'ios',
+        //cssClass: 'costom-modal',
+      });
+      return await modal.present();
+    }
+  
+  
 
   
     async archivageMultiple(ids) {
@@ -1229,6 +1890,7 @@ export class EssaiPage implements OnInit {
         translucent: true,
         componentProps: {
           "options": {
+            idModele: 'essais', 
             "estModeCocherElemListe": this.estModeCocherElemListe,
             "dataLength": this.essaisData.length,
             "selectedIndexesLength": this.selectedIndexes.length,
@@ -1392,6 +2054,7 @@ export class EssaiPage implements OnInit {
           //"dataLength": this.essaisData.length,
           //"selectedIndexesLength": this.selectedIndexes.length,
           //"styleAffichage": this.styleAffichage,
+          idModele: 'essais', 
           "action": this.cacheAction
       /*}*/},
         animated: true,
@@ -1731,7 +2394,8 @@ export class EssaiPage implements OnInit {
   
     annuler(){
       if(this.action === 'modifier'){
-        this.action = "infos";
+        //this.action = "infos";
+        this.infos(this.unEssai)
       }else{
         this.action = 'liste';
         //this.actualiserTableau(this.essaisData);
@@ -1811,7 +2475,8 @@ export class EssaiPage implements OnInit {
         component: ActionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'essais'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1850,7 +2515,8 @@ export class EssaiPage implements OnInit {
         component: ActionDatatableComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
+        componentProps: {
+          idModele: 'essais', "action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1897,7 +2563,8 @@ export class EssaiPage implements OnInit {
         component: SelectionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'essais'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1918,7 +2585,8 @@ export class EssaiPage implements OnInit {
         component: DatatableMoreComponent,
         event: ev,
         translucent: true,
-        componentProps: {action: this.action},
+        componentProps: {
+          idModele: 'essais', action: this.action},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1963,9 +2631,9 @@ export class EssaiPage implements OnInit {
           let institutionIndex = [];
           let projetIndex = [];
           let protocoleIndex = [];
-          let membreIndex = [];
+          let personneIndex = [];
           let champIndex = [];
-          let idInstitution, idProjet, idProtocole, idMembre, idChamp;
+          let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
           for(let u of res.essais){
             //supprimer l'historique de la liste
             delete u.security['shared_history'];
@@ -2039,27 +2707,27 @@ export class EssaiPage implements OnInit {
               idProtocole = null;
             }
 
-            if(u.membre && u.membre != ''){
-              if(isDefined(membreIndex[u.membre])){
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[membreIndex[u.membre]].formData.matricule, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[membreIndex[u.membre]].formData.nom, 9);
-                idMembre = res.membres[membreIndex[u.membre]].id;
+            if(u.personne && u.personne != ''){
+              if(isDefined(personneIndex[u.personne])){
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                idPersonne = res.personnes[personneIndex[u.personne]].id;
               }else{
-                for(let i=0; i < res.membres.length; i++){
-                  if(res.membres[i].id == u.membre){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[i].formData.matricule, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[i].formData.nom, 9);
-                    membreIndex[u.membre] = i;
-                    idMembre = res.membres[i].id;
+                for(let i=0; i < res.personnes.length; i++){
+                  if(res.personnes[i].id == u.personne){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                    personneIndex[u.personne] = i;
+                    idPersonne = res.personnes[i].id;
                     break;
                   }
                 }
               }  
             }else{
               //collone vide
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', null, 8);
-              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', null, 9);
-              idMembre = null;
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+              u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+              idPersonne = null;
             }
 
             if(u.champ && u.champ != ''){
@@ -2086,7 +2754,7 @@ export class EssaiPage implements OnInit {
             }
 
 
-            essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idMembre: idMembre, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+            essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
             cols = Array.from(new Set(cols.concat(keys(u.formioData))));
           }
 
@@ -2154,7 +2822,8 @@ export class EssaiPage implements OnInit {
         component: DatatableConstructComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "cacheAction": this.cacheAction},
+        componentProps: {
+          idModele: 'essais', "action": this.action, "cacheAction": this.cacheAction},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -2187,7 +2856,8 @@ export class EssaiPage implements OnInit {
     async presentDerniereModification(essai) {
       const modal = await this.modalController.create({
         component: DerniereModificationComponent,
-        componentProps: { _id: essai.id, _rev: essai.rev, security: essai.security },
+        componentProps: { 
+          idModele: 'essais', _id: essai.id, _rev: essai.rev, security: essai.security },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -2356,17 +3026,36 @@ export class EssaiPage implements OnInit {
           partenaire: formData.idInstitution, //relation avec la fédération
           projet: formData.idProjet,
           protocole: formData.idProtocole,
-          membre: formData.idMembre,
+          personne: formData.idPersonne,
           champ: formData.idChamp,
+          union: formData.idUnion,
+          op: formData.idOp,
+
+          pays: formData.idPays,
+          region: formData.idRegion,
+          departement: formData.idDepartement,
+          commune: formData.idCommune,
+          localite: formData.idLocalite,
+  
           formData: formData,
           //pour le customisation
           formioData: this.formioFormsData,
           //pour garder les traces
           security: {
+            creation_start: this.start,
+            creation_end: moment().toISOString(),
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
+            update_start: null,
+            update_end: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             archived: false,
             archived_by: null,
             archived_at: null,
@@ -2395,12 +3084,36 @@ export class EssaiPage implements OnInit {
         delete doc.formData.idInstitution;
         delete doc.formData.numeroInstitution;
         delete doc.formData.nomInstitution;
-        delete doc.formData.idMembre;
-        delete doc.formData.matriculeMembre;
-        delete doc.formData.nomMembre;
+        delete doc.formData.idPersonne;
+        delete doc.formData.matriculePersonne;
+        delete doc.formData.nomPersonne;
         delete doc.formData.idChamp;
         delete doc.formData.codeChamp;
         delete doc.formData.nomChamp;
+
+        delete doc.formData.idOp;
+        delete doc.formData.numeroOp;
+        delete doc.formData.nomOp;
+        delete doc.formData.idUnion;
+        delete doc.formData.numeroUnion;
+        delete doc.formData.nomUnion;
+
+        delete doc.formData.idPays;
+        delete doc.formData.codePays;
+        delete doc.formData.nomPays;
+        delete doc.formData.idRegion;
+        delete doc.formData.codeRegion;
+        delete doc.formData.nomRegion;
+        delete doc.formData.idDepartement;
+        delete doc.formData.codeDepartement;
+        delete doc.formData.nomDepartement;
+        delete doc.formData.idCommune;
+        delete doc.formData.codeCommune;
+        delete doc.formData.nomCommune;
+        delete doc.formData.idLocalite;
+        delete doc.formData.codeLocalite;
+        delete doc.formData.nomLocalite;
+        
 
         //console.log(doc)
 
@@ -2455,12 +3168,24 @@ export class EssaiPage implements OnInit {
         this.unEssaiDoc.protocole = formData.idProtocole;
         this.unEssaiDoc.projet = formData.idProjet;
         this.unEssaiDoc.partenaire = formData.idInstitution;
-        this.unEssaiDoc.membre = formData.idMembre;
+        this.unEssaiDoc.personne = formData.idPersonne;
         this.unEssaiDoc.champ = formData.idChamp;
+
+        this.unEssaiDoc.union = formData.idUnion;
+        this.unEssaiDoc.op = formData.idOp;
+
+        this.unEssaiDoc.pays = formData.idPays;
+        this.unEssaiDoc.region = formData.idRegion;
+        this.unEssaiDoc.departement = formData.idDepartement;
+        this.unEssaiDoc.commune = formData.idCommune;
+        this.unEssaiDoc.localite = formData.idLocalite;
+        
         this.unEssaiDoc.formData = formData;
         this.unEssaiDoc.formioData = this.formioFormsData;
 
         //this.unEssai = essaiData;
+        this.unEssaiDoc.security.update_start = this.start;
+        this.unEssaiDoc.security.update_start = moment().toISOString();
         this.unEssaiDoc.security = this.servicePouchdb.garderUpdateTrace(this.unEssaiDoc.security);
 
         let doc = this.clone(this.unEssaiDoc);
@@ -2473,12 +3198,36 @@ export class EssaiPage implements OnInit {
         delete doc.formData.idInstitution;
         delete doc.formData.numeroInstitution;
         delete doc.formData.nomInstitution;
-        delete doc.formData.idMembre;
-        delete doc.formData.matriculeMembre;
-        delete doc.formData.nomMembre;
+        delete doc.formData.idPersonne;
+        delete doc.formData.matriculePersonne;
+        delete doc.formData.nomPersonne;
         delete doc.formData.idChamp;
         delete doc.formData.codeChamp;
         delete doc.formData.nomChamp;
+
+        delete doc.formData.idOp;
+        delete doc.formData.numeroOp;
+        delete doc.formData.nomOp;
+        delete doc.formData.idUnion;
+        delete doc.formData.numeroUnion;
+        delete doc.formData.nomUnion;
+
+        delete doc.formData.idPays;
+        delete doc.formData.codePays;
+        delete doc.formData.nomPays;
+        delete doc.formData.idRegion;
+        delete doc.formData.codeRegion;
+        delete doc.formData.nomRegion;
+        delete doc.formData.idDepartement;
+        delete doc.formData.codeDepartement;
+        delete doc.formData.nomDepartement;
+        delete doc.formData.idCommune;
+        delete doc.formData.codeCommune;
+        delete doc.formData.nomCommune;
+        delete doc.formData.idLocalite;
+        delete doc.formData.codeLocalite;
+        delete doc.formData.nomLocalite;
+        
 
         this.servicePouchdb.updateRelationalDoc(doc).then((res) => {
           //this.essais._rev = res.rev;
@@ -2576,7 +3325,7 @@ export class EssaiPage implements OnInit {
     doRefresh(event) {
       let cols = [];
       if(this.action != 'conflits'){
-        if((this.idChamp && this.idChamp!= '') || (this.idMembre && this.idMembre!= '') || (this.idProtocole && this.idProtocole!= '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
+        if((this.idChamp && this.idChamp!= '') || (this.idPersonne && this.idPersonne!= '') || (this.idProtocole && this.idProtocole!= '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
           var deleted: any;
           var archived: any;
           var shared: any;
@@ -2599,12 +3348,33 @@ export class EssaiPage implements OnInit {
             shared = {$ne: null};
           }
           
-          if(this.idChamp){
+          if(this.idUnion){
+            typePere = 'union';
+            idPere = this.idUnion;
+          }else if(this.idOp){
+            typePere = 'op';
+            idPere = this.idOp;
+          }else if(this.idPays){
+            typePere = 'pays';
+            idPere = this.idPays;
+          }else if(this.idRegion){
+            typePere = 'region';
+            idPere = this.idRegion;
+          }else if(this.idDepartement){
+            typePere = 'departement';
+            idPere = this.idDepartement;
+          }else if(this.idCommune){
+            typePere = 'commune';
+            idPere = this.idCommune;
+          }else if(this.idLocalite){
+            typePere = 'localite';
+            idPere = this.idLocalite;
+          }else if(this.idChamp){
             typePere = 'champ';
             idPere = this.idChamp;
-          }else if(this.idMembre){
-            typePere = 'membre';
-            idPere = this.idMembre;
+          }else if(this.idPersonne){
+            typePere = 'personne';
+            idPere = this.idPersonne;
           }else if(this.idProtocole){
             typePere = 'protocole';
             idPere = this.idProtocole;
@@ -2615,6 +3385,7 @@ export class EssaiPage implements OnInit {
             typePere = 'partenaire';
             idPere = this.idPartenaire;
           }
+
           this.servicePouchdb.findRelationalDocOfTypeByPere('essai', typePere, idPere, deleted, archived, shared).then((res) => {
             if(res && res.essais){
               //this.essais = [...essais];
@@ -2622,9 +3393,9 @@ export class EssaiPage implements OnInit {
               let institutionIndex = [];
               let projetIndex = [];
               let protocoleIndex = [];
-              let membreIndex = [];
+              let personneIndex = [];
               let champIndex = [];
-              let idInstitution, idProjet, idProtocole, idMembre, idChamp;
+              let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
               for(let u of res.essais){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
@@ -2698,27 +3469,27 @@ export class EssaiPage implements OnInit {
                   idProtocole = null;
                 }
 
-                if(u.membre && u.membre != ''){
-                  if(isDefined(membreIndex[u.membre])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[membreIndex[u.membre]].formData.matricule, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[membreIndex[u.membre]].formData.nom, 9);
-                    idMembre = res.membres[membreIndex[u.membre]].id;
+                if(u.personne && u.personne != ''){
+                  if(isDefined(personneIndex[u.personne])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                    idPersonne = res.personnes[personneIndex[u.personne]].id;
                   }else{
-                    for(let i=0; i < res.membres.length; i++){
-                      if(res.membres[i].id == u.membre){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[i].formData.matricule, 8);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[i].formData.nom, 9);
-                        membreIndex[u.membre] = i;
-                        idMembre = res.membres[i].id;
+                    for(let i=0; i < res.personnes.length; i++){
+                      if(res.personnes[i].id == u.personne){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                        personneIndex[u.personne] = i;
+                        idPersonne = res.personnes[i].id;
                         break;
                       }
                     }
                   }  
                 }else{
                   //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', null, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', null, 9);
-                  idMembre = null;
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                  idPersonne = null;
                 }
 
                 if(u.champ && u.champ != ''){
@@ -2745,7 +3516,7 @@ export class EssaiPage implements OnInit {
                 }
 
 
-                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idMembre: idMembre, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
                 cols = Array.from(new Set(cols.concat(keys(u.formioData))));
               }
   
@@ -2835,9 +3606,9 @@ export class EssaiPage implements OnInit {
               let institutionIndex = [];
               let projetIndex = [];
               let protocoleIndex = [];
-              let membreIndex = [];
+              let personneIndex = [];
               let champIndex = [];
-              let idInstitution, idProjet, idProtocole, idMembre, idChamp;
+              let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
               for(let u of res.essais){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
@@ -2911,27 +3682,27 @@ export class EssaiPage implements OnInit {
                   idProtocole = null;
                 }
 
-                if(u.membre && u.membre != ''){
-                  if(isDefined(membreIndex[u.membre])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[membreIndex[u.membre]].formData.matricule, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[membreIndex[u.membre]].formData.nom, 9);
-                    idMembre = res.membres[membreIndex[u.membre]].id;
+                if(u.personne && u.personne != ''){
+                  if(isDefined(personneIndex[u.personne])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                    idPersonne = res.personnes[personneIndex[u.personne]].id;
                   }else{
-                    for(let i=0; i < res.membres.length; i++){
-                      if(res.membres[i].id == u.membre){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[i].formData.matricule, 8);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[i].formData.nom, 9);
-                        membreIndex[u.membre] = i;
-                        idMembre = res.membres[i].id;
+                    for(let i=0; i < res.personnes.length; i++){
+                      if(res.personnes[i].id == u.personne){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                        personneIndex[u.personne] = i;
+                        idPersonne = res.personnes[i].id;
                         break;
                       }
                     }
                   }  
                 }else{
                   //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', null, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', null, 9);
-                  idMembre = null;
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                  idPersonne = null;
                 }
 
                 if(u.champ && u.champ != ''){
@@ -2958,7 +3729,7 @@ export class EssaiPage implements OnInit {
                 }
 
 
-                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idMembre: idMembre, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
                 cols = Array.from(new Set(cols.concat(keys(u.formioData))));
               }
   
@@ -3076,13 +3847,13 @@ export class EssaiPage implements OnInit {
               proto = null;
             }
 
-            if(res.membres && res.membres[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculeMembre', res.membres[0].formData.matricule, 8);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomMembre', res.membres[0].formData.nom, 9); 
-              memb = res.membres[0].id; 
+            if(res.personnes && res.personnes[0]){
+              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculePersonne', res.personnes[0].formData.matricule, 8);
+              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomPersonne', res.personnes[0].formData.nom, 9); 
+              memb = res.personnes[0].id; 
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculeMembre', null, 8);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomMembre', null, 9);
+              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculePersonne', null, 8);
+              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomPersonne', null, 9);
               memb = null;
             }
 
@@ -3096,7 +3867,7 @@ export class EssaiPage implements OnInit {
               champ = null;
             }
             
-            this.infos({id: res.partenaires[0].id, idInstitution: f, idProjet: proj, idProtocole: proto, idMembre: memb, idChamp: champ, ...res.essais[0].formData}); 
+            this.infos({id: res.partenaires[0].id, idInstitution: f, idProjet: proj, idProtocole: proto, idPersonne: memb, idChamp: champ, ...res.essais[0].formData}); 
           }else{
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
@@ -3106,7 +3877,7 @@ export class EssaiPage implements OnInit {
           console.log(err)
           this.close();
         });
-      }else if((this.idChamp && this.idChamp != '') || (this.idMembre && this.idMembre != '') || (this.idProtocole && this.idProtocole != '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
+      }else if((this.idChamp && this.idChamp != '') || (this.idPersonne && this.idPersonne != '') || (this.idProtocole && this.idProtocole != '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
         var deleted: any;
         var archived: any;
         var shared: any;
@@ -3129,12 +3900,33 @@ export class EssaiPage implements OnInit {
           shared = {$ne: null};
         }
         
-        if(this.idChamp){
+        if(this.idUnion){
+          typePere = 'union';
+          idPere = this.idUnion;
+        }else if(this.idOp){
+          typePere = 'op';
+          idPere = this.idOp;
+        }else if(this.idPays){
+          typePere = 'pays';
+          idPere = this.idPays;
+        }else if(this.idRegion){
+          typePere = 'region';
+          idPere = this.idRegion;
+        }else if(this.idDepartement){
+          typePere = 'departement';
+          idPere = this.idDepartement;
+        }else if(this.idCommune){
+          typePere = 'commune';
+          idPere = this.idCommune;
+        }else if(this.idLocalite){
+          typePere = 'localite';
+          idPere = this.idLocalite;
+        }else if(this.idChamp){
           typePere = 'champ';
           idPere = this.idChamp;
-        }else if(this.idMembre){
-          typePere = 'membre';
-          idPere = this.idMembre;
+        }else if(this.idPersonne){
+          typePere = 'personne';
+          idPere = this.idPersonne;
         }else if(this.idProtocole){
           typePere = 'protocole';
           idPere = this.idProtocole;
@@ -3153,9 +3945,9 @@ export class EssaiPage implements OnInit {
             let institutionIndex = [];
             let projetIndex = [];
             let protocoleIndex = [];
-            let membreIndex = [];
+            let personneIndex = [];
             let champIndex = [];
-            let idInstitution, idProjet, idProtocole, idMembre, idChamp;
+            let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
             for(let u of res.essais){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
@@ -3229,27 +4021,27 @@ export class EssaiPage implements OnInit {
                 idProtocole = null;
               }
 
-              if(u.membre && u.membre != ''){
-                if(isDefined(membreIndex[u.membre])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[membreIndex[u.membre]].formData.matricule, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[membreIndex[u.membre]].formData.nom, 9);
-                  idMembre = res.membres[membreIndex[u.membre]].id;
+              if(u.personne && u.personne != ''){
+                if(isDefined(personneIndex[u.personne])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                  idPersonne = res.personnes[personneIndex[u.personne]].id;
                 }else{
-                  for(let i=0; i < res.membres.length; i++){
-                    if(res.membres[i].id == u.membre){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[i].formData.matricule, 8);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[i].formData.nom, 9);
-                      membreIndex[u.membre] = i;
-                      idMembre = res.membres[i].id;
+                  for(let i=0; i < res.personnes.length; i++){
+                    if(res.personnes[i].id == u.personne){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                      personneIndex[u.personne] = i;
+                      idPersonne = res.personnes[i].id;
                       break;
                     }
                   }
                 }  
               }else{
                 //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', null, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', null, 9);
-                idMembre = null;
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                idPersonne = null;
               }
 
               if(u.champ && u.champ != ''){
@@ -3276,7 +4068,7 @@ export class EssaiPage implements OnInit {
               }
 
 
-              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idMembre: idMembre, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
               cols = Array.from(new Set(cols.concat(keys(u.formioData))));
             }
 
@@ -3353,9 +4145,9 @@ export class EssaiPage implements OnInit {
             let institutionIndex = [];
             let projetIndex = [];
             let protocoleIndex = [];
-            let membreIndex = [];
+            let personneIndex = [];
             let champIndex = [];
-            let idInstitution, idProjet, idProtocole, idMembre, idChamp;
+            let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
             for(let u of res.essais){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
@@ -3429,27 +4221,27 @@ export class EssaiPage implements OnInit {
                 idProtocole = null;
               }
 
-              if(u.membre && u.membre != ''){
-                if(isDefined(membreIndex[u.membre])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[membreIndex[u.membre]].formData.matricule, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[membreIndex[u.membre]].formData.nom, 9);
-                  idMembre = res.membres[membreIndex[u.membre]].id;
+              if(u.personne && u.personne != ''){
+                if(isDefined(personneIndex[u.personne])){
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                  idPersonne = res.personnes[personneIndex[u.personne]].id;
                 }else{
-                  for(let i=0; i < res.membres.length; i++){
-                    if(res.membres[i].id == u.membre){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', res.membres[i].formData.matricule, 8);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', res.membres[i].formData.nom, 9);
-                      membreIndex[u.membre] = i;
-                      idMembre = res.membres[i].id;
+                  for(let i=0; i < res.personnes.length; i++){
+                    if(res.personnes[i].id == u.personne){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                      personneIndex[u.personne] = i;
+                      idPersonne = res.personnes[i].id;
                       break;
                     }
                   }
                 }  
               }else{
                 //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculeMembre', null, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomMembre', null, 9);
-                idMembre = null;
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                idPersonne = null;
               }
 
               if(u.champ && u.champ != ''){
@@ -3476,7 +4268,7 @@ export class EssaiPage implements OnInit {
               }
 
 
-              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idMembre: idMembre, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
               
               cols = Array.from(new Set(cols.concat(keys(u.formioData))));
             }
@@ -3574,6 +4366,51 @@ export class EssaiPage implements OnInit {
       });
     }
 
+    getProjetParDateCollecte(dateCollecte){
+      this.projetData = [];
+      this.protocoleData = [];
+      this.servicePouchdb.findRelationalDocProjetAndProtocoleForDataCollect('projet', null, dateCollecte, false, false).then((res) => {
+        //console.log(res)
+        if(res && res.docs){
+          //this.projets = [...projets];
+          //var datas = [];
+          for(let p of res.docs){
+
+            if(this.idPartenaire && this.idPartenaire != ''){
+              if(p.data.partenaire == this.idPartenaire){
+                this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+              }
+            }else{
+              this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+            }
+          }
+          //console.log(this.projetData)
+
+          this.projetData.sort((a, b) => {
+            if (a.nom < b.nom) {
+              return -1;
+            }
+            if (a.nom > b.nom) {
+              return 1;
+            }
+            return 0;
+          });
+
+          if(this.doModification){
+            this.setSelect2DefaultValue('idProjet', this.unEssai.idProjet);
+          }else if(this.idProjet){
+            this.setSelect2DefaultValue('idProjet', this.idProjet);
+          }
+          
+        }
+      }).catch((err) => {
+        this.projetData = [];
+        console.log(err)
+      });
+    
+      
+    }
+
 
     getProjetParInstitution(idInstitution){
       this.projetData = [];
@@ -3635,12 +4472,52 @@ export class EssaiPage implements OnInit {
     getProtocoleParProjet(idProjet){
       this.protocoleData = [];
 
-      if(idProjet && idProjet != ''){
+      if(this.idProtocole){
+        this.servicePouchdb.findRelationalDocByID('protocole', this.idProtocole).then((res) => {
+          if(res && res.protocoles && res.protocoles[0]){
+                //filtrer au cas ou un racoursi a été utilisé
+            let p = res.protocoles[0];
+            this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
+            }else{
+              this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+            }
+            
+          }
+        }).catch((err) => {
+          this.protocoleData = [];
+          console.log(err)
+        });
+      }else if(idProjet && idProjet != ''){
         this.servicePouchdb.findRelationalDocHasMany('protocole', 'projet', idProjet).then((res) => {
           if(res && res.protocoles){
-            for(let u of res.protocoles){
-              if(!u.security.deleted){
-                this.protocoleData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+            for(let p of res.protocoles){
+              if(!p.security.deleted && !p.security.archived && p.formData.dateDebut <= this.essaiForm.controls.dateCollecte.value && p.formData.dateFin >= this.essaiForm.controls.dateCollecte.value){
+
+                //filtrer au cas ou un racoursi a été utilisé
+                if(this.idUnion && this.idUnion != '' && (p.formData.niveauCollecte == 'union' || p.formData.niveauCollecte == 'op')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idOp && this.idOp != '' && p.formData.niveauCollecte == 'op'){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idPays && this.idPays != '' && (p.formData.niveauCollecte == 'pays' || p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idRegion && this.idRegion != '' && (p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idDepartement && this.idDepartement != '' && (p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idCommune && this.idCommune != '' && (p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idLocalite && this.idLocalite != '' && p.formData.niveauCollecte == 'localite'){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idChamp && this.idChamp != '' && (p.formData.niveauCollecte == 'champ')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else if(this.idPersonne && this.idPersonne != '' && (p.formData.niveauCollecte == 'personne' || p.formData.niveauCollecte == 'champ')){
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }else {
+                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                }
               }
             }
   
@@ -3665,6 +4542,7 @@ export class EssaiPage implements OnInit {
           this.protocoleData = [];
           console.log(err)
         });
+        
       }else {
         this.protocoleData = [];
       }
@@ -3672,43 +4550,78 @@ export class EssaiPage implements OnInit {
     }
 
 
-    getMembre(){
-      this.membreData = [];
-      this.servicePouchdb.findRelationalDocByTypeAndDeleted('membre', false).then((res) => {
-        if(res && res.membres){
-          for(let m of res.membres){
-            this.membreData.push({id: m.id, matricule: m.formData.matricule, nom: m.formData.nom});
-          }
-
-          this.membreData.sort((a, b) => {
-            if (a.nom < b.nom) {
-              return -1;
+    getPersonne(){
+      this.personneData = [];
+      if(this.idPersonne){
+        this.servicePouchdb.findRelationalDocByID('personne', this.idPersonne).then((res) => {
+          if(res && res.personnes && res.personnes[0]){
+            this.personneData.push({id: res.personnes[0].id, matricule: res.personnes[0].formData.matricule, nom: res.personnes[0].formData.nom});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPersonne', this.unEssai.idPersonne);
+            }else{
+              this.setSelect2DefaultValue('idPersonne', this.idPersonne);
             }
-            if (a.nom > b.nom) {
-              return 1;
-            }
-            return 0;
-          });
-
-          if(this.doModification){
-            this.setSelect2DefaultValue('idMembre', this.unEssai.idMembre);
-          }else if(this.idMembre){
-            this.setSelect2DefaultValue('idMembre', this.idMembre);
+            
           }
-          
-        }
-      }).catch((err) => {
-        this.membreData = [];
-        console.log(err)
-      });
+        }).catch((err) => {
+          this.personneData = [];
+          console.log(err)
+        });
+      }else{
+        this.servicePouchdb.findRelationalDocByTypeAndDeleted('personne', false).then((res) => {
+          if(res && res.personnes){
+            for(let m of res.personnes){
+              this.personneData.push({id: m.id, matricule: m.formData.matricule, nom: m.formData.nom});
+            }
+  
+            this.personneData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPersonne', this.unEssai.idPersonne);
+            }/*else if(this.idPersonne){
+              this.setSelect2DefaultValue('idPersonne', this.idPersonne);
+            }*/
+            
+          }
+        }).catch((err) => {
+          this.personneData = [];
+          console.log(err)
+        });
+      }
+      
     }
 
 
-    getChampParMembre(idMembre){
+    getChampParPersonne(idPersonne){
       this.champData = [];
 
-      if(idMembre && idMembre != ''){
-        this.servicePouchdb.findRelationalDocHasMany('champ', 'membre', idMembre).then((res) => {
+      if(this.idChamp){
+        this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
+          if(res && res.champs && res.champs[0]){
+            this.champData.push({id: res.champs[0].id, nom: res.champs[0].formData.nom});
+            //console.log(this.unEssai)
+            if(this.doModification){
+              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+            }else{
+              this.setSelect2DefaultValue('idChamp', this.idChamp);
+            }
+            
+          }
+        }).catch((err) => {
+          this.champData = [];
+          console.log(err)
+        });
+      }else if(idPersonne && idPersonne != ''){
+        this.servicePouchdb.findRelationalDocHasMany('champ', 'personne', idPersonne).then((res) => {
           if(res && res.champs){
             for(let c of res.champs){
               if(!c.security.deleted){
@@ -3825,45 +4738,60 @@ export class EssaiPage implements OnInit {
     }
 
 
-    getChampsParMembre(idMembre){
+    getChampsParPersonne(idPersonne){
       this.champData = [];
+      if(this.idChamp){
+          this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
+            if(res && res.champs && res.champs[0]){
+              this.champData.push({id: res.champs[0].id, code: res.champs[0].formData.code, nom: res.champs[0].formData.nom});
 
-      if(idMembre && idMembre != ''){
-        this.servicePouchdb.findRelationalDocHasMany('champ', 'membre', idMembre).then((res) => {
-          if(res && res.champs){
-            for(let c of res.champs){
-              if(!c.security.deleted){
-                this.champData.push({id: c.id, code: c.formData.code, nom: c.formData.nom});
-
+              if(this.doModification){
+                this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+              }else{
+                this.setSelect2DefaultValue('idChamp', this.idChamp);
               }
             }
+          }).catch((err) => {
+            this.champData = [];
+            this.nbEtapes = 2;
+            console.log(err)
+          });
+      }else if(idPersonne && idPersonne != ''){
+          this.servicePouchdb.findRelationalDocHasMany('champ', 'personne', idPersonne).then((res) => {
+            if(res && res.champs){
+              for(let c of res.champs){
+                if(!c.security.deleted){
+                  this.champData.push({id: c.id, code: c.formData.code, nom: c.formData.nom});
+  
+                }
+              }
+              
+              this.champData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+  
+              if(this.doModification){
+                this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+              }else if(this.idChamp){
+                this.setSelect2DefaultValue('idChamp', this.idChamp);
+              }
+  
+            }
+          }).catch((err) => {
+            this.champData = [];
+            this.nbEtapes = 2;
+            console.log(err)
+          });
             
-            this.champData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
-
-            if(this.doModification){
-              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
-            }else if(this.idChamp){
-              this.setSelect2DefaultValue('idChamp', this.idChamp);
-            }
-
-          }
-        }).catch((err) => {
-          this.formulaireData = [];
-          this.nbEtapes = 2;
-          console.log(err)
-        });
       }else {
-        this.formulaireData = [];
+        this.champData = [];
       }
-      
     }
 
 
@@ -3881,6 +4809,7 @@ export class EssaiPage implements OnInit {
             this.essaiForm.controls.idProtocole.setValue(null);
             this.essaiForm.controls.numeroProtocole.setValue(null);
             this.essaiForm.controls.nomProtocole.setValue(null);
+            this.essaiForm.controls.niveauCollecte.setValue(null);
             //console.log(numeroInstitution)
             this.getProjetParInstitution(idInstitution);
             break;
@@ -3895,28 +4824,36 @@ export class EssaiPage implements OnInit {
 
         this.essaiForm.controls.numeroProtocole.setValue(null);
         this.essaiForm.controls.nomProtocole.setValue(null);
+        this.essaiForm.controls.niveauCollecte.setValue(null);
         this.getProjetParInstitution(idInstitution)
       }
     }
 
     setNumeroAndNomProjet(idProjet){
+      //console.log(idProjet)
       if(idProjet && idProjet != ''){
         for(let u of this.projetData){
           if(idProjet == u.id){
+            this.essaiForm.controls.idInstitution.setValue(u.idPartenaire)
             this.essaiForm.controls.numeroProjet.setValue(u.numero);
             this.essaiForm.controls.nomProjet.setValue(u.nom);
             
             this.essaiForm.controls.numeroProtocole.setValue(null);
             this.essaiForm.controls.nomProtocole.setValue(null);
+            this.essaiForm.controls.niveauCollecte.setValue(null);
             
+            //console.log(idProjet)
             this.getProtocoleParProjet(idProjet);
             break;
           }
         }
       }else{
+        this.essaiForm.controls.idInstitution.setValue(null)
+            
         this.essaiForm.controls.nomProjet.setValue(null);
         this.essaiForm.controls.numeroProjet.setValue(null);
         
+        this.essaiForm.controls.niveauCollecte.setValue(null);
         this.essaiForm.controls.nomProtocole.setValue(null);
         this.essaiForm.controls.numeroProtocole.setValue(null);
         
@@ -3926,47 +4863,156 @@ export class EssaiPage implements OnInit {
 
     
     setNumeroAndNomProtocole(idProtocole){
+      this.paysData = [];
+      this.regionData = [];
+      this.departementData = [];
+      this.communeData = [];
+      this.localiteData = [];
+      this.personneData = [];
+      this.champData= [];
+      this.unionData = [];
+      this.unionData = [];
+      this.opData = [];
       if(idProtocole && idProtocole != ''){
         for(let u of this.protocoleData){
           if(idProtocole == u.id){
             this.essaiForm.controls.numeroProtocole.setValue(u.numero);
             this.essaiForm.controls.nomProtocole.setValue(u.nom);
+            this.essaiForm.controls.niveauCollecte.setValue(u.niveauCollecte);
             
+            this.essaiForm.controls['numeroUnion'].setValue(null);
+            this.essaiForm.controls['nomUnion'].setValue(null);
+            this.essaiForm.controls['idUnion'].setValue(null);
+            this.essaiForm.controls['numeroOp'].setValue(null);
+            this.essaiForm.controls['nomOp'].setValue(null);
+            this.essaiForm.controls['idOp'].setValue(null);
+            this.essaiForm.controls['matriculePersonne'].setValue(null);
+            this.essaiForm.controls['nomPersonne'].setValue(null);
+            this.essaiForm.controls['idPersonne'].setValue(null);
+            this.essaiForm.controls['nomChamp'].setValue(null);
+            this.essaiForm.controls['idChamp'].setValue(null);
+            this.essaiForm.controls['codeChamp'].setValue(null);
+            this.essaiForm.controls['idPays'].setValue(null);
+            this.essaiForm.controls['nomPays'].setValue(null);
+            this.essaiForm.controls['codePays'].setValue(null);
+            this.essaiForm.controls['nomRegion'].setValue(null);
+            this.essaiForm.controls['codeRegion'].setValue(null);
+            this.essaiForm.controls['idRegion'].setValue(null);
+            this.essaiForm.controls['nomDepartement'].setValue(null);
+            this.essaiForm.controls['codeDepartement'].setValue(null);
+            this.essaiForm.controls['idDepartement'].setValue(null);
+            this.essaiForm.controls['nomCommune'].setValue(null);
+            this.essaiForm.controls['codeCommune'].setValue(null);
+            this.essaiForm.controls['idCommune'].setValue(null);
+            this.essaiForm.controls['nomLocalite'].setValue(null);
+            this.essaiForm.controls['codeLocalite'].setValue(null);
+            this.essaiForm.controls['idLocalite'].setValue(null);
+
+            if(this.essaiForm.controls.niveauCollecte.value == 'union'){
+              this.getUnion();
+              this.initSelect2('idUnion', this.translate.instant('ESSAI_PAGE.SELECTIONUNION'));            
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'op'){
+              this.getUnion();
+              this.initSelect2('idUnion', this.translate.instant('ESSAI_PAGE.SELECTIONUNION'));
+              this.initSelect2('idOp', this.translate.instant('ESSAI_PAGE.SELECTIONOP'));            
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'personne'){
+              this.getPersonne();
+              this.initSelect2('idPersonne', this.translate.instant('ESSAI_PAGE.SELECTIONPERSONNE'));            
+            } else if(this.essaiForm.controls.niveauCollecte.value == 'champ'){
+              this.getPersonne();
+              this.initSelect2('idPersonne', this.translate.instant('ESSAI_PAGE.SELECTIONPERSONNE'));
+              this.initSelect2('idChamp', this.translate.instant('ESSAI_PAGE.SELECTIONCHAMP'));
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'pays'){
+              this.getPays();
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'region'){
+              this.getPays();
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'departement'){
+              this.getPays();
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+              this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+            }else if(this.essaiForm.controls.niveauCollecte.value == 'commune'){
+              this.getPays();
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+              this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+              this.initSelect2('idCommune', this.translate.instant('ESSAI_PAGE.SELECTIONCOMMUNE'));
+            }else{
+              this.getPays();
+              this.initSelect2('idPays', this.translate.instant('ESSAI_PAGE.SELECTIONPAYS'));
+              this.initSelect2('idRegion', this.translate.instant('ESSAI_PAGE.SELECTIONREGION'));
+              this.initSelect2('idDepartement', this.translate.instant('ESSAI_PAGE.SELECTIONDEPARTEMENT'));
+              this.initSelect2('idCommune', this.translate.instant('ESSAI_PAGE.SELECTIONCOMMUNE'));
+              this.initSelect2('idLocalite', this.translate.instant('ESSAI_PAGE.SELECTIONLOCALITE'));
+            }
+                  
             this.getFormulaireParProtocole(idProtocole)
             break;
           }
         }
       }else{
+        this.essaiForm.controls.niveauCollecte.setValue(null);
         this.essaiForm.controls.nomProtocole.setValue(null);
         this.essaiForm.controls.numeroProtocole.setValue(null);
+
+        this.essaiForm.controls['numeroUnion'].setValue(null);
+        this.essaiForm.controls['nomUnion'].setValue(null);
+        this.essaiForm.controls['idUnion'].setValue(null);
+        this.essaiForm.controls['numeroOp'].setValue(null);
+        this.essaiForm.controls['nomOp'].setValue(null);
+        this.essaiForm.controls['idOp'].setValue(null);
+        this.essaiForm.controls['matriculePersonne'].setValue(null);
+        this.essaiForm.controls['nomPersonne'].setValue(null);
+        this.essaiForm.controls['idPersonne'].setValue(null);
+        this.essaiForm.controls['nomChamp'].setValue(null);
+        this.essaiForm.controls['idChamp'].setValue(null);
+        this.essaiForm.controls['codeChamp'].setValue(null);
+        this.essaiForm.controls['idPays'].setValue(null);
+        this.essaiForm.controls['nomPays'].setValue(null);
+        this.essaiForm.controls['codePays'].setValue(null);
+        this.essaiForm.controls['nomRegion'].setValue(null);
+        this.essaiForm.controls['codeRegion'].setValue(null);
+        this.essaiForm.controls['idRegion'].setValue(null);
+        this.essaiForm.controls['nomDepartement'].setValue(null);
+        this.essaiForm.controls['codeDepartement'].setValue(null);
+        this.essaiForm.controls['idDepartement'].setValue(null);
+        this.essaiForm.controls['nomCommune'].setValue(null);
+        this.essaiForm.controls['codeCommune'].setValue(null);
+        this.essaiForm.controls['idCommune'].setValue(null);
+        this.essaiForm.controls['nomLocalite'].setValue(null);
+        this.essaiForm.controls['codeLocalite'].setValue(null);
+        this.essaiForm.controls['idLocalite'].setValue(null);
 
         this.getFormulaireParProtocole(idProtocole)
       }
 
     }
 
-    setNumeroAndNomMembre(idMembre){
-      if(idMembre && idMembre != ''){
-        for(let m of this.membreData){
-          if(idMembre == m.id){
-            this.essaiForm.controls.matriculeMembre.setValue(m.matricule);
-            this.essaiForm.controls.nomMembre.setValue(m.nom);
+    setNumeroAndNomPersonne(idPersonne){
+      if(idPersonne && idPersonne != ''){
+        for(let m of this.personneData){
+          if(idPersonne == m.id){
+            this.essaiForm.controls.matriculePersonne.setValue(m.matricule);
+            this.essaiForm.controls.nomPersonne.setValue(m.nom);
 
             this.essaiForm.controls.nomChamp.setValue(null);
             this.essaiForm.controls.codeChamp.setValue(null);
             
-            this.getChampsParMembre(idMembre)
+            this.getChampsParPersonne(idPersonne)
             break;
           }
         }
       }else{
-        this.essaiForm.controls.nomMembre.setValue(null);
-        this.essaiForm.controls.matriculeMembre.setValue(null);
+        this.essaiForm.controls.nomPersonne.setValue(null);
+        this.essaiForm.controls.matriculePersonne.setValue(null);
 
         this.essaiForm.controls.nomChamp.setValue(null);
         this.essaiForm.controls.codeChamp.setValue(null);
             
-        this.getChampsParMembre(idMembre)
+        this.getChampsParPersonne(idPersonne)
       }
 
     }
@@ -3989,6 +5035,597 @@ export class EssaiPage implements OnInit {
 
     }
   
+    getUnion(){
+      if(this.idUnion){
+        this.servicePouchdb.findRelationalDocByID('union', this.idUnion).then((res) => {
+          if(res && res.unions && res.unions[0]){
+              this.unionData.push({id: res.unions[0].id, numero: res.unions[0].formData.numero, nom: res.unions[0].formData.nom});
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idUnion', this.unEssai.idUnion);
+            }else{
+              this.setSelect2DefaultValue('idUnion', this.idUnion);
+              /*$('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });*/
+            }
+            
+          }
+        }).catch((err) => {
+          this.unionData = [];
+          console.log(err)
+        });
+      }else {
+        this.servicePouchdb.findRelationalDocByTypeAndDeleted('union', false).then((res) => {
+          if(res && res.unions){
+            for(let u of res.unions){
+                this.unionData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+            }
+  
+            this.unionData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idUnion', this.unEssai.idUnion);
+            }/*else if(this.idUnion){
+              this.setSelect2DefaultValue('idUnion', this.idUnion);
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
+            }*/
+            
+          }
+        }).catch((err) => {
+          this.unionData = [];
+          console.log(err)
+        });
+      }
+      
+    }
+
+    getOpParUnion(idUnion){
+      this.opData = [];
+      if(this.idOp){
+        this.servicePouchdb.findRelationalDocByID('op', this.idOp).then((res) => {
+          if(res && res.ops && res.ops[0]){
+            this.opData.push({id: res.ops[0].id, numero: res.ops[0].formData.numero, nom: res.ops[0].formData.nom});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else {
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });*/
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }else if(idUnion && idUnion != ''){
+        this.servicePouchdb.findRelationalDocHasMany('op', 'union', idUnion).then((res) => {
+          if(res && res.ops){
+            for(let u of res.ops){
+              if(!u.security.deleted){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              }
+            }
+  
+            this.opData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });*/
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }else{
+        //get les ops indépendantes
+        this.servicePouchdb.findRelationalDocByTypeNiveauAndDeleted('op', '3', false).then((res) => {
+          if(res && res.ops){
+            //this.unions = [...unions];
+            this.opData = [];
+            //var datas = [];
+            for(let u of res.ops){
+              //if(f.data.formData.categorie == 'Fédération'){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              //}
+            }
+  
+            this.opData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });*/
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }
+      
+    }
+
+
+    setNumeroAndNomUnion(idUnion){
+      if(idUnion && idUnion != ''){
+        for(let u of this.unionData){
+          if(idUnion == u.id){
+            this.essaiForm.controls.numeroUnion.setValue(u.numero);
+            this.essaiForm.controls.nomUnion.setValue(u.nom);
+
+            this.essaiForm.controls.idOp.setValue(null);
+            this.essaiForm.controls.numeroOp.setValue(null);
+            this.essaiForm.controls.nomOp.setValue(null);
+            //console.log(numeroFederation)
+            this.getOpParUnion(idUnion)
+            break;
+          }
+        }
+      }else{
+        this.essaiForm.controls.nomUnion.setValue(null);
+        this.essaiForm.controls.numeroUnion.setValue(null);
+
+        this.essaiForm.controls.numeroOp.setValue(null);
+        this.essaiForm.controls.nomOp.setValue(null);
+        this.getOpParUnion(idUnion)
+      }
+
+      //console.log(this.essaiForm.controls)
+    }
+
+    setNumeroAndNomOp(idOp){
+      if(idOp && idOp != ''){
+        for(let o of this.opData){
+          if(idOp == o.id){
+            this.essaiForm.controls.numeroOp.setValue(o.numero);
+            this.essaiForm.controls.nomOp.setValue(o.nom);
+            break;
+          }
+        }
+      }else{
+        this.essaiForm.controls.nomOp.setValue(null);
+        this.essaiForm.controls.numeroOp.setValue(null);
+
+      }
+
+      //console.log(this.essaiForm.controls)
+    }
+  
+
+
+    getPays(){
+      this.paysData = [];
+      if(this.idPays){
+        this.servicePouchdb.findRelationalDocByID('pays', this.idPays).then((res) => {
+          if(res && res.pays && res.pays[0]){
+            this.paysData.push({id: res.pays[0].id, ...res.pays[0].formData});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPays', this.unEssai.idPays);
+            }else{
+              this.setSelect2DefaultValue('idPays', this.idPays);
+            }
+          }
+        }).catch((e) => {
+          console.log('pays erreur: '+e);
+          this.paysData = [];
+        });
+  
+      }else{
+        this.servicePouchdb.findAllRelationalDocByType('pays').then((res) => {
+          if(res && res.pays){
+            for(let p of res.pays){
+              this.paysData.push({id: p.id, ...p.formData});
+            }
+  
+            this.paysData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPays', this.unEssai.idPays);
+            }/*else if(this.idPays){
+              this.setSelect2DefaultValue('idPays', this.idPays);
+            }*/
+          }
+        }).catch((e) => {
+          console.log('pays erreur: '+e);
+          this.paysData = [];
+        });  
+      }
+    }
+
+    getRegionParPays(idPays){
+      this.regionData = [];
+      if(this.idRegion){
+        this.servicePouchdb.findRelationalDocByID('region', this.idRegion).then((res) => {
+          if(res && res.regions && res.regions[0]){
+              
+            this.regionData.push({id: res.regions[0].id, ...res.regions[0].formData});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idRegion', this.unEssai.idRegion);
+            }else {
+              this.setSelect2DefaultValue('idRegion', this.idRegion);
+            }
+          }
+        }).catch((e) => {
+          console.log('region erreur: '+e);
+          this.regionData = [];
+        });  
+      }else{
+        this.servicePouchdb.findRelationalDocHasMany('region', 'pays', idPays).then((res) => {
+          if(res && res.regions){
+            this.regionData = [];
+            //var datas = [];
+            for(let r of res.regions){
+              this.regionData.push({id: r.id, ...r.formData});
+            }
+  
+            this.regionData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idRegion', this.unEssai.idRegion);
+            }/*else if(this.idRegion){
+              this.setSelect2DefaultValue('idRegion', this.idRegion);
+            }*/
+          }
+        }).catch((e) => {
+          console.log('region erreur: '+e);
+          this.regionData = [];
+        });  
+      }
+      
+    }
+
+    getDepartementParRegion(idRegion){
+      this.departementData = [];
+      if(this.idDepartement){
+        this.servicePouchdb.findRelationalDocByID('departement', this.idDepartement).then((res) => {
+          if(res && res.departements && res.departements[0]){
+            this.departementData.push({id: res.departements[0].id, ...res.departements[0].formData});
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idDepartement', this.unEssai.idDepartement);
+            }else{
+              this.setSelect2DefaultValue('idDepartement', this.idDepartement);
+            }
+          }
+        }).catch((e) => {
+          console.log('departement erreur: '+e);
+          this.departementData = [];
+        });  
+      }else{
+        this.servicePouchdb.findRelationalDocHasMany('departement', 'region', idRegion).then((res) => {
+          if(res && res.departements){
+            this.departementData = [];
+            //var datas = [];
+            for(let d of res.departements){
+              this.departementData.push({id: d.id, ...d.formData});
+            }
+  
+            this.departementData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idDepartement', this.unEssai.idDepartement);
+            }/*else if(this.idDepartement){
+              this.setSelect2DefaultValue('idDepartement', this.idDepartement);
+            }*/
+          }
+        }).catch((e) => {
+          console.log('departement erreur: '+e);
+          this.departementData = [];
+        });  
+      }
+      
+      
+    }
+
+    getCommuneParDepartement(idDepartement){
+      this.communeData = [];
+      if(this.idCommune){
+        this.servicePouchdb.findRelationalDocByID('commune', this.idChamp).then((res) => {
+          if(res && res.communes && res.communes[0]){
+            this.communeData.push({id: res.communes[0].id, ...res.communes[0].formData});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idCommune', this.unEssai.idCommune);
+            }else{
+              this.setSelect2DefaultValue('idCommune', this.idCommune);
+            }
+          }
+        }).catch((e) => {
+          console.log('Commune erreur: '+e);
+          this.communeData = [];
+        });  
+      }else {
+        this.servicePouchdb.findRelationalDocHasMany('commune', 'departement', idDepartement).then((res) => {
+          if(res && res.communes){
+            for(let c of res.communes){
+              this.communeData.push({id: c.id, ...c.formData});
+            }
+  
+            this.communeData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idCommune', this.unEssai.idCommune);
+            }/*else if(this.idCommune){
+              this.setSelect2DefaultValue('idCommune', this.idCommune);
+            }*/
+          }
+        }).catch((e) => {
+          console.log('Commune erreur: '+e);
+          this.communeData = [];
+        });  
+      }
+      
+    }
+
+    
+    getLocaliteParCommune(idCommune){
+      this.localiteData = [];
+      if(this.idLocalite){
+        this.servicePouchdb.findRelationalDocByID('localite', this.idLocalite).then((res) => {
+          if(res && res.localites && res.localites[0]){
+            this.localiteData.push({id: res.localites[0].id, ...res.localites[0].formData});
+            
+            if(this.doModification){
+              this.setSelect2DefaultValue('idLocalite', this.unEssai.idLocalite);
+            }else {
+              this.setSelect2DefaultValue('idLocalite', this.idLocalite);
+            }
+          }
+        }).catch((e) => {
+          console.log('vilage commune erreur: '+e);
+          this.localiteData = [];
+        });
+      }else{
+        this.servicePouchdb.findRelationalDocHasMany('localite', 'commune', idCommune).then((res) => {
+          if(res && res.localites){
+            this.localiteData = [];
+            //var datas = [];
+            for(let l of res.localites){
+              this.localiteData.push({id: l.id, ...l.formData});
+            }
+  
+            this.localiteData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idLocalite', this.unEssai.idLocalite);
+            }/*else if(this.idLocalite){
+              this.setSelect2DefaultValue('idLocalite', this.idLocalite);
+            }*/
+          }
+        }).catch((e) => {
+          console.log('vilage commune erreur: '+e);
+          this.localiteData = [];
+        });
+      }
+      
+    }
+
+    setCodeAndNomPays(idPays){
+      if(idPays && idPays != ''){
+        for(let p of this.paysData){
+          if(idPays == p.id){
+            this.essaiForm.controls.codePays.setValue(p.code);
+            this.essaiForm.controls.nomPays.setValue(p.nom);
+
+            this.essaiForm.controls.idRegion.setValue(null);
+            this.essaiForm.controls.codeRegion.setValue(null);
+            this.essaiForm.controls.nomRegion.setValue(null);
+
+            this.departementData = [];
+            this.essaiForm.controls.idDepartement.setValue(null);
+            this.essaiForm.controls.codeDepartement.setValue(null);
+            this.essaiForm.controls.nomDepartement.setValue(null);
+
+            this.communeData = [];
+            this.essaiForm.controls.idCommune.setValue(null);
+            this.essaiForm.controls.codeCommune.setValue(null);
+            this.essaiForm.controls.nomCommune.setValue(null);
+
+            this.localiteData = [];
+            this.essaiForm.controls.idLocalite.setValue(null);
+            this.essaiForm.controls.codeLocalite.setValue(null);
+            this.essaiForm.controls.nomLocalite.setValue(null);
+
+            this.getRegionParPays(idPays)
+            break;
+          }
+        }
+      }
+    }
+
+    setCodeAndNomRegion(idRegion){
+      if(idRegion && idRegion != ''){
+        for(let r of this.regionData){
+          if(idRegion == r.id){
+            this.essaiForm.controls.codeRegion.setValue(r.code);
+            this.essaiForm.controls.nomRegion.setValue(r.nom);
+
+            this.essaiForm.controls.idDepartement.setValue(null);
+            this.essaiForm.controls.codeDepartement.setValue(null);
+            this.essaiForm.controls.nomDepartement.setValue('');
+
+            this.communeData = [];
+            this.essaiForm.controls.idCommune.setValue(null);
+            this.essaiForm.controls.codeCommune.setValue(null);
+            this.essaiForm.controls.nomCommune.setValue(null);
+
+            this.localiteData = [];
+            this.essaiForm.controls.idLocalite.setValue(null);
+            this.essaiForm.controls.codeLocalite.setValue(null);
+            this.essaiForm.controls.nomLocalite.setValue(null);
+
+            this.getDepartementParRegion(idRegion)
+            break;
+          }
+        }
+      }
+    }
+
+    setCodeAndNomDepartement(idDepartement){
+      if(idDepartement && idDepartement != ''){
+        for(let d of this.departementData){
+          if(idDepartement == d.id){
+            this.essaiForm.controls.codeDepartement.setValue(d.code);
+            this.essaiForm.controls.nomDepartement.setValue(d.nom);
+
+            this.essaiForm.controls.idCommune.setValue(null);
+            this.essaiForm.controls.codeCommune.setValue(null);
+            this.essaiForm.controls.nomCommune.setValue(null);
+
+            this.localiteData = [];
+            this.essaiForm.controls.idLocalite.setValue(null);
+            this.essaiForm.controls.codeLocalite.setValue(null);
+            this.essaiForm.controls.nomLocalite.setValue(null);
+
+            this.getCommuneParDepartement(idDepartement)
+            break;
+          }
+        }
+      }
+    }
+
+    setCodeAndNomCommune(idCommune){
+      if(idCommune && idCommune != ''){
+        for(let c of this.communeData){
+          if(idCommune == c.id){
+            this.essaiForm.controls.codeCommune.setValue(c.code);
+            this.essaiForm.controls.nomCommune.setValue(c.nom);
+            
+            this.essaiForm.controls.idLocalite.setValue(null);
+            this.essaiForm.controls.codeLocalite.setValue(null);
+            this.essaiForm.controls.nomLocalite.setValue(null);
+            this.getLocaliteParCommune(idCommune)
+            break;
+          }
+        }
+      }
+    }
+
+    setCodeAndNomLocalite(idLocalite){
+      if(idLocalite && idLocalite != ''){
+        for(let l of this.localiteData){
+          if(idLocalite == l.id){
+            this.essaiForm.controls.codeLocalite.setValue(l.code);
+            this.essaiForm.controls.nomLocalite.setValue(l.nom);
+            break;
+          }
+        }
+      }
+    }
+  
+    setIDCodeEtNomPays(paysData){
+      this.essaiForm.controls.idPays.setValue(paysData.id);
+      this.essaiForm.controls.codePays.setValue(paysData.code);
+      this.essaiForm.controls.nomPays.setValue(paysData.nom);
+    }
+
+    setIDCodeEtNomRegion(regionData){
+      this.essaiForm.controls.idRegion.setValue(regionData.id);
+      this.essaiForm.controls.codeRegion.setValue(regionData.code);
+      this.essaiForm.controls.nomRegion.setValue(regionData.nom);
+    }
+
+    setIDCodeEtNomDepartement(departementData){
+      this.essaiForm.controls.idDepartement.setValue(departementData.id);
+      this.essaiForm.controls.codeDepartement.setValue(departementData.code);
+      this.essaiForm.controls.nomDepartement.setValue(departementData.nom);
+    }
+
+    setIDCodeEtNomCommune(communeData){
+      this.essaiForm.controls.idCommune.setValue(communeData.id);
+      this.essaiForm.controls.codeCommune.setValue(communeData.code);
+      this.essaiForm.controls.nomCommune.setValue(communeData.nom);
+    }
+
+    setIDCodeEtNomLocalite(localiteData){
+      this.essaiForm.controls.idLocalite.setValue(localiteData.id);
+      this.essaiForm.controls.codeLocalite.setValue(localiteData.code);
+      this.essaiForm.controls.nomLocalite.setValue(localiteData.nom);
+    }
+
   
 
     attacheEventToDataTable(datatable){
@@ -4081,14 +5718,51 @@ export class EssaiPage implements OnInit {
         this.messages_validation.idProtocole[0].message = res;
       });
 
-      //numero membre
-      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.MATRICULE_MEMBRE.REQUIRED').subscribe((res: string) => {
-        this.messages_validation.idMembre[0].message = res;
+      //numero personne
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.MATRICULE_PERSONNE.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idPersonne[0].message = res;
       });
 
       //numero champ
       this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODE_CHAMP.REQUIRED').subscribe((res: string) => {
         this.messages_validation.idChamp[0].message = res;
+      });
+
+      
+      //code pays
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODEPAYS.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idPays[0].message = res;
+      });
+
+
+      //code région
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODEREGION.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idRegion[0].message = res;
+      });
+
+       //code département
+       this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODEDEPARTEMENT.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idDepartement[0].message = res;
+      });
+
+      //code commune
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODECOMMUNE.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idCommune[0].message = res;
+      });
+
+      //code localité
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.CODELOCALITE.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idLocalite[0].message = res;
+      });
+
+      //numero union
+      this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.NUMERO_UNION.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idUnion[0].message = res;
+      });
+
+       //numero op
+       this.translate.get('ESSAI_PAGE.MESSAGES_VALIDATION.NUMERO_OP.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.idOp[0].message = res;
       });
 
       //autre type domaine

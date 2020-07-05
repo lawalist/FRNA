@@ -26,7 +26,7 @@
       <ion-title *ngIf="action == 'partages' && !estModeCocherElemListe">{{'GENERAL.PARTAGES' | translate}}</ion-title>
       <ion-title *ngIf="action == 'conflits' && !estModeCocherElemListe">{{'GENERAL.GESTION_DES_CONFLITS' | translate}}</ion-title>
   
-      <ion-buttons *ngIf="!idOp && mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
+      <ion-buttons *ngIf="!filtreOP && !idOp && mobile && styleAffichage == 'liste' && action == 'infos'" slot="end">
         <ion-button ion-button icon-only  (click)="openRelationOp($event)">
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
         </ion-button>
@@ -42,20 +42,20 @@
           <ion-icon name="done-all"></ion-icon>
         </ion-button>
   
-        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="openRelationOpDepuisListe($event)">
+        <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" *ngIf="!filtreOP && selectedIndexes && selectedIndexes.length > 0" (click)="openRelationOpDepuisListe($event)">
           <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i> 
         </ion-button>
                   
-        <ion-button ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
+        <ion-button *ngIf="!filtreOP" ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
           <ion-icon name="more"></ion-icon>
         </ion-button>
   
-        <ion-button ion-button icon-only [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
+        <ion-button *ngIf="!filtreOP" ion-button icon-only [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
           <ion-icon name="ios-build"></ion-icon>
         </ion-button>
       </ion-buttons>
    
-      <ion-buttons *ngIf="(idOp || idUnion || idPartenaire)" slot="end">
+      <ion-buttons *ngIf="idOp || idUnion || idPartenaire || filtreOP" slot="end">
         <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
           <ion-icon name="close"></ion-icon>
         </ion-button>
@@ -81,11 +81,11 @@
             <ion-icon name="checkbox"></ion-icon>
           </ion-button>
   
-          <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
+          <ion-button *ngIf="!filtreOP" class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
             <i style="font-size: 18px" class="fa fa-caret-down"></i>
           </ion-button>
   
-          <ion-button title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
+          <ion-button [disabled]="!global.controlAccesModele('ops', 'lecture')" title="{{'GENERAL.RECHERGER_ANNULER' | translate}}" (click)="doRefresh()">
             <ion-icon name="refresh"></ion-icon>
           </ion-button>
   
@@ -112,35 +112,35 @@
           <!--div [class.barre-verticale]="selectedIndexes.length > 0"-->
           <!--/div-->
   
-          <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getOpsByType('liste')">
+          <ion-button *ngIf="!filtreOP" class="hid-boutons-petit-ecran" [hidden]="action == 'liste'"  title="{{'GENERAL.LISTE_PRINCIPALE' | translate}}" (click)="getOpsByType('liste')">
             <ion-icon name="ios-undo"></ion-icon>
           </ion-button>
   
-          <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getOpsByType('archives')">
+          <ion-button *ngIf="!filtreOP" class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'archivage')" [hidden]="action == 'archives'"  title="{{'GENERAL.ARCHIVES' | translate}}" (click)="getOpsByType('archives')">
             <ion-icon name="archive"></ion-icon>
           </ion-button>
   
-          <ion-button class="hid-boutons-petit-ecran" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getOpsByType('corbeille')">
+          <ion-button *ngIf="!filtreOP" class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'suppression')" [hidden]="action == 'corbeille'" title="{{'GENERAL.CORBEILLE' | translate}}" (click)="getOpsByType('corbeille')">
             <ion-icon name="trash"></ion-icon>
           </ion-button>
   
-          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableMorePopover($event)">
+          <ion-button *ngIf="!filtreOP" class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableMorePopover($event)">
             <ion-icon name="more"></ion-icon>
           </ion-button>
   
-          <ion-button class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS ' | translate}}" (click)="actionDatatablePopover($event)">
+          <ion-button *ngIf="!filtreOP" class="hid-boutons-grand-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS ' | translate}}" (click)="actionDatatablePopover($event)">
             <ion-icon name="more"></ion-icon>
           </ion-button>
           
         </ion-buttons>
   
         <!--Action pour selection-->
-        <ion-buttons slot="end" style="padding-right: 5px !important">
-          <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
+        <ion-buttons *ngIf="!filtreOP" slot="end" style="padding-right: 5px !important">
+          <ion-button [disabled]="!global.controlAccesModele('ops', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
             <ion-icon name="eye"></ion-icon>
           </ion-button>
   
-          <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
+          <ion-button [disabled]="!global.controlAccesModele('ops', 'modification')" class="hid-boutons-petit-ecran" title="{{'GENERAL.MODIFIER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0 && action != 'corbeille'" (click)="selectedItemModifier()">
             <ion-icon  name="create"></ion-icon>
           </ion-button>
   
@@ -166,40 +166,41 @@
               <ion-icon name="arrow-back"></ion-icon>
             </ion-button>
   
-            <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
-              <ion-icon name="create"></ion-icon>
-            </ion-button>
-  
-            <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" (click)="openRelationOpDepuisListe($event)">
-              <!--ion-icon name="redo"></ion-icon-->
-              <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
-            </ion-button>
-  
-            <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
-              <ion-icon name="md-archive"></ion-icon>
-            </ion-button>
-  
-            <ion-button class="hid-boutons-petit-ecran" *ngIf="uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
-              <ion-icon name="ios-archive"></ion-icon>
-            </ion-button>
-  
-            <ion-button class="hid-boutons-petit-ecran" *ngIf="!uneOp.archived && uneOp.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
-              <!--ion-icon name="trash"></ion-icon-->
-              <i style="font-size: 22px" class="mdi mdi-backup-restore"></i>
-            </ion-button>
-  
-            <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!uneOp.archived && !uneOp.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
-              <ion-icon name="trash"></ion-icon>
-            </ion-button>
-  
-            <ion-button class="hid-boutons-petit-ecran" color="danger" *ngIf="!uneOp.archived && uneOp.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
-              <ion-icon name="trash"></ion-icon>
-            </ion-button>
-            
-            <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
-              <ion-icon name="more"></ion-icon>
-            </ion-button>
-  
+            <ng-container *ngIf="!filtreOP">
+              <ion-button [disabled]="!global.controlAccesModele('ops', 'modification')" class="hid-boutons-petit-ecran" *ngIf="!uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
+                <ion-icon name="create"></ion-icon>
+              </ion-button>
+    
+              <ion-button title="{{'GENERAL.ENREGISTRMENTS_LIES' | translate}}" slot="end" (click)="openRelationOpDepuisListe($event)">
+                <!--ion-icon name="redo"></ion-icon-->
+                <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
+              </ion-button>
+    
+              <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'archivage')" *ngIf="!uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.ARCHIVER' | translate}}" (click)="archivageMultiple(selectedIndexes)">
+                <ion-icon name="md-archive"></ion-icon>
+              </ion-button>
+    
+              <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'archivage')" *ngIf="uneOp.archived && !uneOp.deleted"  title="{{'GENERAL.DESARCHIVER' | translate}}" (click)="desarchivageMultiple(selectedIndexes)">
+                <ion-icon name="ios-archive"></ion-icon>
+              </ion-button>
+    
+              <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'suppression')" *ngIf="!uneOp.archived && uneOp.deleted" title="{{'GENERAL.RESTAURER' | translate}}" (click)="restaurationMultiple(selectedIndexes)">
+                <!--ion-icon name="trash"></ion-icon-->
+                <i style="font-size: 22px" class="mdi mdi-backup-restore"></i>
+              </ion-button>
+    
+              <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'suppression')" color="danger" *ngIf="!uneOp.archived && !uneOp.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultiple(selectedIndexes)">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+    
+              <ion-button class="hid-boutons-petit-ecran" [disabled]="!global.controlAccesModele('ops', 'suppression')" color="danger" *ngIf="!uneOp.archived && uneOp.deleted" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+              
+              <ion-button class="hid-boutons-petit-ecran" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+                <ion-icon name="more"></ion-icon>
+              </ion-button>  
+            </ng-container>
           </ion-buttons>      
    
           <!--Button vers la droite-->
@@ -271,13 +272,13 @@
                 <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
               </ion-item>
       
-              <ion-item-options [hidden]="estModeCocherElemListe" side="start">
+              <ion-item-options [hidden]="estModeCocherElemListe || !global.controlAccesModele('ops', 'modification')" side="start">
                 <ion-item-option (click)="modifier(p)">
                   <ion-icon slot="icon-only" name="create"></ion-icon>
                 </ion-item-option>
               </ion-item-options> 
       
-              <ion-item-options [hidden]="estModeCocherElemListe" side="end">
+              <ion-item-options [hidden]="estModeCocherElemListe || !global.controlAccesModele('ops', 'suppression')" side="end">
                 <ion-item-option color="danger" (click)="supprimer(p)">
                   <ion-icon slot="icon-only" name="trash"></ion-icon>
                 </ion-item-option>
@@ -299,9 +300,9 @@
     <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
       <ion-card-content>
   
-        <div *ngIf="!idPartenaire && !idUnion" class="table-responsive" id="op"></div>
+        <div *ngIf="!idPartenaire && !idUnion && !filtreOP" class="table-responsive" id="op"></div>
   
-        <div *ngIf="idPartenaire || idUnion" class="table-responsive" id="op-relation"></div>
+        <div *ngIf="idPartenaire || idUnion || filtreOP" class="table-responsive" id="op-relation"></div>
   
         <!--Si le tableau est vide>
         <ion-list *ngIf="!opsData || !opsData.length > 0" lines="none">        
@@ -331,6 +332,10 @@
           </ng-container>
           <ion-row ><ion-col><h2><strong>{{'OP_PAGE.DATECREATION' | translate}}:</strong></h2></ion-col><ion-col>{{uneOp.dateCreation}}</ion-col></ion-row>
           <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.TELEPHONE' | translate}}:</strong></h2></ion-col><ion-col>{{uneOp.telephone}}</ion-col></ion-row>
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.EMAIL' | translate}}:</strong></h2></ion-col><ion-col>{{uneOp.email}}</ion-col></ion-row>
+          <div class="hr"></div>
   
           <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPays(uneOp.idPays)">{{uneOp.nomPays}}</a> </ion-col></ion-row>
           <div class="hr"></div>
@@ -341,6 +346,8 @@
           <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentCommune(uneOp.idCommune)">{{uneOp.nomCommune}}</a> </ion-col></ion-row>
           <div class="hr"></div>
           <ion-row ><ion-col><h2><strong>{{'GENERAL.SIEGE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentLocalite(uneOp.idSiege)">{{uneOp.nomSiege}}</a> </ion-col></ion-row>
+          <div class="hr"></div>
+          <ion-row ><ion-col><h2><strong>{{'GENERAL.ADRESSE' | translate}}:</strong></h2></ion-col><ion-col>{{uneOp.adresse}}</ion-col></ion-row>
           <div class="hr"></div>
           <ion-row ><ion-col><h2><strong>{{'GENERAL.LATITUDE' | translate}}:</strong></h2></ion-col><ion-col>{{uneOp.latitude}}</ion-col></ion-row>
           <div class="hr"></div>
@@ -453,6 +460,21 @@
             </ion-col>
           </ion-row>
           
+          <ion-row>
+            <ion-col>
+              <div id="telephone" class="form-group has-feedback">
+                <label class="control-label">{{'GENERAL.TELEPHONE' | translate}}</label>
+                <input ion-input formControlName="telephone" type="text"  class="form-control" placeholder="{{'GENERAL.TELEPHONE' | translate}}">
+              </div>
+            </ion-col>
+  
+            <ion-col>
+              <div id="email" class="form-group has-feedback">
+                <label class="control-label">{{'GENERAL.EMAIL' | translate}}</label>
+                <input ion-input formControlName="email" type="text"  class="form-control" placeholder="{{'GENERAL.EMAIL' | translate}}">
+              </div>
+            </ion-col>
+          </ion-row>
   
           <!--Info pays et région-->
           <ion-row>
@@ -552,6 +574,14 @@
             </ion-col>
           </ion-row>
           
+          <ion-row>
+            <ion-col>
+              <div id="adresse" class="form-group has-feedback">
+                <label class="control-label">{{'GENERAL.ADRESSE' | translate}}</label>
+                <textarea ion-textarea formControlName="adresse" type="text"  class="form-control" placeholder="{{'GENERAL.ADRESSE' | translate}}" row="6"></textarea>
+              </div>
+            </ion-col>
+          </ion-row>
           
           <!--Coordonnées géographiques-->
           <ion-row>
@@ -584,13 +614,13 @@
     </ion-card>
   
     <br><br><br>
-    <ion-fab *ngIf="!mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab *ngIf="!filtreOP && !mobile && action == 'liste' && global.controlAccesModele('ops', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button>
         <ion-icon name="add"></ion-icon>
       </ion-fab-button>
     </ion-fab>
   
-    <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab *ngIf="!filtreOP && mobile && action == 'liste' && !selectedIndexes.length && global.controlAccesModele('ops', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button>
         <ion-icon name="add"></ion-icon>
       </ion-fab-button>
@@ -603,21 +633,29 @@
       </ion-fab-button>
     </ion-fab-->
   
-    <ion-fab *ngIf="mobile && !idOp && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab *ngIf="!filtreOP && mobile && !idOp && action == 'infos' && cacheAction == 'liste' && global.controlAccesModele('ops', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button (click)="modifier(uneOp)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
     </ion-fab>
   
     
-    <ion-fab *ngIf="!mobile && !idOp && action == 'infos' && cacheAction == 'liste'" (click)="modifier(uneOp)" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab *ngIf="!filtreOP && !mobile && !idOp && action == 'infos' && cacheAction == 'liste' && global.controlAccesModele('ops', 'modification')" (click)="modifier(uneOp)" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button>
         <ion-icon name="create"></ion-icon>
       </ion-fab-button>
     </ion-fab>
   
-    <ion-fab *ngIf="action == 'ajouter' || action == 'modifier'" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab *ngIf="!filtreOP && (action == 'ajouter' || action == 'modifier')" (click)="getPosition()" vertical="bottom" horizontal="end" slot="fixed">
       <ion-fab-button>
         <ion-icon name="pin"></ion-icon>
       </ion-fab-button>
     </ion-fab>
   </ion-content>
   
+  <ion-footer *ngIf="filtreOP">
+    <ion-toolbar>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+        <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="valider()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+      </div>
+    </ion-toolbar>
+  </ion-footer>

@@ -11,20 +11,65 @@
           <!--ion-avatar>
               <img src="assets/img/avatar/photo_pasport.png">
             </ion-avatar-->
-                  
+        <ion-list>
+          <!--Si non connécté, connexion-->
+          <ion-menu-toggle auto-hide="false" *ngIf="!global.estConnecte">
+            <ion-item [routerLink]="" (click)="connexion()">
+              <ion-icon name="key" slot="start"></ion-icon>
+              <ion-label>
+                {{'GENERAL.CONNEXION' | translate}}
+              </ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+
+          <!--Si est connecté, afficher profile-->
+          <ng-container *ngIf="global.estConnecte">
+            <ng-container *ngFor="let p of appPages1; let i = index">
+              <ion-item button *ngIf="p.children?.length > 0" (click)="derouler1(i)" [class.parent-active]="p.open" detail="true">
+                <ion-avatar slot="start">
+                  <img src="./../assets/img/avatar_2x.png">
+                
+                </ion-avatar>
+                <ion-label>{{global.info_user.name}}</ion-label>
+                <!--ion-label>{{ p.title }}</ion-label-->
+              </ion-item>
+              <!-- Children List for clicked Item -->
+              <ion-list *ngIf="p.open">
+                <ion-menu-toggle auto-hide="false" *ngFor="let sub of p.children; let j = index">
+                  <ion-item *ngIf="sub.url" class="sub-item" [routerLink]="sub.url" routerLinkActive="active" [color]="sub.color">
+                    <!--ion-icon [name]="sub.icon" slot="start"></ion-icon-->
+                    <ion-icon *ngIf="sub.icon" [name]="sub.icon" slot="start"></ion-icon>
+                    <ion-label>
+                      {{ sub.title }}
+                    </ion-label>
+                  </ion-item>
+
+                  <ion-item *ngIf="!sub.url" class="sub-item" [routerLink]="" (click)="doAction(sub.id)" [color]="sub.color">
+                    <!--ion-icon [name]="sub.icon" slot="start"></ion-icon-->
+                    <ion-icon *ngIf="sub.icon" [name]="sub.icon" slot="start"></ion-icon>
+                    <ion-label>
+                      {{ sub.title }}
+                    </ion-label>
+                  </ion-item>
+                </ion-menu-toggle>
+              </ion-list>
+            </ng-container>
+          </ng-container>
+        </ion-list>
+            
         <ion-list>
           <ng-container *ngFor="let p of appPages; let i = index">
-            <ion-menu-toggle auto-hide="false" *ngIf="p.url">
+            <ion-menu-toggle auto-hide="false" *ngIf="p.url && testerAccesMenu(p.id)">
               <ion-item [routerDirection]="'root'" (click)="replier()" [routerLink]="[p.url]">
                 <ion-icon slot="start" [name]="p.icon"></ion-icon>
                 <ion-label>
-                  {{p.title}}
+                  {{p.title}} 
                 </ion-label>
               </ion-item>
             </ion-menu-toggle>
             <!-- Item with Children -->
      
-          <ion-item button *ngIf="p.children?.length > 0" (click)="derouler(i)" [class.parent-active]="p.open" detail="false">
+          <ion-item button *ngIf="p.children?.length > 0 && testerAccesMenu(p.id)" (click)="derouler(i)" [class.parent-active]="p.open" detail="false">
             <!--ion-icon slot="start" [name]="p.icon"></ion-icon-->
             <ion-icon *ngIf="p.icon" [name]="p.icon" slot="start"></ion-icon>
             <ion-icon *ngIf="p.src" [src]="p.src" slot="start"></ion-icon>
@@ -36,9 +81,9 @@
           </ion-item>
        
             <!-- Children List for clicked Item -->
-            <ion-list *ngIf="p.open">
+            <ion-list *ngIf="p.open && testerAccesMenu(p.id)">
               <ion-menu-toggle auto-hide="false" *ngFor="let sub of p.children; let j = index">
-                <ion-item class="sub-item" [routerLink]="sub.url" routerLinkActive="active" [color]="sub.color">
+                <ion-item class="sub-item" *ngIf="testerAccesMenu(sub.id)" [routerLink]="sub.url" routerLinkActive="active" [color]="sub.color">
                   <!--ion-icon [name]="sub.icon" slot="start"></ion-icon-->
                   <ion-icon *ngIf="sub.icon" [name]="sub.icon" slot="start"></ion-icon>
                   <ion-icon *ngIf="sub.src" [src]="sub.src" slot="start"></ion-icon>

@@ -41,7 +41,11 @@ declare var cordova: any;
 export class ProjetPage implements OnInit {
   @Input() idProjet: string;
   @Input() idPartenaire: string;
+  @Input() filtreProjet: any;
 
+  global = global;
+  start: any;
+  moment = moment;
   projetForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -194,12 +198,17 @@ export class ProjetPage implements OnInit {
           format: 'dd-mm-yyyy',
           language: global.langue
         }).on('changeDate', function(e) {
+          self.projetForm.controls.dateDebut.setValue(e.date.toISOString());
+          self.projetForm.controls.dateFin.setValue(null);
+          $('#dateFin input').datepicker({'setDate': null})
+          $('#dateFin input').datepicker('setStartDate', moment(e.date).format('DD-MM-YYYY'));
+          /*
           let newDate = moment(e.date)//.format('DD-MM-YYYY');
           let min = moment(newDate).add(1, 'days');//le jour suivant
           self.projetForm.controls.dateDebut.setValue(newDate.format('DD-MM-YYYY'));
           self.projetForm.controls.dateFin.setValue(null);
           $('#dateFin input').datepicker({'setDate': null})
-          $('#dateFin input').datepicker('setStartDate', min.format('DD-MM-YYYY'));
+          $('#dateFin input').datepicker('setStartDate', min.format('DD-MM-YYYY'));*/
         });
       });
     }
@@ -209,14 +218,14 @@ export class ProjetPage implements OnInit {
       var self = this;
       let min;
       if(this.unProjet && this.unProjet.dateDebut && this.unProjet.dateDebut != ''){
-        min = moment(this.unProjet.dateDebut, 'DD-MM-YYYY');
-        min = moment(min).add(1, 'days');
+        min = moment(this.unProjet.dateDebut);
+        //min = moment(min).add(1, 'days');
       }else{
         min = moment();
-        min = moment(min).add(1, 'days');
+        //min = moment(min).add(1, 'days');
       }
-
-      $(function () {
+      //console.log(min.format('DD-MM-YYYY'))
+      $('#'+id+' input').ready(() => {
         $('#'+id+' input').datepicker({
           autoclose: true,
           todayHighlight: true,
@@ -224,8 +233,9 @@ export class ProjetPage implements OnInit {
           format: 'dd-mm-yyyy',
           language: global.langue
         }).on('changeDate', function(e) {
-          let newDate = moment(e.date)
-          self.projetForm.controls.dateFin.setValue(newDate.format('DD-MM-YYYY'));
+          //let newDate = moment(e.date)
+          //console.log(e)
+          self.projetForm.controls.dateFin.setValue(e.date.toISOString()/*newDate.format('DD-MM-YYYY')*/);
         });
       });
     }
@@ -387,6 +397,7 @@ export class ProjetPage implements OnInit {
   
     ajouter(){
       this.doModification = false;
+      this.start = moment().toISOString();
       this.unProjet = null;
       this.getInstitution();
       this.editorData = '';
@@ -400,82 +411,53 @@ export class ProjetPage implements OnInit {
     }
   
     infos(u){
-      if(!this.estModeCocherElemListe){
-        this.unProjet = u;
-        this.unProjetDoc = null;
-
-        let id;
-        if(isObject(u)){
-          id = u.id;
-        }else{
-          id = u;
-        }
-
-        this.action = 'infos';
-        this.servicePouchdb.findRelationalDocByID('projet', id).then((res) => {
-          if(res && res.projets[0]){
-            this.unProjetDoc = res;
-
-            this.rev = res.projets[0].rev.substring(0, res.projets[0].rev.indexOf('-'));
+      if(global.controlAccesModele('projets', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.unProjet = u;
+          this.unProjetDoc = null;
+  
+          let id;
+          if(isObject(u)){
+            id = u.id;
+          }else{
+            id = u;
           }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
+  
+          this.action = 'infos';
+          this.servicePouchdb.findRelationalDocByID('projet', id).then((res) => {
+            if(res && res.projets[0]){
+              this.unProjetDoc = res;
+  
+              this.rev = res.projets[0].rev.substring(0, res.projets[0].rev.indexOf('-'));
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          })
+        }
       }
+      
     }
 
   
     modifier(projet){
       //console.log(projet)
-      let id;
-      if(isObject(projet)){
-        id = projet.id;
-      }else{
-        id = projet;
-      }
-
-      this.doModification = true;
-      if(this.action == 'infos' && this.unProjetDoc){
-        this.editForm(this.clone(this.unProjetDoc));
-
-        this.unProjetDoc = this.unProjetDoc.projets[0];  
-        this.getInstitution();
-
-        this.iniDateDabutDatePicker('dateDebut');
-        this.iniDateFinDatePicker('dateFin');
-        this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
-        //this.initSelect2('domaine', this.translate.instant('PROJET_PAGE.DOMAINE'));
-        
-        /*$('#numero input').ready(()=>{
-          $('#numero input').attr('disabled', true)
-        });*/
-        //this.setSelect2DefaultValue('numeroInstitution', uDoc.formData.numeroInstitution)
-        //this.setSelect2DefaultValue('domaine', uDoc.formData.domaine)
-        
-        
-       
-        if(!isObject(projet)){
-          for(let u of this.projetsData){
-            if(u.id == id){
-              this.unProjet = u;
-              break;
-            }
+      if(!this.filtreProjet){
+        if(global.controlAccesModele('projets', 'modification')){
+          let id;
+          if(isObject(projet)){
+            id = projet.id;
+          }else{
+            id = projet;
           }
-        }else{
-          this.unProjet = projet;
-        }
-
-        this.action ='modifier';
-      }else{
-        this.unProjetDoc = null;
-        this.servicePouchdb.findRelationalDocByID('projet', id).then((res) => {
-          if(res && res.projets[0]){
-            let uDoc = res.projets[0];
-            
+    
+          this.doModification = true;
+          this.start = moment().toISOString();
+          if(this.action == 'infos' && this.unProjetDoc){
+            this.editForm(this.clone(this.unProjetDoc));
+    
+            this.unProjetDoc = this.unProjetDoc.projets[0];  
             this.getInstitution();
-  
-            this.editForm(res);
-  
+    
             this.iniDateDabutDatePicker('dateDebut');
             this.iniDateFinDatePicker('dateFin');
             this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
@@ -487,7 +469,7 @@ export class ProjetPage implements OnInit {
             //this.setSelect2DefaultValue('numeroInstitution', uDoc.formData.numeroInstitution)
             //this.setSelect2DefaultValue('domaine', uDoc.formData.domaine)
             
-            this.unProjetDoc = uDoc;
+            
            
             if(!isObject(projet)){
               for(let u of this.projetsData){
@@ -499,14 +481,50 @@ export class ProjetPage implements OnInit {
             }else{
               this.unProjet = projet;
             }
-  
+    
             this.action ='modifier';
-          }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
-      }
+          }else{
+            this.unProjetDoc = null;
+            this.servicePouchdb.findRelationalDocByID('projet', id).then((res) => {
+              if(res && res.projets[0]){
+                let uDoc = res.projets[0];
+                
+                this.getInstitution();
       
+                this.editForm(res);
+      
+                this.iniDateDabutDatePicker('dateDebut');
+                this.iniDateFinDatePicker('dateFin');
+                this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
+                //this.initSelect2('domaine', this.translate.instant('PROJET_PAGE.DOMAINE'));
+                
+                /*$('#numero input').ready(()=>{
+                  $('#numero input').attr('disabled', true)
+                });*/
+                //this.setSelect2DefaultValue('numeroInstitution', uDoc.formData.numeroInstitution)
+                //this.setSelect2DefaultValue('domaine', uDoc.formData.domaine)
+                
+                this.unProjetDoc = uDoc;
+               
+                if(!isObject(projet)){
+                  for(let u of this.projetsData){
+                    if(u.id == id){
+                      this.unProjet = u;
+                      break;
+                    }
+                  }
+                }else{
+                  this.unProjet = projet;
+                }
+      
+                this.action ='modifier';
+              }
+            }).catch((err) => {
+              alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+            })
+          }  
+        }
+      }
       
     }
     
@@ -712,7 +730,8 @@ export class ProjetPage implements OnInit {
     async presentInstitution(idPartenaire) {
       const modal = await this.modalController.create({
         component: PartenairePage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: { 
+          idModele: 'projets', idPartenaire: idPartenaire },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -894,6 +913,7 @@ export class ProjetPage implements OnInit {
         event: ev,
         translucent: true,
         componentProps: {"options": {
+          idModele: 'projets', 
           "estModeCocherElemListe": this.estModeCocherElemListe,
           "dataLength": this.projetsData.length,
           "selectedIndexesLength": this.selectedIndexes.length,
@@ -1054,6 +1074,7 @@ export class ProjetPage implements OnInit {
           //"dataLength": this.projetsData.length,
           //"selectedIndexesLength": this.selectedIndexes.length,
           //"styleAffichage": this.styleAffichage,
+          idModele: 'projets', 
           "action": this.cacheAction
       /*}*/},
         animated: true,
@@ -1477,7 +1498,8 @@ export class ProjetPage implements OnInit {
         component: ActionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'projets'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1516,7 +1538,8 @@ export class ProjetPage implements OnInit {
         component: ActionDatatableComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
+        componentProps: {
+          idModele: 'projets', "action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1563,7 +1586,8 @@ export class ProjetPage implements OnInit {
         component: SelectionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: {
+          idModele: 'projets'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1584,7 +1608,8 @@ export class ProjetPage implements OnInit {
         component: DatatableMoreComponent,
         event: ev,
         translucent: true,
-        componentProps: {action: this.action},
+        componentProps: {
+          idModele: 'projets', action: this.action},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1712,7 +1737,8 @@ export class ProjetPage implements OnInit {
         component: DatatableConstructComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "cacheAction": this.cacheAction},
+        componentProps: {
+          idModele: 'projets', "action": this.action, "cacheAction": this.cacheAction},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1745,7 +1771,8 @@ export class ProjetPage implements OnInit {
     async presentDerniereModification(projet) {
       const modal = await this.modalController.create({
         component: DerniereModificationComponent,
-        componentProps: { _id: projet.id, _rev: projet.rev, security: projet.security },
+        componentProps: { 
+          idModele: 'projets', _id: projet.id, _rev: projet.rev, security: projet.security },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1906,7 +1933,8 @@ export class ProjetPage implements OnInit {
         component: RelationsProjetComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProjet": this.unProjet.id},
+        componentProps: {
+          idModele: 'projets', "idProjet": this.unProjet.id},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -1934,7 +1962,8 @@ export class ProjetPage implements OnInit {
         component: RelationsProjetComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProjet": this.selectedIndexes[0]},
+        componentProps: {
+          idModele: 'projets', "idProjet": this.selectedIndexes[0]},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -1964,7 +1993,8 @@ export class ProjetPage implements OnInit {
         component: RelationsProjetComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProjet": this.selectedIndexes[0]/*data.numero*/},
+        componentProps: {
+          idModele: 'projets', "idProjet": this.selectedIndexes[0]/*data.numero*/},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1984,7 +2014,8 @@ export class ProjetPage implements OnInit {
     async presentProtocole(idProjet){
       const modal = await this.modalController.create({
         component: ProtocolePage,
-        componentProps: { idProjet: idProjet },
+        componentProps: { 
+          idModele: 'projets', idProjet: idProjet },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -1994,7 +2025,8 @@ export class ProjetPage implements OnInit {
     async presentEssai(idProjet){
       const modal = await this.modalController.create({
         component: EssaiPage,
-        componentProps: { idProjet: idProjet },
+        componentProps: { 
+          idModele: 'projets', idProjet: idProjet },
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2019,10 +2051,20 @@ export class ProjetPage implements OnInit {
           formioData: formioData,
           //pour garder les traces
           security: {
+            creation_start: this.start,
+            creation_end: moment().toISOString(),
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
+            update_start: null,
+            update_end: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             archived: false,
             archived_by: null,
             archived_at: null,
@@ -2100,6 +2142,8 @@ export class ProjetPage implements OnInit {
           this.unProjetDoc.formioData = formioData;
 
           //this.unProjet = projetData;
+          this.unProjetDoc.security.update_start = this.start;
+          this.unProjetDoc.security.update_start = moment().toISOString();
           this.unProjetDoc.security = this.servicePouchdb.garderUpdateTrace(this.unProjetDoc.security);
 
           let doc = this.clone(this.unProjetDoc);
@@ -2224,7 +2268,7 @@ export class ProjetPage implements OnInit {
           shared = {$ne: null};
         }
 
-        if(this.idPartenaire && this.idPartenaire != ''){
+        if((this.idPartenaire && this.idPartenaire != '')  || this.filtreProjet){
           this.servicePouchdb.findRelationalDocOfTypeByPere('projet', 'partenaire', this.idPartenaire, deleted, archived, shared).then((res) => {
             if(res && res.projets){
               let projetsData = [];
@@ -2234,32 +2278,64 @@ export class ProjetPage implements OnInit {
   
               for(let u of res.projets){
                 //supprimer l'historique de la liste
-                delete u.security['shared_history'];
+                if(this.filtreProjet){
+                  if(this.filtreProjet.indexOf(u.id) === -1){
+                    delete u.security['shared_history'];
     
-                if(u.partenaire && u.partenaire != ''){
-                  if(isDefined(partenaireIndex[u.partenaire])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
-                    idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
-                  }else{
-                    for(let i=0; i < res.partenaires.length; i++){
-                      if(res.partenaires[i].id == u.partenaire){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                        partenaireIndex[u.partenaire] = i;
-                        idInstitution = res.partenaires[i].id;
-                        break;
-                      }
+                    if(u.partenaire && u.partenaire != ''){
+                      if(isDefined(partenaireIndex[u.partenaire])){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                        idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                      }else{
+                        for(let i=0; i < res.partenaires.length; i++){
+                          if(res.partenaires[i].id == u.partenaire){
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                            partenaireIndex[u.partenaire] = i;
+                            idInstitution = res.partenaires[i].id;
+                            break;
+                          }
+                        }
+                      }  
+                    }else{
+                      //collone vide
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                      idInstitution = null;
                     }
-                  }  
+        
+                    projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+                  }
                 }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                  idInstitution = null;
-                }
+                  delete u.security['shared_history'];
     
-                projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+                  if(u.partenaire && u.partenaire != ''){
+                    if(isDefined(partenaireIndex[u.partenaire])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                      idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                    }else{
+                      for(let i=0; i < res.partenaires.length; i++){
+                        if(res.partenaires[i].id == u.partenaire){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                          partenaireIndex[u.partenaire] = i;
+                          idInstitution = res.partenaires[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                    idInstitution = null;
+                  }
+      
+                  projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+                }
+                
               }
     
             //si mobile
@@ -2277,11 +2353,15 @@ export class ProjetPage implements OnInit {
   
               this.allProjetsData = [...this.projetsData]
             } else{
+              let expor = global.peutExporterDonnees;
+                if(this.filtreProjet){
+                  expor = false;
+                }
                 $('#projet-partenaire').ready(()=>{
                   if(global.langue == 'en'){
-                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, null, this.translate, global.peutExporterDonnees);
+                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, null, this.translate, expor);
                   }else{
-                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                    this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, global.dataTable_fr, this.translate, expor);
                   }
                   this.attacheEventToDataTable(this.projetHTMLTable.datatable);
                 });
@@ -2439,7 +2519,7 @@ export class ProjetPage implements OnInit {
           console.log(err)
           this.close();
         });
-      }else if(this.idPartenaire && this.idPartenaire != ''){
+      }else if((this.idPartenaire && this.idPartenaire != '')  || this.filtreProjet){
         var deleted: any;
         var archived: any;
         var shared: any;
@@ -2471,33 +2551,67 @@ export class ProjetPage implements OnInit {
 
             for(let u of res.projets){
               //supprimer l'historique de la liste
-              delete u.security['shared_history'];
+              if(this.filtreProjet){
+                if(this.filtreProjet.indexOf(u.id) === -1){
+                  delete u.security['shared_history'];
 
-              if(u.partenaire && u.partenaire != ''){
-                if(isDefined(partenaireIndex[u.partenaire])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
-                  idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
-                }else{
-                  for(let i=0; i < res.partenaires.length; i++){
-                    if(res.partenaires[i].id == u.partenaire){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                      partenaireIndex[u.partenaire] = i;
-                      idInstitution = res.partenaires[i].id;
-                      break;
-                    }
+                  if(u.partenaire && u.partenaire != ''){
+                    if(isDefined(partenaireIndex[u.partenaire])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                      idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                    }else{
+                      for(let i=0; i < res.partenaires.length; i++){
+                        if(res.partenaires[i].id == u.partenaire){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                          partenaireIndex[u.partenaire] = i;
+                          idInstitution = res.partenaires[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                    idInstitution = null;
                   }
-                }  
+      
+      
+                  projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+    
+                }
               }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                idInstitution = null;
+                delete u.security['shared_history'];
+
+                if(u.partenaire && u.partenaire != ''){
+                  if(isDefined(partenaireIndex[u.partenaire])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.numero, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[partenaireIndex[u.partenaire]].formData.nom, 3);
+                    idInstitution = res.partenaires[partenaireIndex[u.partenaire]].id;
+                  }else{
+                    for(let i=0; i < res.partenaires.length; i++){
+                      if(res.partenaires[i].id == u.partenaire){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                        partenaireIndex[u.partenaire] = i;
+                        idInstitution = res.partenaires[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                  idInstitution = null;
+                }
+    
+    
+                projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
+  
               }
-  
-  
-              projetsData.push({id: u.id, idInstitution: idInstitution, ...u.formData, ...u.formioData, ...u.security});
             }
   
             //this.projetsData = [...datas];
@@ -2518,11 +2632,15 @@ export class ProjetPage implements OnInit {
 
             } else {
               //si non mobile ou mobile + mode tableau et 
+              let expor = global.peutExporterDonnees;
+                if(this.filtreProjet){
+                  expor = false;
+                }
               $('#projet-partenaire').ready(()=>{
                 if(global.langue == 'en'){
-                  this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, null, this.translate, global.peutExporterDonnees);
+                  this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, null, this.translate, expor);
                 }else{
-                  this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.projetHTMLTable = createDataTable("projet-partenaire", this.colonnes, projetsData, global.dataTable_fr, this.translate, expor);
                 }
                 this.attacheEventToDataTable(this.projetHTMLTable.datatable);
               });
@@ -3042,10 +3160,21 @@ export class ProjetPage implements OnInit {
       
     }
     
-    async close(){
+    /*async close(){
       await this.modalController.dismiss();
-    }
+    }*/
     
+    async close(){
+      await this.modalController.dismiss({filtreProjet: this.filtreProjet});
+    }
+
+    async valider() {
+      //this.filtreProjet = [];
+      this.filtreProjet = this.filtreProjet.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtreProjet: this.filtreProjet});
+    }
+
     ionViewDidEnter(){ 
 
     }

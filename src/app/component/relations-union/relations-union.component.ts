@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { PopoverController } from '@ionic/angular'
+import { PopoverController, NavParams } from '@ionic/angular'
+import {global} from '../../globale/variable';
 
 @Component({
   selector: 'app-relations-union',
@@ -7,8 +8,12 @@ import { PopoverController } from '@ionic/angular'
   styleUrls: ['./relations-union.component.scss'],
 })
 export class RelationsUnionComponent implements OnInit {
+  idModele: any;
+  global = global;
 
-  constructor(public popoverController: PopoverController) { }
+  constructor(public popoverController: PopoverController, public navP: NavParams) { 
+    this.idModele = this.navP.data.idModele;
+  }
 
   ngOnInit() {}
 

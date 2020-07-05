@@ -4,7 +4,12 @@ import PouchDB from 'pouchdb';
 import { Storage } from '@ionic/storage';
 import PouchdbFind from 'pouchdb-find';
 import * as Relational from 'relational-pouch';
-import { DepartementPage } from 'src/app/localite/departement/departement.page';
+import PouchAuth from 'pouchdb-authentication';
+import * as moment from 'moment';
+import { ToastController } from '@ionic/angular';
+import { Device } from '@ionic-native/device/ngx';
+import { Sim } from '@ionic-native/sim/ngx';
+
 
 //var PouchDB = require('pouchdb')
 //PouchDB.plugin(require('pouchdb-find'));
@@ -19,38 +24,165 @@ import { DepartementPage } from 'src/app/localite/departement/departement.page';
 })
 export class PouchdbService {
 
-  public remoteDB: any;
+  public remoteDB: any = null;
+
+  public remoteDBOld: any = null;
   public localDB: any;
-  private isInstantiated: boolean;
-  private  pouchOpts = {
+  public localDB_Back: any;
+  //private isInstantiated: boolean;
+  public  pouchOpts = {
         skip_setup: true
     };
   private  data: any;
+  phonenumber: any = '';
+  imei: any = '';
 
-  constructor(private storage: Storage) {
+  constructor(private storage: Storage, private toastCtl: ToastController, private sim: Sim, private device: Device) {
+    PouchDB.plugin(PouchAuth);
     PouchDB.plugin(Relational);
     PouchDB.plugin(PouchdbFind);
+    this.getConfServeur();
 
-    this.localDB = new PouchDB('frna-local-db');
+    this.localDB = new PouchDB('frna-db');
+    this.localDB_Back = new PouchDB('frna-db');
     this.localDB.setMaxListeners(20); // or 30 or 40 or however many you need, 
                                       //to prevent warning (node) warning: possible EventEmitter memory leak detected. 11 listeners added. 
                                       //Use emitter.setMaxListeners() to increase limit.
     //this.remoteDB = new PouchDB('http://localhost:5984/frna-v2');
+    this.remoteDBOld = new PouchDB('http://localhost:5984/frna_db');
     //this.sync();
-    this.localDB.sync('http://localhost:5984/frna-v2', { live: true, retry: true });
+    //this.localDB.sync(this.remoteDB, { live: true, retry: true }).on('error', console.log.bind(console));
     this.creatDocByTypeSecondIndex();
     this.createDBSchema();
+    //this.createDBSchema(this.remoteDB);
    }
 
-   createDBSchema(){
+   getInfoSimEmei(){
+    this.sim.getSimInfo().then(
+        (info) => {
+          if(info.cards.length > 0){
+            info.cards.forEach((infoCard) => {
+              if(infoCard.phoneNumber){
+                this.phonenumber = infoCard.phoneNumber;
+              }
+              if(infoCard.deviceId){
+                this.imei = infoCard.deviceId;
+              }
+            })
+          }else{
+            this.phonenumber = info.phoneNumber;
+            this.imei = info.deviceId;
+          }
+
+        },
+        (err) => console.log('Unable to get sim info: ', err)
+      );
+
+  }
+
+  getConfServeur(){
+    this.storage.get('conf-serveur').then((res) => {
+      //console.log(res)
+      if(res && res != ''){
+        global.conf_serveur = res;
+        this.remoteDB = new PouchDB(global.conf_serveur.domaine+'/'+global.conf_serveur.bd, this.pouchOpts /*'http://localhost:5984/frna-v2', {skip_setup: true}*/);
+        this.testerConnexion();
+      }else{
+        this.remoteDB = null;
+      }
+    }).catch((err) => {
+      console.log(err)
+      this.remoteDB = null;
+    })
+  }
+
+  testerConnexion(){
+    this.getSessionUtilisateur().then((res) => {
+      if(res.userCtx.name){
+        global.estConnecte = true;
+        global.info_user.name = res.userCtx.name;
+        global.info_user.roles = res.userCtx.roles;
+        this.getInfosUtilisateur(res.userCtx.name).then((res) => {
+          global.info_user.groupes = res.groupes;
+          global.info_user.permissionsAccesModel = [];
+          global.info_user.accessDonnes = res.accessDonnes;
+          this.sync();
+          //console.log(global.info_user.groupes)
+          this.findRelationalDocByTypeAndID('groupe', res.groupes).then((res) => {
+            if(res){
+              //console.log(res)
+              res.groupes.forEach((g) => {
+                g.formData.permissionAcces.forEach((p) => {
+                  if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
+                    global.info_user.permissionsAccesModel.push(p)
+                  }
+                })
+                
+              });
+              //console.log(global.info_user.permissionsAccesDonnees)
+            }
+          })
+        }).catch((err) => {
+          if(err){
+            console.log("Problème de réseau ou privilèges insuffisants ", err)
+          }
+        });
+      }else{
+        global.estConnecte = false;
+        global.info_user.name = 'default';
+        global.info_user.roles = [];
+        global.info_user.groupes = [];
+        global.info_user.permissionsAccesModel = [];
+        global.info_user.accessDonnes = {
+          exporter: false,
+          importer: false,
+          inclureDonneesDependantes: false,
+          pays: [],
+          regions: [],
+          departements: [],
+          communes: [],
+          partenaires: [],
+          unions: [],
+          ops: [],
+          personnes: [],
+          projets: [],
+          protocoles: []
+        };
+      }
+    }).catch((err) => {
+        console.log("Problème de réseau ", err)
+        global.estConnecte = false;
+        global.info_user.name = 'default';
+        global.info_user.roles = [];
+        global.info_user.groupes = [];
+        global.info_user.permissionsAccesModel = [];
+        global.info_user.accessDonnes = {
+          exporter: false,
+          importer: false,
+          inclureDonneesDependantes: false,
+          pays: [],
+          regions: [],
+          departements: [],
+          communes: [],
+          partenaires: [],
+          unions: [],
+          ops: [],
+          personnes: [],
+          projets: [],
+          protocoles: []
+        };
+    });
+  }
+  
+   createDBSchema(db = this.localDB){
     //une fédération peut avoir plusieurs union
-    this.localDB.setSchema([
+    db.setSchema([
       {
         singular: 'essai',
         plural: 'essais',
         relations: {
           'protocole': {belongsTo: 'protocole'},
-          'membre': {belongsTo: 'membre'},
+          'personne': {belongsTo: 'personne'},
           'champ': {belongsTo: 'champ'}
         }
       },
@@ -191,8 +323,8 @@ export class PouchdbService {
         }
       },
       {
-        singular: 'membre',
-        plural: 'membres',
+        singular: 'personne',
+        plural: 'personnes',
         relations: {
           /*'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
@@ -211,10 +343,19 @@ export class PouchdbService {
         plural: 'typesoles'
       },
       {
+        singular: 'groupe',
+        plural: 'groupes'
+      },
+      {
+        singular: 'utilisateur',
+        plural: 'utilisateurs'
+      },
+      {
         singular: 'champ',
         plural: 'champs',
         relations: {
-          'membre': {belongsTo: 'membre'},
+          'localite': {belongsTo: 'localite'},
+          'personne': {belongsTo: 'personne'},
           'typesole': {belongsTo: 'typesole'}
         }
       }
@@ -238,6 +379,10 @@ export class PouchdbService {
         return null;
       }
     });
+  }
+
+  public getMembreAttachment(id,filename) {
+    return this.remoteDBOld.getAttachment(id, filename)
   }
 
   removeRelationalDocAttachment(doc, fileName = 'avatar'){
@@ -284,6 +429,19 @@ export class PouchdbService {
     });    
   }
 
+  findRelationalDocByTypeAndNom(type, nom){
+    /*return new Promise ( resolve => {*/
+    return  this.localDB.find({
+      selector: {
+        "data.type": type,
+        "data.formData.nom": nom,
+      }}).then((data) => {
+
+        return this.localDB.rel.parseRelDocs(type, data.docs);
+    });    
+  }
+
+
   existRelationalDocByTypeAndID(type, id){
     return this.localDB.rel.find(type,id).then((res) => {
       return true
@@ -299,6 +457,11 @@ export class PouchdbService {
   findRelationalDocByTypeAndOptions(type, options){
     return this.localDB.rel.find(type, options);
   }
+
+  findAllRelationalDocByTypeAndIDs(type, ids){
+    return this.localDB.rel.find(type, ids);
+  }
+  
 
   findRelationalDocHasMany(type, belongsToKey, belongsToId){
     return this.localDB.rel.findHasMany(type, belongsToKey, belongsToId);
@@ -392,6 +555,27 @@ export class PouchdbService {
     })    
   }
 
+  findRelationalDocProjetAndProtocoleForDataCollect(type, projet, dateCollecte, deleted: any = false, archived : any = {$ne: null}, shared: any = {$ne: null}){
+    /*return new Promise ( resolve => {*/
+      //console.log(dateCollecte)
+    return  this.localDB.find({
+      selector: {
+        "data.type": type,
+        //"data.projet": projet,
+        "data.formData.dateDebut": {$lte: dateCollecte},
+        "data.formData.dateFin": {$gt: dateCollecte},
+        "data.security.deleted": deleted,
+        "data.security.archived": archived,
+        "data.security.shared": shared,
+      }})/*.then((data) => {
+        //console.log(data)
+        //resolve(this.localDB.rel.parseRelDocs(type, data.docs));
+        return this.localDB.rel.parseRelDocs(type, data.docs);
+    })*/
+  /*  });*/
+    
+  }
+
 
   findRelationalDocInConflict(type){
     let data: any;
@@ -418,7 +602,185 @@ export class PouchdbService {
   }
 
    sync(){
-    PouchDB.sync(this.localDB, this.remoteDB);
+    //PouchDB.sync(this.localDB, this.remoteDB);
+    //this.localDB.sync(this.remoteDB, { live: true, retry: true }).on('error', console.log.bind(console));
+    //var url = 'http://localhost:5984/mydb';
+    var opts = { 
+      live: true, 
+      retry: true, 
+      filter: 'filtreDonnees/filtrer',
+      query_params: {
+        unions: global.info_user.accessDonnes.unions,
+        ops: global.info_user.accessDonnes.ops,
+        projets: global.info_user.accessDonnes.projets,
+        protocoles: global.info_user.accessDonnes.protocoles,
+        roles: global.info_user.roles
+      } 
+    };
+    
+    // do one way, one-off sync from the server until completion
+    //console.log('sync en cours')
+    this.localDB.replicate.from(this.remoteDB, {
+      filter: 'filtreDonnees/filtrer',
+      query_params: {
+        unions: global.info_user.accessDonnes.unions,
+        ops: global.info_user.accessDonnes.ops,
+        projets: global.info_user.accessDonnes.projets,
+        protocoles: global.info_user.accessDonnes.protocoles,
+        roles: global.info_user.roles
+      }
+    }).on('complete', (info) => {
+      // then two-way, continuous, retriable sync
+      //this.afficheMessage('commplete')
+      this.localDB.sync(this.remoteDB, opts)
+        .on('change', (err) => {
+          // a document failed to replicate (e.g. due to permissions)
+        })
+        .on('paused', (err) => {
+          // replication paused (e.g. replication up to date, user went offline)
+        })
+        .on('error', (err) => {
+          // handle error
+          console.log(err)
+          this.afficheMessage('Erreur replication: '+ err);
+        });
+    }).on('error', (err) => {
+      // handle error
+      console.log(err)
+      this.afficheMessage('Erreur replication');
+    });
+  }
+
+   replicationFromServerToLocal(){
+    this.remoteDB.replicate.to(this.localDB, {
+      filter: 'filtreDonnees/filtrer',
+      query_params: {
+        unions: global.info_user.accessDonnes.unions,
+        ops: global.info_user.accessDonnes.ops,
+        projets: global.info_user.accessDonnes.projets,
+        protocoles: global.info_user.accessDonnes.protocoles,
+        roles: global.info_user.roles
+      }
+    }).on('change', (info) => {
+      // handle change
+    }).on('paused', (err) => {
+      // replication paused (e.g. replication up to date, user went offline)
+    }).on('active', () => {
+      // replicate resumed (e.g. new changes replicating, user went back online)
+      //alert('Synchronisation des données en cours')
+      this.afficheMessage('Replication des données depuis le serveur en cours');
+    }).on('denied', (err) => {
+      // a document failed to replicate (e.g. due to permissions)
+    }).on('complete', (info) => {
+      this.afficheMessage('Replication des données depuis le serveur terminée avec succes');
+    }).on('error', (err) => {
+      // handle error
+      console.log(err)
+      this.afficheMessage('Erreur replication');
+    });
+   }
+
+   replicationFromLocalToServer(){
+    this.localDB.replicate.to(this.remoteDB, {
+      filter: 'filtreDonnees/filtrer',
+      query_params: {
+        unions: global.info_user.accessDonnes.unions,
+        ops: global.info_user.accessDonnes.ops,
+        projets: global.info_user.accessDonnes.projets,
+        protocoles: global.info_user.accessDonnes.protocoles,
+        roles: global.info_user.roles
+      }
+    }).on('change', (info) => {
+      // handle change
+    }).on('paused', (err) => {
+      // replication paused (e.g. replication up to date, user went offline)
+    }).on('active', () => {
+      // replicate resumed (e.g. new changes replicating, user went back online)
+      this.afficheMessage('Replication vers le serveur en cours')
+    }).on('denied', (err) => {
+      // a document failed to replicate (e.g. due to permissions)
+    }).on('complete', (info) => {
+      this.afficheMessage('Replication des données vers le serveur terminée avec succes');
+    }).on('error', (err) => {
+      // handle error
+      console.log(err)
+      this.afficheMessage('Erreur replication');
+    });
+   }
+
+   async afficheMessage(msg) {
+    const toast = await this.toastCtl.create({
+      message: msg,
+      duration: 2000,
+      position: 'top',
+      buttons: [
+        {
+          icon: 'close',
+          text: 'Fermer',//translate.instant('GENERAL.FERMER'),
+          role: 'cancel',
+          handler: () => {
+            console.log('Fermer cliqué');
+          }
+        }
+      ]
+    });
+    toast.present();
+  }  
+
+  iniServerConnexion(){
+    this.remoteDB = new PouchDB(global.conf_serveur.domaine+'/'+global.conf_serveur.bd, this.pouchOpts /*'http://localhost:5984/frna-v2', {skip_setup: true}*/);
+  }
+
+   filtreDesignDoc(db, rev = null){
+    let doc2: any = {
+      _id: '_design/filtreDonnees',
+      filters: {
+        filtrer: function (doc, req) {
+          /*var filtrableDocType = ['union', 'op', 'personnes', 'projet', 'protocole', 'essais'];
+          if(filtrableDocType.indexOf(doc.type) === -1){
+            return 1;
+          }else{*/
+            if(doc._id === '_design/filtreDonnees' || req.query.roles.indexOf('_admin') !== -1){
+              return 1;
+            }else if(doc.data && doc.data.type === 'pays'){
+              return req.query.pays.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'region'){
+              return req.query.regions.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'departement'){
+              return req.query.departements.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'commune'){
+              return req.query.communes.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'localite'){
+              return req.query.communes.indexOf(doc.data.commune) !== -1;
+            }else if(doc.data && doc.data.type === 'partenaire' && req.query.partenaires){
+              return req.query.partenaires.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'union' && req.query.unions){
+              return req.query.unions.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'op' && req.query.ops){
+              return req.query.ops.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'personne' && req.query.ops){
+              return (req.query.ops.indexOf(doc.data.op) !== -1) || (doc.data.formData.niveau === '2');
+            }else if(doc.data && doc.data.type === 'projet' && req.query.projets){
+              return req.query.projets.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'protocole' && req.query.protocoles){
+              return req.query.protocoles.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'essai' && req.query.protocoles){
+              return req.query.protocoles.indexOf(doc.data.protocole) !== -1;
+            }else {
+              return 1;
+            }
+          //}
+        }.toString()
+      }
+    }
+
+    if(rev && rev != ''){
+      doc2._rev = rev;
+    }
+
+    return db.put(doc2);
+
+
    }
    
   public getDB() {
@@ -610,6 +972,13 @@ export class PouchdbService {
       }
     });
 
+    //index pour collecte de données: projet et protocole
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.formData.dateDebut', 'data.formData.dateFin', 'data.security.deleted', 'data.security.archived', 'data.security.shared']
+      }
+    });
+
     //pour recherche par code et type
     this.localDB.createIndex({
       index: {
@@ -621,6 +990,13 @@ export class PouchdbService {
     this.localDB.createIndex({
       index: {
         fields: ['data.type', 'data.formData.numero']
+      }
+    })
+
+    //pour recherche par nom et type
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.formData.nom']
       }
     })
 
@@ -652,9 +1028,10 @@ export class PouchdbService {
   }
 
   createLocalDoc(doc){
-    let dat = new Date();
-    doc.data.created_at = dat.toJSON();
-    doc.data.updated_at = dat.toJSON();
+    //let dat = new Date();
+    let mom = moment().toISOString();
+    doc.data.created_at = mom;//dat.toJSON();
+    doc.data.updated_at = mom; //dat.toJSON();
     if(global.info_user !== null){
       doc.data.created_by = global.info_user.name;
     }else{
@@ -674,9 +1051,16 @@ export class PouchdbService {
   }
 
   garderCreationTrace(doc){
-    let dat = new Date();
-    doc.created_at = dat.toJSON();
-    doc.updated_at = dat.toJSON();
+    //let dat = new Date();
+    let mom = moment().toISOString();
+    doc.created_at = mom;//dat.toJSON();
+    doc.created_deviceid = this.device.uuid;
+    doc.created_imei = this.imei;
+    doc.created_phonenumber = this.phonenumber;
+    doc.updated_at = mom;//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.created_by = global.info_user.name;
     }else{
@@ -694,9 +1078,13 @@ export class PouchdbService {
   }
 
   createLocalite(doc){
-    let dat = new Date();
-    doc.created_at = dat.toJSON();
-    doc.updated_at = dat.toJSON();
+    //let dat = new Date();
+    let mom = moment().toISOString();
+    doc.created_at = mom;//dat.toJSON();
+    doc.updated_at = mom;//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.created_by = global.info_user.name;
     }else{
@@ -740,9 +1128,10 @@ export class PouchdbService {
 
   
   createRemoteDoc(doc){
-    let dat = new Date();
-    doc.data.created_at = dat.toJSON();
-    doc.data.updated_at = dat.toJSON();
+    //let dat = new Date();
+    let mom = moment().toISOString();
+    doc.data.created_at = mom;//dat.toJSON();
+    doc.data.updated_at = mom;//dat.toJSON();
     if(global.info_user !== null){
       doc.data.created_by = global.info_user.name;
     }else{
@@ -762,8 +1151,8 @@ export class PouchdbService {
 
 
    updateLocalDoc(doc){
-    let dat = new Date();
-    doc.data.updated_at = dat.toJSON();
+    //let dat = new Date();
+    doc.data.updated_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.data.updated_by = global.info_user.name;
     }else{
@@ -776,8 +1165,11 @@ export class PouchdbService {
   }
 
   garderUpdateTrace(doc){
-    let dat = new Date();
-    doc.updated_at = dat.toJSON();
+    //let dat = new Date();
+    doc.updated_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.updated_by = global.info_user.name;
     }else{
@@ -791,8 +1183,11 @@ export class PouchdbService {
   }
 
   garderDeleteTrace(doc){
-    let dat = new Date();
-    doc.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.deleted_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.deleted_by = global.info_user.name;
     }else{
@@ -803,8 +1198,11 @@ export class PouchdbService {
   }
 
   garderRestaureTrace(doc){
-    let dat = new Date();
-    doc.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.deleted_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.deleted_by = global.info_user.name;
     }else{
@@ -815,8 +1213,11 @@ export class PouchdbService {
   }
 
   garderArchivedTrace(doc){
-    let dat = new Date();
-    doc.archived_at = dat.toJSON();
+    //let dat = new Date();
+    doc.archived_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.archived_by = global.info_user.name;
     }else{
@@ -827,8 +1228,11 @@ export class PouchdbService {
   }
 
   garderDesarchivedTrace(doc){
-    let dat = new Date();
-    doc.archived_at = dat.toJSON();
+    //let dat = new Date();
+    doc.archived_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.archived_by = global.info_user.name;
     }else{
@@ -839,8 +1243,11 @@ export class PouchdbService {
   }
 
   garderSharedTrace(doc, url){
-    let dat = new Date();
-    doc.shared_at = dat.toJSON();
+    //let dat = new Date();
+    doc.shared_at = moment().toISOString();//dat.toJSON();
+    doc.updated_deviceid = this.device.uuid;
+    doc.updated_imei = this.imei;
+    doc.updated_phonenumber = this.phonenumber;
     if(global.info_user !== null){
       doc.shared_by = global.info_user.name;
     }else{
@@ -856,8 +1263,8 @@ export class PouchdbService {
     return doc;
   }
   deleteLocalite(doc){
-    let dat = new Date();
-    doc.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.deleted_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.deleted_by = global.info_user.name;
     }else{
@@ -868,8 +1275,8 @@ export class PouchdbService {
   }
 
   deleteLocaliteDefinitivement(doc){
-    let dat = new Date();
-    doc.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.deleted_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.deleted_by = global.info_user.name;
     }else{
@@ -884,8 +1291,8 @@ export class PouchdbService {
 
 
   updateLocalite(doc){
-    let dat = new Date();
-    doc.updated_at = dat.toJSON();
+    //let dat = new Date();
+    doc.updated_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.updated_by = global.info_user.name;
     }else{
@@ -914,8 +1321,8 @@ export class PouchdbService {
 
 
   updateRemoteDoc(doc){
-    let dat = new Date();
-    doc.data.updated_at = dat.toJSON();
+    //let dat = new Date();
+    doc.data.updated_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.data.updated_by = global.info_user.name;
     }else{
@@ -1156,8 +1563,8 @@ export class PouchdbService {
 
 
   deleteDoc(doc){
-    let dat = new Date();
-    doc.data.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.data.deleted_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.data.deleted_by = global.info_user.name;
     }else{
@@ -1191,8 +1598,8 @@ export class PouchdbService {
   }
 
   deleteDocReturn(doc){
-    let dat = new Date();
-    doc.data.deleted_at = dat.toJSON();
+    //let dat = new Date();
+    doc.data.deleted_at = moment().toISOString();//dat.toJSON();
     if(global.info_user !== null){
       doc.data.deleted_by = global.info_user.name;
     }else{
@@ -1304,5 +1711,96 @@ export class PouchdbService {
   destroyDB(){
     return this.localDB.destroy()
   }
+
+
+  /********************************* Sécurité *********************************************/
+  creerUtilisateur(username, passwd, metata = {}){
+    return this.remoteDB.signUp(username, passwd, {
+      metadata : metata
+    });
+  }
+
+  connexion(username, passwd){
+    return this.remoteDB.logIn(username, passwd);
+  }
+
+  deconnexion(){
+    return this.remoteDB.logOut();
+  }
+
+  getSessionUtilisateur(){
+    return this.remoteDB.getSession();
+  }
+
+  getInfosUtilisateur(username){
+    return this.remoteDB.getUser(username);
+  }
+
+  updateInfoUtilisateur(username, metadata){
+    return this.remoteDB.putUser(username, {
+      metadata : metadata
+    });
+  }
+
+  supprimerUtilisateur(username){
+    return this.remoteDB.deleteUser(username);
+  }
+
+  changerMdPass(username, newPaswd){
+    return this.remoteDB.changePassword(username, newPaswd);
+  }
+
+  changerNomutilisateur(oldUsername, newUsername){
+    return this.remoteDB.changeUsername(oldUsername, newUsername);
+  }
+
+  creerAdmin(username, passwd){
+    return this.remoteDB.signUpAdmin(username, passwd);
+  }
+
+  supprimerAdmin(username){
+    return this.remoteDB.deleteAdmin(username);
+  } 
+  
+  
+  getAllUsers(){
+    var users_db = new PouchDB(global.conf_serveur.domaine+/*'http://localhost:5984'+*/'/_users'/*, {
+      auth: {
+        username: username,
+        password: pass
+      }*
+    }*/);
+
+    return users_db.allDocs({
+      include_docs: true,
+      startkey: 'org.couchdb.user',
+      endkey: 'org.couchdb.user:\uffff'
+    })
+
+    //si non vide
+    /*let data: any;
+    if(data){
+      return data
+    }
+    
+    return new Promise ( resolve => {
+      users_db.allDocs({
+        include_docs: true,
+        startkey: 'org.couchdb.user',
+        endkey: 'org.couchdb.user:\uffff'
+      }).then((result) => {
+        data = [];
+        let d:any = result
+        d.rows.map((row) => {
+          //if(row.doc.db === 'frna'){
+            data.push(row.doc);
+          //}
+        });
+        resolve(data);
+      })//.catch((err) => console.log(err));
+    });*/
+  }
+
+
 
 }

@@ -1,13 +1,18 @@
 import { Component, OnInit } from '@angular/core';
 
-import { Platform, ToastController } from '@ionic/angular';
+import { Platform, ToastController, ModalController } from '@ionic/angular';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
 import { Router } from '@angular/router';
+import { Storage } from '@ionic/storage';
+
+import { PouchdbService } from '../app/services/pouchdb/pouchdb.service';
 
 import { TranslateService } from '@ngx-translate/core';
 
 import { global } from '../app/globale/variable';
+import { ConnexionPage } from './utilisateur/connexion/connexion.page';
+import { ProfilPage } from './utilisateur/profil/profil.page';
 
 declare var $: any;
 
@@ -23,53 +28,100 @@ export class AppComponent implements OnInit {
   public timePeriodToExit  = 2000;
   public backButtonSubscrib;
   //public language: string;
+  public appPages1 = [
+    {
+      title: global.info_user.name,
+      //icon: 'logo-ionic',
+      src: './../assets/img/avatar_2x.png',
+      open: false,
+      children: [
+        {
+          title: 'Profile',
+          url: '/profil',
+          icon: 'person',
+          color: '',
+          id: 'profil'
+        },
+        {
+          title: 'Télécharger données',
+          //url: '/profil',
+          icon: 'cloud-download',
+          color: '',
+          id: 'tel-donnees'
+        },
+        {
+          title: 'Envoyer Données',
+          //url: '/profil',
+          icon: 'cloud-upload',
+          color: '',
+          id: 'env-donnees'
+        },
+        {
+          title: 'Deconnexion',
+          //url: '/champ',
+          icon: 'log-out',
+          color: '',
+          id: 'deconnexion'
+        }
+      ]
+    }
+  ];
+
   public appPages = [
     {
       title: 'Tableau de bord',
       url: '/tableau-de-bord',
       icon: 'home',
-      open: false
+      open: false,
+      id: 'tableau-de-bord'
     },
     {
       title: 'Institution',
       //icon: 'logo-ionic',
       src: './../assets/svgs/university.svg',
       open: false,
+      id: 'institution',
       children: [
         {
           title: 'Mon institution',
           url: '/mon-institution',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'mon-institution'
         },
         {
           title: 'Partenaires',
           url: '/partenaires',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'partenaires'
         },
         {
           title: 'Unions',
           url: '/unions',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'unions'
         },
         {
           title: 'OPs',
           url: '/ops',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'ops'
         },
         {
-          title: 'Membres/Producteurs',
-          url: '/membres',
-          icon: 'document',
-          color: ''
+          title: 'Personnes',
+          url: '/personnes',
+          icon: 'person',
+          color: '',
+          id: 'personnes'
         },{
           title: 'Champ',
           url: '/champ',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'champ'
         },
       ]
     },
@@ -77,36 +129,42 @@ export class AppComponent implements OnInit {
       title: 'Recherche',
       icon: 'medkit',
       open: false,
+      id: 'recherche',
       children: [
         {
           title: 'Projets',
           url: '/projets',
           icon: 'folder',
-          color: ''
+          color: '',
+          id: 'projets'
         },
         {
           title: 'Protocoles',
           url: '/protocoles',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'protocoles'
         },
         {
           title: 'Essais',
           url: '/essais',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'essais'
         },
         {
           title: 'Pluviométrie',
           url: '/pluviometrie',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'pluviometrie'
         },
         {
           title: 'Typologie',
           url: '/typologie',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'typologie'
         }
       ]
     },
@@ -114,55 +172,64 @@ export class AppComponent implements OnInit {
       title: 'Rapport',
       icon: 'stats',
       open: false,
+      id: 'rapport',
       children: [
         {
           title: 'Restitution',
           url: '/restitution',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'restitution'
         },
         {
           title: 'Statistiques',
           url: '/statistiques',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'statistiques'
         }
       ]
     },
     {
-      title: 'Localités',
+      title: 'Habitations',
       icon: 'planet',
       open: false,
+      id: 'habitations',
       children: [
         {
           title: 'Pays',
           url: '/pays',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'pays'
         },
         {
           title: 'Régions',
           url: '/regions',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'regions'
         },
         {
           title: 'Départments',
           url: '/departements',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'departements'
         },
         {
           title: 'Communes',
           url: '/communes',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'communes'
         },
         {
           title: 'Localites',
           url: '/localites',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'localites'
         }
       ]
     },
@@ -170,6 +237,7 @@ export class AppComponent implements OnInit {
       title: 'Configuration',
       icon: 'construct',
       open: false,
+      id: 'configuration',
       children: [
         /*{
           title: 'Partenaire',
@@ -199,38 +267,58 @@ export class AppComponent implements OnInit {
           title: 'Profession',
           url: '/profession',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'profession'
         },
         {
           title: 'Ethnie',
           url: '/ethnie',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'ethnie'
         },
         {
           title: 'Types de soles',
           url: '/type-sole',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'type-sole'
+        },
+        {
+          title: 'Serveur',
+          url: '/conf-serveur',
+          icon: 'document',
+          color: '',
+          id: 'conf-serveur'
         }
-      ]
+      ] 
     },
     {
       title: 'Administration',
       icon: 'settings',
       open: false,
+      id: 'administration',
       children: [
         {
           title: 'Modules',
           url: '/modules',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'modules'
+        },
+        {
+          title: 'Groupes',
+          url: '/groupes',
+          icon: 'document',
+          color: '',
+          id: 'groupes'
         },
         {
           title: 'Utilisateurs',
           url: '/utilisateurs',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'utilisateurs'
         },
         /*{
           title: 'Localités',
@@ -242,13 +330,15 @@ export class AppComponent implements OnInit {
           title: 'Serveur',
           url: '/serveur',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'serveur'
         },
         {
           title: 'Base de données locale',
           url: '/bd-locale',
           icon: 'document',
-          color: ''
+          color: '',
+          id: 'bd-locale'
         }
       ]
     }
@@ -260,7 +350,10 @@ export class AppComponent implements OnInit {
     private statusBar: StatusBar,
     private translate: TranslateService,
     private toastCtl: ToastController,
-    private router: Router
+    private router: Router,
+    private modalController: ModalController,
+    private servicePouchdb: PouchdbService,
+    private storage: Storage
   ) {
     this.initializeApp();
   }
@@ -272,16 +365,47 @@ export class AppComponent implements OnInit {
       if(this.platform.is('android') || this.platform.is('ios')){
         global.mobile = true;
       }
-
       console.log('platform android ou ios = '+global.mobile);
-      this.initTranslate();      
+      this.initTranslate();  
+      //this.getConfServeur();    
 //this.initMultipleSelect(this.translate)
       
     });
   }
 
+  getConfServeur(){
+    this.storage.get('conf-serveur').then((res) => {
+      console.log(res)
+      if(res && res != ''){
+        global.conf_serveur = res;
+        this.servicePouchdb.remoteDB = new PouchDB(global.conf_serveur.domaine+'/'+global.conf_serveur.bd, this.servicePouchdb.pouchOpts /*'http://localhost:5984/frna-v2', {skip_setup: true}*/);
+        this.testerConnexion();
+      }else{
+        this.servicePouchdb = null;
+      }
+    }).catch((err) => {
+      console.log(err)
+      this.servicePouchdb.remoteDB = null;
+    })
+  }
+
   ngOnInit(){
-    this.quitterApp();
+    this.quitterApp(); 
+  }
+
+  testerAccesMenu(idMenu){
+    //console.log(global.info_user.roles)
+    if(global.estModeTeste || global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1){
+      return true;
+    }else {
+      for(let p of global.info_user.permissionsAccesModel){
+        if(idMenu === 'serveur' || idMenu === 'administration' || p.modele === idMenu){
+          return true;
+        }
+      }
+      return false;
+    }
+    //return true
   }
  initMultipleSelect(t){
   $(function () {
@@ -364,7 +488,7 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.INSTITUTION.OPS').subscribe((res: string) => {
       this.appPages[1].children[3].title = res;
     });
-    this.translate.get('MENU.INSTITUTION.MEMBRES').subscribe((res: string) => {
+    this.translate.get('MENU.INSTITUTION.PERSONNES').subscribe((res: string) => {
       this.appPages[1].children[4].title = res;
     });
     this.translate.get('MENU.INSTITUTION.CHAMP').subscribe((res: string) => {
@@ -407,7 +531,7 @@ export class AppComponent implements OnInit {
     });
 
     //Localités
-    this.translate.get('MENU.LOCALITES.LOCALITES').subscribe((res: string) => {
+    this.translate.get('MENU.LOCALITES.HABITATIONS').subscribe((res: string) => {
       this.appPages[4].title = res;
     });
     //sous-menu localitées
@@ -457,6 +581,9 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.CONFIGURATION.TYPESOLE').subscribe((res: string) => {
       this.appPages[5].children[2].title = res;
     });
+    this.translate.get('MENU.CONFIGURATION.SERVEUR').subscribe((res: string) => {
+      this.appPages[5].children[3].title = res;
+    });
 
     //Administration
     this.translate.get('MENU.ADMINISTRATION.ADMINISTRATION').subscribe((res: string) => {
@@ -466,14 +593,17 @@ export class AppComponent implements OnInit {
     this.translate.get('MENU.ADMINISTRATION.MODULES').subscribe((res: string) => {
       this.appPages[6].children[0].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.UTILISATEURS').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.GROUPES').subscribe((res: string) => {
       this.appPages[6].children[1].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.SERVEUR').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.UTILISATEURS').subscribe((res: string) => {
       this.appPages[6].children[2].title = res;
     });
-    this.translate.get('MENU.ADMINISTRATION.BASE_DE_DONNEES_LOCALE').subscribe((res: string) => {
+    this.translate.get('MENU.ADMINISTRATION.SERVEUR').subscribe((res: string) => {
       this.appPages[6].children[3].title = res;
+    });
+    this.translate.get('MENU.ADMINISTRATION.BASE_DE_DONNEES_LOCALE').subscribe((res: string) => {
+      this.appPages[6].children[4].title = res;
     });
   }
 
@@ -518,6 +648,185 @@ export class AppComponent implements OnInit {
         p.open = false;
     })
   }
+
+  derouler1(i){
+    this.appPages1[i].open = !this.appPages1[i].open;
+    this.appPages1.forEach((p, index) =>{
+      if(i != index && p.open){
+        p.open = false;
+      }
+    })
+}
+
+replier1(){
+  this.appPages1.forEach((p, index) =>{
+    if(p.open)
+      p.open = false;
+  })
+}
+
+
+async connexion() {
+  const modal = await this.modalController.create({
+    component: ConnexionPage,
+    //componentProps: { idMembre: idMembre },
+    mode: 'ios',
+    cssClass: 'costom-connexion-modal',
+  });
+  return await modal.present();
+}
+
+doAction(id){
+  if(id == 'tel-donnees'){
+    this.servicePouchdb.replicationFromServerToLocal();
+  }else if(id == 'env-donnees'){
+    this.servicePouchdb.replicationFromLocalToServer();
+  }else if(id == 'deconnexion'){
+    this.deconnexion();    
+  }
+}
+
+deconnexion(){
+  this.servicePouchdb.deconnexion().then((res) => {
+    global.estConnecte = false;
+    global.info_user.name = 'default';
+    global.info_user.roles = [];
+    global.info_user.groupes = [];
+    global.info_user.permissionsAccesModel = [];
+    global.info_user.accessDonnes = {
+      exporter: false,
+      importer: false,
+      inclureDonneesDependantes: false,
+      pays: [],
+      regions: [],
+      departements: [],
+      communes: [],
+      partenaires: [],
+      unions: [],
+      ops: [],
+      personnes: [],
+      projets: [],
+      protocoles: []
+    };
+
+    this.afficheMessage('Vous ètes déconnecté');
+    
+    if(this.router.url === '/profil' || this.router.url === '/groupes' || this.router.url === '/utilisateurs' || this.router.url === '/serveur'){
+      this.router.navigateByUrl('/tableau-de-bord');
+    }
+  }).catch((err) => {
+    console.log('Erreur réseau ', err)
+  })
+}
+
+async afficheMessage(msg) {
+  const toast = await this.toastCtl.create({
+    message: msg,
+    duration: 2000,
+    position: 'top',
+    buttons: [
+      {
+        icon: 'close',
+        text: 'Fermer',//translate.instant('GENERAL.FERMER'),
+        role: 'cancel',
+        handler: () => {
+          console.log('Fermer cliqué');
+        }
+      }
+    ]
+  });
+  toast.present();
+}  
+
+
+async profil() {
+  const modal = await this.modalController.create({
+    component: ProfilPage,
+    //componentProps: { idMembre: idMembre },
+    mode: 'ios',
+    //cssClass: 'costom-connexion-modal',
+  });
+  return await modal.present();
+}
+
+
+testerConnexion(){
+  this.servicePouchdb.getSessionUtilisateur().then((res) => {
+    if(res.userCtx.name){
+      global.estConnecte = true;
+      global.info_user.name = res.userCtx.name;
+      global.info_user.roles = res.userCtx.roles;
+      this.servicePouchdb.getInfosUtilisateur(res.userCtx.name).then((res) => {
+        global.info_user.groupes = res.groupes;
+        global.info_user.permissionsAccesModel = [];
+        global.info_user.accessDonnes = res.accessDonnes;
+        //console.log(global.info_user.groupes)
+        this.servicePouchdb.findRelationalDocByTypeAndID('groupe', res.groupes).then((res) => {
+          if(res){
+            //console.log(res)
+            res.groupes.forEach((g) => {
+              g.formData.permissionAcces.forEach((p) => {
+                if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
+                  global.info_user.permissionsAccesModel.push(p)
+                }
+              })
+              
+            });
+            //console.log(global.info_user.permissionsAccesDonnees)
+          }
+        })
+      }).catch((err) => {
+        if(err){
+          console.log("Problème de réseau ou privilèges insuffisants ", err)
+        }
+      });
+    }else{
+      global.estConnecte = false;
+      global.info_user.name = 'default';
+      global.info_user.roles = [];
+      global.info_user.groupes = [];
+      global.info_user.permissionsAccesModel = [];
+      global.info_user.accessDonnes = {
+        exporter: false,
+        importer: false,
+        inclureDonneesDependantes: false,
+        pays: [],
+        regions: [],
+        departements: [],
+        communes: [],
+        partenaires: [],
+        unions: [],
+        ops: [],
+        personnes: [],
+        projets: [],
+        protocoles: []
+      };
+    }
+  }).catch((err) => {
+      console.log("Problème de réseau ", err)
+      global.estConnecte = false;
+      global.info_user.name = 'default';
+      global.info_user.roles = [];
+      global.info_user.groupes = [];
+      global.info_user.permissionsAccesModel = [];
+      global.info_user.accessDonnes = {
+        exporter: false,
+        importer: false,
+        inclureDonneesDependantes: false,
+        pays: [],
+        regions: [],
+        departements: [],
+        communes: [],
+        partenaires: [],
+        unions: [],
+        ops: [],
+        personnes: [],
+        projets: [],
+        protocoles: []
+      };
+  });
+}
+
 
   boutonMenuControl(){
     this.boutonMenuClass = !this.boutonMenuClass;

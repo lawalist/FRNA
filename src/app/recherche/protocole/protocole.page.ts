@@ -45,7 +45,12 @@ export class ProtocolePage implements OnInit {
   @Input() idProtocole: string;
   @Input() idPartenaire: string;
   @Input() idProjet: string;
+  @Input() filtreProtocole: any;
+  @Input() filtreProjets: any;
 
+  global = global;
+  moment = moment;
+  start: any;
   protocoleForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -56,6 +61,9 @@ export class ProtocolePage implements OnInit {
   projetData: any = [];
   secteurs = ['Privé', 'Etat', 'Sémi-privé'];
   domaines = ['Agronamie', 'Santé', 'Environement', 'Gouvernement'];
+  niveauCollectes = [{id:"pays", val: "Pays"}, {id:"region", val:"Region"},{id: "commune", val: "Commune"},
+    {id:"departement", val: "Departement"}, {id: "localite", val: "Localité"}, {id: "union", val: "Union"},
+    {id: "op", val: "OP"}, {id: "personne", val: "Personne"}, {id:"champ", val: "Champ"}];
   unProtocole: any;
   unProtocoleDoc: any;
   protocoleHTMLTable: any;
@@ -70,10 +78,11 @@ export class ProtocolePage implements OnInit {
   prev: boolean = false;
   next: boolean = false;
   doModification: boolean = false;
+  chargementModification: boolean = false;
   estModeCocherElemListe: boolean = false;
   rechargerListeMobile: boolean = false;
   rev = 0;
-  colonnes = ['nom', 'numero', 'dateDebut', 'dateFin', 'updateData', 'nomInstitution', 'numeroInstitution', 'nomProjet', 'numeroProjet']
+  colonnes = ['annee', 'niveauCollecte', 'nom', 'numero', 'dateDebut', 'dateFin',/* 'updateData', */'nomInstitution', 'numeroInstitution', 'nomProjet', 'numeroProjet']
 
   messages_validation = {
     'numero': [
@@ -81,6 +90,9 @@ export class ProtocolePage implements OnInit {
       { type: 'uniqueNumeroProtocole', message: '' }
     ],
     'nom': [
+      { type: 'required', message: '' }
+    ],
+    'niveauCollecte': [
       { type: 'required', message: '' }
     ],
     'idInstitution': [
@@ -107,7 +119,7 @@ export class ProtocolePage implements OnInit {
   };
 
   public editorData = '';
-  annee;
+  //annee;
   projetDateDebut = null
   projetDateFin = null;
   
@@ -120,8 +132,16 @@ export class ProtocolePage implements OnInit {
       //au cas où la protocole est en mode modal, on chercher info region
       this.translateLangue();
       this.getProtocole();
+      this.translateChoixNiveauCollecte();
     }
   
+    translateChoixNiveauCollecte(){
+      for(let i = 1; i < this.niveauCollectes.length; i++){
+        this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+this.niveauCollectes[i].id).subscribe((res: string) => {
+          this.niveauCollectes[i].val = res;
+        });
+      }
+    }
     
     public onReady( editor ) {
       editor.ui.getEditableElement().parentElement.insertBefore(
@@ -200,7 +220,7 @@ export class ProtocolePage implements OnInit {
     iniAnneDatePicker(id){
       var self = this;
 
-      $(function () {
+      $('#'+id+' input').ready(() => {
         
         $('#'+id+' input').datepicker({
           minViewMode: 2,
@@ -211,7 +231,8 @@ export class ProtocolePage implements OnInit {
         }).on('changeDate', function(e) {
           // `e` here contains the extra attributes
           //console.log(e.date)
-          self.annee = e.date.getFullYear();
+          //self.annee = e.date.getFullYear();
+          self.protocoleForm.controls.annee.setValue(e.date.getFullYear());
           //console.log(new Date(new Date().getFullYear(), 0, 1))
           self.protocoleForm.controls.idProjet.setValue(null);
           self.protocoleForm.controls.numeroProjet.setValue(null);
@@ -229,7 +250,7 @@ export class ProtocolePage implements OnInit {
       var self = this;
       //let min = moment(this.projetDateDebut, 'DD-MM-YYYY');
         
-      $(function () {
+      $('#'+id+' input').ready(() => {
         
         $('#'+id+' input').datepicker({
           //minViewMode: 2,
@@ -243,12 +264,14 @@ export class ProtocolePage implements OnInit {
           // `e` here contains the extra attributes
           //let min = new Date(e.date.toDateString());
           //min.setDate(min.getDate() + 1); //le jour suivant
-          let newDate = moment(e.date)//.format('DD-MM-YYYY');
-          let min = moment(newDate).add(1, 'days');//le jour suivant
-          self.protocoleForm.controls.dateDebut.setValue(newDate.format('DD-MM-YYYY'));
+          ///console.log(moment(e.date).add(1, 'days'))
+          ////let newDate = moment(e.date)//.format('DD-MM-YYYY');
+          ////let min = moment(newDate).add(1, 'days');//le jour suivant
+          ////console.log(min)
+          self.protocoleForm.controls.dateDebut.setValue(e.date.toISOString()/*newDate.format('DD-MM-YYYY')*/);
           self.protocoleForm.controls.dateFin.setValue(null);
           $('#dateFin input').datepicker({'setDate': null})
-          $('#dateFin input').datepicker('setStartDate', min.format('DD-MM-YYYY'));
+          $('#dateFin input').datepicker('setStartDate', moment(e.date)/*.add(1, 'days')*/.format('DD-MM-YYYY'));
           //$('#dateFin input').datepicker('setDate', '');
           //$('#'+id+' input').datepicker('hide')
         });
@@ -260,11 +283,11 @@ export class ProtocolePage implements OnInit {
       var self = this;
       let min;
       if(this.unProtocole && this.unProtocole.dateDebut && this.unProtocole.dateDebut != ''){
-        min = moment(this.unProtocole.dateDebut, 'DD-MM-YYYY');
-        min = moment(min).add(1, 'days');
+        min = moment(this.unProtocole.dateDebut/*, 'DD-MM-YYYY'*/);
+        ///min = moment(min).add(1, 'days');
       }else{
         min = moment();
-        min = moment(min).add(1, 'days');
+        ///min = moment(min).add(1, 'days');
       }
 
       $(function () {
@@ -277,8 +300,8 @@ export class ProtocolePage implements OnInit {
           format: 'dd-mm-yyyy',
           language: global.langue
         }).on('changeDate', function(e) {
-          let newDate = moment(e.date)
-          self.protocoleForm.controls.dateFin.setValue(newDate.format('DD-MM-YYYY'));
+          //let newDate = moment(e.date)
+          self.protocoleForm.controls.dateFin.setValue(e.date.toISOString()/*newDate.format('DD-MM-YYYY')*/);
           /*console.log(e.date+ " ==>" + e.date.toDateString('d-M-yyyy')+ "--> "+Date.parse(e.date).toString())
           //self.annee = e.date.getFullYear();
           //new Date().toLocaleDateString()
@@ -322,7 +345,9 @@ export class ProtocolePage implements OnInit {
           }else if(id == 'idProjet'){
             self.setNumeroAndNomProjet(self.protocoleForm.value[id]);
             self.setSelectRequredError(id, id)
-          }          
+          } else if(id == 'niveauCollecte'){
+            self.setSelectRequredError(id, id)
+          }         
         });
 
         $('#'+id+' select').on("select2:unselect", function (e) { 
@@ -346,6 +371,8 @@ export class ProtocolePage implements OnInit {
             self.protocoleForm.controls.nomProjet.setValue(null);
             self.projetDateDebut = null;
             self.projetDateFin = null;
+            self.setSelectRequredError(id, id);
+          }else if(id == 'niveauCollecte'){
             self.setSelectRequredError(id, id);
           }
         });
@@ -376,11 +403,13 @@ export class ProtocolePage implements OnInit {
     initForm(){
       //this.protocoleForm = null;
       this.protocoleForm = this.formBuilder.group({
+        annee: [(new Date).getFullYear(), Validators.required],
+        niveauCollecte: [null , Validators.required],
         nom: [null, Validators.required],
         numero: [null, Validators.required],
         dateDebut : [null, Validators.required],
         dateFin : [null, Validators.required],
-        updateData : [null],
+        //updateData : [null],
         nomInstitution: [null, Validators.required],
         numeroInstitution: [null, Validators.required],
         idInstitution: [null, Validators.required],
@@ -414,11 +443,11 @@ export class ProtocolePage implements OnInit {
         numeroProjet = oDoc.projets[0].formData.numero;
         nomProjet = oDoc.projets[0].formData.nom;
         if(oDoc.projets[0].formData.dateDebut && oDoc.projets[0].formData.dateDebut != ''){
-          this.projetDateDebut = new Date(oDoc.projets[0].formData.dateDebut);
+          this.projetDateDebut = oDoc.projets[0].formData.dateDebut;//new Date(oDoc.projets[0].formData.dateDebut);
         }
         
         if(oDoc.projets[0].formData.dateFin && oDoc.projets[0].formData.dateFin != ''){
-          this.projetDateFin = new Date(oDoc.projets[0].formData.dateFin);
+          this.projetDateFin = oDoc.projets[0].formData.dateFin;//new Date(oDoc.projets[0].formData.dateFin);
         }
         
       }
@@ -432,11 +461,13 @@ export class ProtocolePage implements OnInit {
         this.editorData = '';
       }*/
       this.protocoleForm = this.formBuilder.group({
+        annee: [u.annee, Validators.required],
+        niveauCollecte: [u.niveauCollecte, Validators.required],
         nom: [u.nom, Validators.required],
         numero: [u.numero, Validators.required],
         dateDebut : [u.dateDebut, Validators.required],
         dateFin : [u.dateFin, Validators.required],
-        updateData : [u.updateData],
+        //updateData : [u.updateData],
         nomInstitution: [nomInstitution],
         numeroInstitution: [numeroInstitution],
         idInstitution: [idInstitution],
@@ -499,10 +530,11 @@ export class ProtocolePage implements OnInit {
   
     ajouter(){
       this.doModification = false;
+      this.start = moment().toISOString();
       this.projetDateDebut = null;
       this.projetDateFin = null;
       this.unProtocole = null;
-      this.annee = (new Date).getFullYear();
+      //this.annee = (new Date).getFullYear();
       if(this.idProjet && this.idProjet != ''){
         if(this.protocoleHTMLTable && this.protocoleHTMLTable.datatable && this.protocoleHTMLTable.datatable.row(0) && this.protocoleHTMLTable.datatable.row(0).data()){
           //console.log(this.protocoleHTMLTable.datatable.row(0).data())
@@ -521,6 +553,7 @@ export class ProtocolePage implements OnInit {
       //this.getProjet();
       this.initForm();
       this.iniAnneDatePicker('annee');
+      this.initSelect2('niveauCollecte', this.translate.instant('PROTOCOLE_PAGE.NIVEAUCOLLECTE'), true);
       this.iniDateDabutDatePicker('dateDebut');
       this.iniDateFinDatePicker('dateFin');
       this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
@@ -531,101 +564,74 @@ export class ProtocolePage implements OnInit {
     }
   
     infos(u){
-      if(!this.estModeCocherElemListe){
-        this.unProtocole = u;
-
-        this.unProtocoleDoc = null;
-
-        let id;
-        if(isObject(u)){
-          id = u.id;
-        }else{
-          id = u;
-        }
-
-        this.action = 'infos';
-        this.servicePouchdb.findRelationalDocByID('protocole', id).then((res) => {
-          if(res && res.protocoles[0]){
-            this.unProtocoleDoc = res;
-            this.rev = res.protocoles[0].rev.substring(0, res.protocoles[0].rev.indexOf('-'));
-
+      if(global.controlAccesModele('protocoles', 'lecture')){
+        if(!this.estModeCocherElemListe){
+          this.unProtocole = u;
+  
+          this.unProtocoleDoc = null;
+  
+          let id;
+          if(isObject(u)){
+            id = u.id;
+          }else{
+            id = u;
           }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
-
-        
+  
+          this.action = 'infos';
+          this.servicePouchdb.findRelationalDocByID('protocole', id).then((res) => {
+            if(res && res.protocoles[0]){
+              this.unProtocoleDoc = res;
+              this.rev = res.protocoles[0].rev.substring(0, res.protocoles[0].rev.indexOf('-'));
+  
+            }
+          }).catch((err) => {
+            alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+          }) 
+        }
       }
+      
     }
 
   
     modifier(protocole){
       //console.log(protocole)
-      let id;
-      if(isObject(protocole)){
-        id = protocole.id;
-      }else{
-        id = protocole;
-      }
-
-      this.doModification = true;
-      this.projetDateDebut = null;
-      this.projetDateFin = null;
-      if(this.action == 'infos' && this.unProtocoleDoc){
-        this.editForm(this.clone(this.unProtocoleDoc));
-        this.unProtocoleDoc = this.unProtocoleDoc.protocoles[0];  
-        
-        this.getInstitution();
-
-        //this.editForm(res);
-        this.iniAnneDatePicker('annee');
-        this.iniDateDabutDatePicker('dateDebut');
-        this.iniDateFinDatePicker('dateFin');
-        this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
-        this.initSelect2('idProjet', this.translate.instant('PROTOCOLE_PAGE.SELECTIONPROJET'));
-        //this.initSelect2('domaine', this.translate.instant('PROTOCOLE_PAGE.DOMAINE'));
-        /*$('#numero input').ready(()=>{
-          $('#numero input').attr('disabled', true)
-        });*/
-
-
-        //this.setSelect2DefaultValue('numeroProjet', oDoc.formData.numeroProjet)
-        //this.setSelect2DefaultValue('domaine', oDoc.formData.domaine)
-        
-        
-       
-        if(!isObject(protocole)){
-          for(let u of this.protocolesData){
-            if(u.id == id){
-              this.unProtocole = u;
-              break;
-            }
+      if(!this.filtreProtocole){
+        if(global.controlAccesModele('protocoles', 'modification')){
+          let id;
+          if(isObject(protocole)){
+            id = protocole.id;
+          }else{
+            id = protocole;
           }
-        }else{
-          this.unProtocole = protocole;
-        }
-
-        this.action ='modifier';
-      }else{
-        this.unProtocoleDoc = null;
-        this.servicePouchdb.findRelationalDocByID('protocole', id).then((res) => {
-          if(res && res.protocoles[0]){
-            let oDoc = res.protocoles[0];
-            this.unProtocoleDoc = oDoc;
+    
+          this.doModification = true;
+          this.start = moment().toISOString();
+          this.chargementModification = true;
+          this.projetDateDebut = null;
+          this.projetDateFin = null;
+          if(this.action == 'infos' && this.unProtocoleDoc){
+            this.editForm(this.clone(this.unProtocoleDoc));
+            this.unProtocoleDoc = this.unProtocoleDoc.protocoles[0];  
+            
             this.getInstitution();
-  
-            this.editForm(res);
+            this.getProjetParInstitution(this.unProtocole.idInstitution);
+            
+    
+            //this.editForm(res);
             this.iniAnneDatePicker('annee');
+            this.initSelect2('niveauCollecte', this.translate.instant('PROTOCOLE_PAGE.NIVEAUCOLLECTE'));
             this.iniDateDabutDatePicker('dateDebut');
             this.iniDateFinDatePicker('dateFin');
             this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
             this.initSelect2('idProjet', this.translate.instant('PROTOCOLE_PAGE.SELECTIONPROJET'));
+  
+            this.setSelect2DefaultValue('niveauCollecte', this.unProtocoleDoc.formData.niveauCollecte);
             //this.initSelect2('domaine', this.translate.instant('PROTOCOLE_PAGE.DOMAINE'));
             /*$('#numero input').ready(()=>{
               $('#numero input').attr('disabled', true)
             });*/
-  
-  
+    
+    
             //this.setSelect2DefaultValue('numeroProjet', oDoc.formData.numeroProjet)
             //this.setSelect2DefaultValue('domaine', oDoc.formData.domaine)
             
@@ -641,16 +647,54 @@ export class ProtocolePage implements OnInit {
             }else{
               this.unProtocole = protocole;
             }
-  
+    
             this.action ='modifier';
-          }
-        }).catch((err) => {
-          alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
-        })
+          }else{
+            this.unProtocoleDoc = null;
+            this.servicePouchdb.findRelationalDocByID('protocole', id).then((res) => {
+              if(res && res.protocoles[0]){
+                let oDoc = res.protocoles[0];
+                this.unProtocoleDoc = oDoc;
+                this.getInstitution();
+      
+                this.editForm(res);
+                this.iniAnneDatePicker('annee');
+                this.initSelect2('niveauCollecte', this.translate.instant('PROTOCOLE_PAGE.NIVEAUCOLLECTE'));
+                this.iniDateDabutDatePicker('dateDebut');
+                this.iniDateFinDatePicker('dateFin');
+                this.initSelect2('idInstitution', this.translate.instant('PROJET_PAGE.SELECTIONINSTITUTION'));
+                this.initSelect2('idProjet', this.translate.instant('PROTOCOLE_PAGE.SELECTIONPROJET'));
+                
+                this.setSelect2DefaultValue('niveauCollecte', this.unProtocoleDoc.formData.niveauCollecte);
+            
+                //this.initSelect2('domaine', this.translate.instant('PROTOCOLE_PAGE.DOMAINE'));
+                /*$('#numero input').ready(()=>{
+                  $('#numero input').attr('disabled', true)
+                });*/
+      
+      
+                //this.setSelect2DefaultValue('numeroProjet', oDoc.formData.numeroProjet)
+                //this.setSelect2DefaultValue('domaine', oDoc.formData.domaine)
+                
+                if(!isObject(protocole)){
+                  for(let u of this.protocolesData){
+                    if(u.id == id){
+                      this.unProtocole = u;
+                      break;
+                    }
+                  }
+                }else{
+                  this.unProtocole = protocole;
+                }
+      
+                this.action ='modifier';
+              }
+            }).catch((err) => {
+              alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
+            })
+          }  
+        }
       }
-      
-      
-      
     }
   
     exportPDF(){
@@ -855,7 +899,8 @@ export class ProtocolePage implements OnInit {
     async presentProjet(idProjet) {
       const modal = await this.modalController.create({
         component: ProjetPage,
-        componentProps: { idProjet: idProjet },
+        componentProps: { 
+          idModele: 'protocoles', idProjet: idProjet },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -865,7 +910,8 @@ export class ProtocolePage implements OnInit {
     async presentInstitution(idPartenaire) {
       const modal = await this.modalController.create({
         component: PartenairePage,
-        componentProps: { idPartenaire: idPartenaire },
+        componentProps: {  
+          idModele: 'protocoles', idPartenaire: idPartenaire },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -1044,7 +1090,8 @@ export class ProtocolePage implements OnInit {
         event: ev,
         translucent: true,
         componentProps: {
-          "options": {
+          "options": { 
+            idModele: 'protocoles', 
             "estModeCocherElemListe": this.estModeCocherElemListe,
             "dataLength": this.protocolesData.length,
             "selectedIndexesLength": this.selectedIndexes.length,
@@ -1207,7 +1254,8 @@ export class ProtocolePage implements OnInit {
           //"estModeCocherElemListe": this.estModeCocherElemListe,
           //"dataLength": this.protocolesData.length,
           //"selectedIndexesLength": this.selectedIndexes.length,
-          //"styleAffichage": this.styleAffichage,
+          //"styleAffichage": this.styleAffichage, 
+          idModele: 'protocoles', 
           "action": this.cacheAction
       /*}*/},
         animated: true,
@@ -1627,7 +1675,8 @@ export class ProtocolePage implements OnInit {
         component: ActionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: { 
+          idModele: 'protocoles'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1666,7 +1715,8 @@ export class ProtocolePage implements OnInit {
         component: ActionDatatableComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
+        componentProps: { 
+          idModele: 'protocoles', "action": this.action, "recherchePlus": this.recherchePlus, "filterAjouter": this.filterAjouter},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1713,7 +1763,8 @@ export class ProtocolePage implements OnInit {
         component: SelectionComponent,
         event: ev,
         translucent: true,
-        //componentProps: {"id": "salu"},
+        componentProps: { 
+          idModele: 'protocoles'},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1734,7 +1785,8 @@ export class ProtocolePage implements OnInit {
         component: DatatableMoreComponent,
         event: ev,
         translucent: true,
-        componentProps: {action: this.action},
+        componentProps: { 
+          idModele: 'protocoles', action: this.action},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1781,6 +1833,10 @@ export class ProtocolePage implements OnInit {
           for(let u of res.protocoles){
             //supprimer l'historique de la liste
             delete u.security['shared_history'];
+
+            this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+              u.formData.niveauCollecte = res;
+            });
 
             if(u.partenaire && u.partenaire != ''){
               if(isDefined(institutionIndex[u.partenaire])){
@@ -1884,7 +1940,8 @@ export class ProtocolePage implements OnInit {
         component: DatatableConstructComponent,
         event: ev,
         translucent: true,
-        componentProps: {"action": this.action, "cacheAction": this.cacheAction},
+        componentProps: { 
+          idModele: 'protocoles', "action": this.action, "cacheAction": this.cacheAction},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -1917,7 +1974,8 @@ export class ProtocolePage implements OnInit {
     async presentDerniereModification(protocole) {
       const modal = await this.modalController.create({
         component: DerniereModificationComponent,
-        componentProps: { _id: protocole.id, _rev: protocole.rev, security: protocole.security },
+        componentProps: {  
+          idModele: 'protocoles', _id: protocole.id, _rev: protocole.rev, security: protocole.security },
         mode: 'ios',
         //cssClass: 'costom-modal',
       });
@@ -2081,7 +2139,8 @@ export class ProtocolePage implements OnInit {
         component: RelationsProtocoleComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProtocole": this.unProtocole.id},
+        componentProps: { 
+          idModele: 'protocoles', "idProtocole": this.unProtocole.id},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -2107,7 +2166,8 @@ export class ProtocolePage implements OnInit {
     async presentFormulaire(idProtocole) {
       const modal = await this.modalController.create({
         component: FormulaireProtocolePage,
-        componentProps: { idProtocole: idProtocole },
+        componentProps: {  
+          idModele: 'protocoles', idProtocole: idProtocole },
         //backdropDismiss: false,
         mode: 'ios',
         cssClass: 'costom-modal',
@@ -2118,7 +2178,8 @@ export class ProtocolePage implements OnInit {
     async presentEssai(idProtocole) {
       const modal = await this.modalController.create({
         component: EssaiPage,
-        componentProps: { idProtocole: idProtocole },
+        componentProps: {  
+          idModele: 'protocoles', idProtocole: idProtocole },
         //backdropDismiss: false,
         mode: 'ios',
         cssClass: 'costom-modal',
@@ -2131,7 +2192,8 @@ export class ProtocolePage implements OnInit {
         component: RelationsProtocoleComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProtocole": this.selectedIndexes[0]},
+        componentProps: { 
+          idModele: 'protocoles', "idProtocole": this.selectedIndexes[0]},
         animated: true,
         showBackdrop: true,
         //mode: "ios"
@@ -2158,7 +2220,8 @@ export class ProtocolePage implements OnInit {
         component: RelationsProtocoleComponent,
         event: ev,
         translucent: true,
-        componentProps: {"idProtocole": data.id},
+        componentProps: { 
+          idModele: 'protocoles', "idProtocole": data.id},
         animated: true,
         showBackdrop: true,
         mode: "ios"
@@ -2194,10 +2257,20 @@ export class ProtocolePage implements OnInit {
           formioData: formioData,
           //pour garder les traces
           security: {
+            creation_start: this.start,
+            creation_end: moment().toISOString(),
             created_by: null,
             created_at: null,
+            created_deviceid: null,
+            created_imei: null,
+            created_phonenumber: null,
+            update_start: null,
+            update_end: null,
             updated_by: null,
             updated_at: null,
+            updated_deviceid: null,
+            updated_imei: null,
+            updated_phonenumber: null,
             archived: false,
             archived_by: null,
             archived_at: null,
@@ -2227,6 +2300,11 @@ export class ProtocolePage implements OnInit {
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
           let protocoleData = {id: res.protocoles[0].id,...protocole.formData, ...protocole.formioData, ...protocole.security};
+          
+          this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+protocoleData.niveauCollecte).subscribe((res: string) => {
+            protocoleData.niveauCollecte = res;
+          });
+
           //this.protocoles = protocole;
           //protocole._rev = res.protocoles[0].rev;
           //this.protocoles.push(protocole);
@@ -2278,6 +2356,8 @@ export class ProtocolePage implements OnInit {
         this.unProtocoleDoc.formioData = formioData;
 
         //this.unProtocole = protocoleData;
+        this.unProtocoleDoc.security.update_start = this.start;
+        this.unProtocoleDoc.security.update_start = moment().toISOString();
         this.unProtocoleDoc.security = this.servicePouchdb.garderUpdateTrace(this.unProtocoleDoc.security);
 
         let doc = this.clone(this.unProtocoleDoc);
@@ -2292,6 +2372,10 @@ export class ProtocolePage implements OnInit {
           //this.protocoles._rev = res.rev;
           //this.unProtocoleDoc._rev = res.rev;
           let protocoleData = {id: this.unProtocoleDoc.id, ...this.unProtocoleDoc.formData, ...this.unProtocoleDoc.formioData, ...this.unProtocoleDoc.security};
+
+          this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+protocoleData.niveauCollecte).subscribe((res: string) => {
+            protocoleData.niveauCollecte = res;
+          });
 
           //this.action = 'infos';
           this.infos(protocoleData);
@@ -2383,7 +2467,7 @@ export class ProtocolePage implements OnInit {
   
     doRefresh(event) {
       if(this.action != 'conflits'){
-        if((this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
+        if((this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '') || this.filtreProtocole){
           var deleted: any;
           var archived: any;
           var shared: any;
@@ -2423,55 +2507,118 @@ export class ProtocolePage implements OnInit {
               let idInstitution, idProjet;
               for(let u of res.protocoles){
                 //supprimer l'historique de la liste
-                delete u.security['shared_history'];
+                if(this.filtreProtocole){
+                  if((this.filtreProtocole.indexOf(u.id) === -1) && (this.filtreProjets.indexOf(u.projet) !== -1)){
+                    delete u.security['shared_history'];
 
-                if(u.partenaire && u.partenaire != ''){
-                  if(isDefined(institutionIndex[u.partenaire])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
-                    idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
-                  }else{
-                    for(let i=0; i < res.partenaires.length; i++){
-                      if(res.partenaires[i].id == u.partenaire){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                        institutionIndex[u.partenaire] = i;
-                        idInstitution =  res.partenaires[i].id;
-                        break;
-                      }
+                    this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                      u.formData.niveauCollecte = res;
+                    });
+    
+                    if(u.partenaire && u.partenaire != ''){
+                      if(isDefined(institutionIndex[u.partenaire])){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                        idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                      }else{
+                        for(let i=0; i < res.partenaires.length; i++){
+                          if(res.partenaires[i].id == u.partenaire){
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                            institutionIndex[u.partenaire] = i;
+                            idInstitution =  res.partenaires[i].id;
+                            break;
+                          }
+                        }
+                      }  
+                    }else{
+                      //collone vide
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                      idInstitution = null;
                     }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                  idInstitution = null;
-                }
-
-                if(u.projet && u.projet != ''){
-                  if(isDefined(projetIndex[u.projet])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
-                    idProjet = res.projets[projetIndex[u.projet]].id;
-                  }else{
-                    for(let i=0; i < res.projets.length; i++){
-                      if(res.projets[i].id == u.projet){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
-                        projetIndex[u.projet] = i;
-                        idProjet = res.projets[i].id;
-                        break;
-                      }
+    
+                    if(u.projet && u.projet != ''){
+                      if(isDefined(projetIndex[u.projet])){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                        idProjet = res.projets[projetIndex[u.projet]].id;
+                      }else{
+                        for(let i=0; i < res.projets.length; i++){
+                          if(res.projets[i].id == u.projet){
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                            u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                            projetIndex[u.projet] = i;
+                            idProjet = res.projets[i].id;
+                            break;
+                          }
+                        }
+                      }  
+                    }else{
+                      //collone vide
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                      idProjet = null;
                     }
-                  }  
+    
+                    protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});
+    
+                  }
                 }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
-                  idProjet = null;
-                }
+                  delete u.security['shared_history'];
 
-                protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});
+                  this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                    u.formData.niveauCollecte = res;
+                  });
+  
+                  if(u.partenaire && u.partenaire != ''){
+                    if(isDefined(institutionIndex[u.partenaire])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                      idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                    }else{
+                      for(let i=0; i < res.partenaires.length; i++){
+                        if(res.partenaires[i].id == u.partenaire){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                          institutionIndex[u.partenaire] = i;
+                          idInstitution =  res.partenaires[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                    idInstitution = null;
+                  }
+  
+                  if(u.projet && u.projet != ''){
+                    if(isDefined(projetIndex[u.projet])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                      idProjet = res.projets[projetIndex[u.projet]].id;
+                    }else{
+                      for(let i=0; i < res.projets.length; i++){
+                        if(res.projets[i].id == u.projet){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                          projetIndex[u.projet] = i;
+                          idProjet = res.projets[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                    idProjet = null;
+                  }
+  
+                  protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});  
+                }
               }
   
               //this.protocolesData = [...datas];
@@ -2490,11 +2637,16 @@ export class ProtocolePage implements OnInit {
   
                 this.allProtocolesData = [...this.protocolesData];
               } else{
+                let expor = global.peutExporterDonnees;
+                if(this.filtreProtocole){
+                  expor = false;
+                }
+
                 $('#protocole-relation').ready(()=>{
                   if(global.langue == 'en'){
-                    this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, null, this.translate, global.peutExporterDonnees);
+                    this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, null, this.translate, expor);
                   }else{
-                    this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                    this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, global.dataTable_fr, this.translate, expor);
                   }
                   this.attacheEventToDataTable(this.protocoleHTMLTable.datatable);
                 });
@@ -2552,6 +2704,10 @@ export class ProtocolePage implements OnInit {
               for(let u of res.protocoles){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
+
+                this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                  u.formData.niveauCollecte = res;
+                });
 
                 if(u.partenaire && u.partenaire != ''){
                   if(isDefined(institutionIndex[u.partenaire])){
@@ -2672,6 +2828,10 @@ export class ProtocolePage implements OnInit {
         this.servicePouchdb.findRelationalDocByID('protocole', this.idProtocole).then((res) => {
           if(res && res.protocoles[0]){
             let f, u;
+
+            this.translate.get('UNION_PAGE.CHOIXNIVEAUCOLLECTE.'+res.protocoles[0].formData.niveauCollecte).subscribe((res2: string) => {
+              res.protocoles[0].formData.niveauCollecte = res2;
+            });
             //this.unProtocole = res && res.protocoles[0];
             if(res.partenaires && res.partenaires[0]){
               res.protocoles[0].formData = this.addItemToObjectAtSpecificPosition(res.protocoles[0].formData, 'numeroInstitution', res.partenaires[0].formData.numero, 2);
@@ -2704,7 +2864,7 @@ export class ProtocolePage implements OnInit {
           console.log(err)
           this.close();
         });
-      }else if((this.idProjet && this.idProjet != '') || this.idPartenaire && this.idPartenaire != ''){
+      }else if((this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '') || this.filtreProtocole){
         var deleted: any;
         var archived: any;
         var shared: any;
@@ -2744,55 +2904,120 @@ export class ProtocolePage implements OnInit {
             let idInstitution, idProjet;
             for(let u of res.protocoles){
               //supprimer l'historique de la liste
-              delete u.security['shared_history'];
+              
+              if(this.filtreProtocole){
+                //console.log(u.projet+ "  "+this.filtreProjets)
+                if((this.filtreProtocole.indexOf(u.id) === -1)  && (this.filtreProjets.indexOf(u.projet) !== -1)){
+                  delete u.security['shared_history'];
 
-              if(u.partenaire && u.partenaire != ''){
-                if(isDefined(institutionIndex[u.partenaire])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
-                  idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
-                }else{
-                  for(let i=0; i < res.partenaires.length; i++){
-                    if(res.partenaires[i].id == u.partenaire){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                      institutionIndex[u.partenaire] = i;
-                      idInstitution =  res.partenaires[i].id;
-                      break;
-                    }
+                  this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                    u.formData.niveauCollecte = res;
+                  });
+    
+                  if(u.partenaire && u.partenaire != ''){
+                    if(isDefined(institutionIndex[u.partenaire])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                      idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                    }else{
+                      for(let i=0; i < res.partenaires.length; i++){
+                        if(res.partenaires[i].id == u.partenaire){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                          institutionIndex[u.partenaire] = i;
+                          idInstitution =  res.partenaires[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                    idInstitution = null;
                   }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                idInstitution = null;
-              }
-
-              if(u.projet && u.projet != ''){
-                if(isDefined(projetIndex[u.projet])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
-                  idProjet = res.projets[projetIndex[u.projet]].id;
-                }else{
-                  for(let i=0; i < res.projets.length; i++){
-                    if(res.projets[i].id == u.projet){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
-                      projetIndex[u.projet] = i;
-                      idProjet = res.projets[i].id;
-                      break;
-                    }
+    
+                  if(u.projet && u.projet != ''){
+                    if(isDefined(projetIndex[u.projet])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                      idProjet = res.projets[projetIndex[u.projet]].id;
+                    }else{
+                      for(let i=0; i < res.projets.length; i++){
+                        if(res.projets[i].id == u.projet){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                          projetIndex[u.projet] = i;
+                          idProjet = res.projets[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                    idProjet = null;
                   }
-                }  
+    
+                  protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});
+                }
               }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
-                idProjet = null;
-              }
+                delete u.security['shared_history'];
 
-              protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});
+                this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                  u.formData.niveauCollecte = res;
+                });
+  
+                if(u.partenaire && u.partenaire != ''){
+                  if(isDefined(institutionIndex[u.partenaire])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                    idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                  }else{
+                    for(let i=0; i < res.partenaires.length; i++){
+                      if(res.partenaires[i].id == u.partenaire){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                        institutionIndex[u.partenaire] = i;
+                        idInstitution =  res.partenaires[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                  idInstitution = null;
+                }
+  
+                if(u.projet && u.projet != ''){
+                  if(isDefined(projetIndex[u.projet])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                    idProjet = res.projets[projetIndex[u.projet]].id;
+                  }else{
+                    for(let i=0; i < res.projets.length; i++){
+                      if(res.projets[i].id == u.projet){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                        projetIndex[u.projet] = i;
+                        idProjet = res.projets[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                  idProjet = null;
+                }
+  
+                protocolesData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, ...u.formData, ...u.formioData, ...u.security});
+              }
+              
             }
 
             //this.protocolesData = [...datas]; 
@@ -2811,11 +3036,16 @@ export class ProtocolePage implements OnInit {
 
               this.allProtocolesData = [...this.protocolesData];
             } else{
+              let expor = global.peutExporterDonnees;
+                if(this.filtreProtocole){
+                  expor = false;
+                }
+
               $('#protocole-relation').ready(()=>{
                 if(global.langue == 'en'){
-                  this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, null, this.translate, global.peutExporterDonnees);
+                  this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, null, this.translate, expor);
                 }else{
-                  this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.protocoleHTMLTable = createDataTable("protocole-relation", this.colonnes, protocolesData, global.dataTable_fr, this.translate, expor);
                 }
                 this.attacheEventToDataTable(this.protocoleHTMLTable.datatable);
               });
@@ -2860,6 +3090,11 @@ export class ProtocolePage implements OnInit {
             for(let u of res.protocoles){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
+
+              this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
+                u.formData.niveauCollecte = res;
+              });
+
 
               if(u.partenaire && u.partenaire != ''){
                 if(isDefined(institutionIndex[u.partenaire])){
@@ -2953,6 +3188,7 @@ export class ProtocolePage implements OnInit {
       this.institutionData = [];
       let monInstitution;
       this.servicePouchdb.findRelationalDocByTypeAndDeleted('partenaire', false).then((res) => {
+        //console.log(res)
         if(res && res.partenaires){
           //this.partenaires = [...partenaires];
           
@@ -2979,6 +3215,7 @@ export class ProtocolePage implements OnInit {
           //console.log(this.idPartenaire)
           if(this.doModification){
             this.setSelect2DefaultValue('idInstitution', this.unProtocole.idInstitution);
+            //this.getProjetParInstitution(this.unProtocole.idInstitution);
           }else if(this.idPartenaire){
             this.setSelect2DefaultValue('idInstitution', this.idPartenaire);
             $('#idInstitution select').ready(()=>{
@@ -2999,9 +3236,9 @@ export class ProtocolePage implements OnInit {
     getProjetParInstitution(idInstitution){
       this.projetData = [];
       //let now = moment();
-      let now = moment()//.format('DD-MM-YYYY');
+      //let now = moment()//.format('DD-MM-YYYY');
 
-      let dateDebutProjet, dateFinProjet;
+      //let dateDebutProjet, dateFinProjet;
       if(idInstitution && idInstitution != ''){
         this.servicePouchdb.findRelationalDocHasMany('projet', 'partenaire', idInstitution).then((res) => {
           if(res && res.projets){
@@ -3009,17 +3246,17 @@ export class ProtocolePage implements OnInit {
             //var datas = [];
             for(let u of res.projets){
 
-              dateDebutProjet = moment(u.formData.dateDebut, 'DD-MM-YYYY')//.format('DD-MM-YYYY'); 
+              //dateDebutProjet = moment(u.formData.dateDebut, 'DD-MM-YYYY')//.format('DD-MM-YYYY'); 
               
-              dateFinProjet = moment(u.formData.dateFin, 'DD-MM-YYYY')//.format('DD-MM-YYYY');
+              //dateFinProjet = moment(u.formData.dateFin, 'DD-MM-YYYY')//.format('DD-MM-YYYY');
               
               //ne charger que les projet qui ne sont pa terminés
               /*if(!u.security.deleted && dateDebutProjet <= now && (!dateFinProjet || (dateFinProjet && dateFinProjet >= now))){
                 this.projetData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom, dateDebut: dateDebutProjet, dateFin: dateFinProjet});
               }*/
-
-              if(!u.security.deleted/* && dateFinProjet >= now*/){
-                this.projetData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom, dateDebut: dateDebutProjet, dateFin: dateFinProjet});
+              //console.log(moment(u.formData.dateDebut).toDate().getFullYear()+ "  " +this.protocoleForm.controls.annee.value + "   "+moment(u.formData.dateFin).toDate().getFullYear())
+              if(!u.security.deleted && moment(u.formData.dateDebut).toDate().getFullYear() <= this.protocoleForm.controls.annee.value && moment(u.formData.dateFin).toDate().getFullYear() >= this.protocoleForm.controls.annee.value){
+                this.projetData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom, dateDebut: u.formData.dateDebut, dateFin:  u.formData.dateFin});
               }
             }
   
@@ -3035,6 +3272,7 @@ export class ProtocolePage implements OnInit {
   
             if(this.doModification){
               this.setSelect2DefaultValue('idProjet', this.unProtocole.idProjet);
+              this.setNumeroAndNomProjet(this.unProtocole.idProjet);
             }else if(this.idProjet){
               this.setSelect2DefaultValue('idProjet', this.idProjet);
               $('#idProjet select').ready(()=>{
@@ -3063,6 +3301,8 @@ export class ProtocolePage implements OnInit {
             this.protocoleForm.controls.idProjet.setValue(null);
             this.protocoleForm.controls.numeroProjet.setValue(null);
             this.protocoleForm.controls.nomProjet.setValue(null);
+            //this.protocoleForm.controls.dateDebut.setValue(null);
+            //this.protocoleForm.controls.dateFin.setValue(null);
             this.projetDateDebut = null;
             this.projetDateFin = null;
             this.getProjetParInstitution(idInstitution);
@@ -3085,27 +3325,38 @@ export class ProtocolePage implements OnInit {
       this.projetDateDebut = null;
       this.projetDateFin = null;
       if(idProjet && idProjet != ''){
-        for(let u of this.projetData){
-          if(idProjet == u.id){
-            this.protocoleForm.controls.numeroProjet.setValue(u.numero);
-            this.protocoleForm.controls.nomProjet.setValue(u.nom);
-            this.projetDateDebut = u.dateDebut.format('DD-MM-YYYY');
-            this.projetDateFin = u.dateFin.format('DD-MM-YYYY');
-
-            let now = moment();
-            //let min = moment(now).add(1, 'days').format('DD-MM-YYYY');//le jour suivant
-            if(now >= u.dateDebut && now <= u.dateFin){
-              this.protocoleForm.controls.dateDebut.setValue(now.format('DD-MM-YYYY'));
+        for(let p of this.projetData){
+          if(idProjet == p.id){
+            if(this.doModification && this.chargementModification){
+              this.chargementModification = false;
+              //this.protocoleForm.controls.numeroProjet.setValue(u.numero);
+              //this.protocoleForm.controls.nomProjet.setValue(u.nom);
+              this.projetDateDebut = p.dateDebut;//moment(u.dateDebut).format('DD-MM-YYYY');
+              this.projetDateFin = p.dateFin;//moment(u.dateFin).format('DD-MM-YYYY');
+  
+              //this.protocoleForm.controls.dateDebut.setValue(null);
+              //this.protocoleForm.controls.dateFin.setValue(null);
+              //$('#dateFin input').datepicker({'setDate': null})
+              $('#dateDebut input').datepicker('setStartDate', moment(p.dateDebut).format('DD-MM-YYYY'));
+              $('#dateDebut input').datepicker('setEndDate', moment(p.dateFin).format('DD-MM-YYYY'));
+              $('#dateFin input').datepicker('setStartDate', moment(this.unProtocole.dateDebut).format('DD-MM-YYYY'));
+              $('#dateFin input').datepicker('setEndDate', moment(p.dateFin).format('DD-MM-YYYY'));
+              
             }else{
+              this.protocoleForm.controls.numeroProjet.setValue(p.numero);
+              this.protocoleForm.controls.nomProjet.setValue(p.nom);
+              this.projetDateDebut = p.dateDebut;//moment(u.dateDebut).format('DD-MM-YYYY');
+              this.projetDateFin = p.dateFin;//moment(u.dateFin).format('DD-MM-YYYY');
+  
               this.protocoleForm.controls.dateDebut.setValue(null);
+              this.protocoleForm.controls.dateFin.setValue(null);
+              $('#dateFin input').datepicker({'setDate': null})
+              $('#dateDebut input').datepicker('setStartDate', moment(p.dateDebut).format('DD-MM-YYYY'));
+              $('#dateDebut input').datepicker('setEndDate',moment(p.dateFin).format('DD-MM-YYYY'));
+              //$('#dateFin input').datepicker('setStartDate', now);
+              $('#dateFin input').datepicker('setEndDate',moment(p.dateFin).format('DD-MM-YYYY'));
+              
             }
-
-            this.protocoleForm.controls.dateFin.setValue(null);
-            $('#dateFin input').datepicker({'setDate': null})
-            $('#dateDebut input').datepicker('setStartDate',this.projetDateDebut);
-            $('#dateDebut input').datepicker('setEndDate',this.projetDateFin);
-            //$('#dateFin input').datepicker('setStartDate', now);
-            $('#dateFin input').datepicker('setEndDate',this.projetDateFin);
             
             break;
           }
@@ -3211,6 +3462,9 @@ export class ProtocolePage implements OnInit {
         this.messages_validation.nom[0].message = res;
       });
 
+      this.translate.get('PROTOCOLE_PAGE.MESSAGES_VALIDATION.NIVEAU_COLLECTE.REQUIRED').subscribe((res: string) => {
+        this.messages_validation.niveauCollecte[0].message = res;
+      });
 
        //numero fédération
        this.translate.get('PROJET_PAGE.MESSAGES_VALIDATION.NUMERO_INSTITUTION.REQUIRED').subscribe((res: string) => {
@@ -3234,7 +3488,7 @@ export class ProtocolePage implements OnInit {
         this.messages_validation.dateFin[0].message = res;
       });
 
-      this.translate.get('PROTOCOLE_PAGE.MESSAGES_VALIDATION.DATE_DEBUT.DATEFININVALIDE').subscribe((res: string) => {
+      this.translate.get('PROTOCOLE_PAGE.MESSAGES_VALIDATION.DATE_FIN.DATEFININVALIDE').subscribe((res: string) => {
         this.messages_validation.dateFin[1].message = res;
       });
 
@@ -3473,7 +3727,7 @@ export class ProtocolePage implements OnInit {
       //if(val && val.trim() != '' && val.trim().length > 1){
         ///let u = [...this.protocolesData]
         this.protocolesData = this.allProtocolesData.filter((item) => {
-          return item.numero.toLowerCase().indexOf(val) !== -1 || item.nom.toLowerCase().indexOf(val) !== -1 || !val;
+          return item.numero.toLowerCase().indexOf(val) !== -1 || item.niveauCollecte.toLowerCase().indexOf(val) !== -1 || item.nom.toLowerCase().indexOf(val) !== -1 || !val;
         });
       //}
       
@@ -3483,8 +3737,19 @@ export class ProtocolePage implements OnInit {
       
     }
     
-    async close(){
+    /*async close(){
       await this.modalController.dismiss();
+    }*/
+
+    async close(){
+      await this.modalController.dismiss({filtreProtocole: this.filtreProtocole});
+    }
+
+    async valider() {
+      //this.filtreProtocole = [];
+      this.filtreProtocole = this.filtreProtocole.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtreProtocole: this.filtreProtocole});
     }
     
     ionViewDidEnter(){ 

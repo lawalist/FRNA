@@ -1,14 +1,17 @@
 <ion-list>
-  <ion-item button (click)="close('OPs')" detail="true">
+  <ion-item button *ngIf="global.testerAccesMenu('ops')"  (click)="close('OPs')" detail="true">
     <ion-label>{{'GENERAL.OPS' | translate}}</ion-label>
   </ion-item>
 
-  <ion-item button (click)="close('membre')" detail="true">
-    <ion-label>{{'GENERAL.MEMBRES' | translate}}</ion-label>
+  <ion-item button *ngIf="global.testerAccesMenu('personnes')" (click)="close('personne')" detail="true">
+    <ion-label>{{'GENERAL.PERSONNES' | translate}}</ion-label>
   </ion-item>
 
+  <ion-item *ngIf="global.testerAccesMenu('essais')" title="{{'GENERAL.ESSAIS' | translate}}" button (click)="close('essais')" detail="true">
+    <ion-label>{{'GENERAL.ESSAIS' | translate}}</ion-label>
+  </ion-item>
   <!--ion-item button (click)="close('Essais')" detail="true">
     <ion-label>Essais</ion-label>
   </ion-item-->
 
-</ion-list>
+</ion-list> 

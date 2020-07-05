@@ -7,18 +7,61 @@
 <ion-content>
   <ion-list lines="none">
     <ion-list-header>
-      <ion-label>Tàches</ion-label>
+      <ion-label>Tâches</ion-label>
     </ion-list-header>
+    
     <ion-item>
+      <div class="checkbox-inline">
+        <label class="control-label">Mobile ?</label>
+        <input class="checkbox-inline" type="checkbox" [(ngModel)]="global.mobile" [value]=global.mobile>
+      </div>
+    </ion-item>
+    <ion-item>
+      <div class="checkbox-inline">
+        <label class="control-label">En ligne ?</label>
+        <input class="checkbox-inline" type="checkbox" (click)="enLigne()" [(ngModel)]="global.enLigne" [value]=global.enLigne>
+      </div>
+    </ion-item>
+
+    <!--ion-item (click)="chargerUnions('union')">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Charger unions</ion-label>
+    </ion-item>
+
+    <ion-item (click)="chargrOPs('op')">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Charger OPs</ion-label>
+    </ion-item>
+
+    <ion-item (click)="chergerMembres('membres')">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Charger membres</ion-label>
+    </ion-item>
+
+    <ion-item (click)="chargerChamps('champ')">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Charger champ</ion-label>
+    </ion-item>
+
+    <ion-item (click)="chargerChamps('champs')">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Charger champs</ion-label>
+    </ion-item-->
+
+    <ion-item (click)="ajouterFiltre()">
       <ion-icon slot="start" color="medium" src='../assets/svgs/upload.svg'></ion-icon>
       <ion-label>Ajouter filtre local</ion-label>
+    </ion-item> 
+    <ion-item (click)="presentLoadLocalLocalite()">
+      <ion-icon slot="start" color="medium" name='planet'></ion-icon>
+      <ion-label>Télécharger les localité</ion-label>
     </ion-item>
     <ion-item>
       <ion-icon slot="start" color="medium" name="trash"></ion-icon>
       <ion-label>Vider la corbeille</ion-label>
     </ion-item>
-    <ion-item>
-      <ion-icon slot="start" (click)="destroyDBs()" color="danger" name="grid"></ion-icon>
+    <ion-item (click)="destroyDBs()">
+      <ion-icon slot="start" color="danger" name="grid"></ion-icon>
       <ion-label>Réinitialiser la BD</ion-label>
     </ion-item>
   </ion-list>
