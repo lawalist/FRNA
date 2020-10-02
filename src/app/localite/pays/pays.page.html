@@ -23,7 +23,7 @@
 
 
 
-    <ion-buttons *ngIf="!idPays && mobile && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!filtrePays && !idPays && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only (click)="openRelationPays($event)">
         <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
       </ion-button>
@@ -35,7 +35,7 @@
  
 
     <!--Si liste mobile-->
-    <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
+    <ion-buttons *ngIf="!filtrePays && mobile && action == 'liste'" slot="end">
       <ion-button [disabled]="!global.controlAccesModele('pays', 'suppression')" *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
@@ -46,7 +46,7 @@
     </ion-buttons>
 
      <!--Close-->
-    <ion-buttons *ngIf="idPays" slot="end">
+    <ion-buttons *ngIf="idPays || filtrePays" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -92,7 +92,7 @@
       </ion-buttons>
 
       
-      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+      <ion-buttons class="hid-boutons" *ngIf="!filtrePays && selectedIndexes.length > 0" slot="end">
         <ion-button [disabled]="!global.controlAccesModele('pays', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
@@ -110,7 +110,7 @@
         </ion-button>
       </ion-buttons>
 
-      <ion-buttons class="hid-action" slot="end">
+      <ion-buttons class="hid-action" slot="end" *ngIf="!filtrePays">
         <!--div [class.barre-verticale]="selectedIndexes.length > 0">
           <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
             <ion-icon name="more"></ion-icon>
@@ -233,7 +233,8 @@
         <br>    
       </ng-c ontainer-->
       <!--Le tabelau-->
-      <div class="table-responsive" id="pays"></div>
+      <div *ngIf="filtrePays" class="table-responsive" id="pays-relation"></div>
+      <div *ngIf="!filtrePays" class="table-responsive" id="pays"></div> 
       <!--Si le tableau est vide-->
       <!--ion-list *ngIf="!paysData || !paysData.length > 0" lines="none">        
         <ion-item class="vide">
@@ -309,7 +310,7 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="action == 'liste' && global.controlAccesModele('pays', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtrePays && action == 'liste' && global.controlAccesModele('pays', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
@@ -321,10 +322,19 @@
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!idPays && action == 'infos' && global.controlAccesModele('pays', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtrePays && !idPays && action == 'infos' && global.controlAccesModele('pays', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(unPays)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 </ion-content>
+
+<ion-footer *ngIf="filtrePays">
+  <ion-toolbar>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+      <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="valider()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+    </div>
+  </ion-toolbar>
+</ion-footer>
 <!--ion-footer *ngIf="mobile && action == 'liste' && selectedIndexes.length > 0">
   <ion-toolbar>
       <ion-buttons slot="end">

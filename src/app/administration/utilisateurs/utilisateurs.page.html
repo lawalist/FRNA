@@ -24,7 +24,7 @@
     <ion-title *ngIf="action == 'mdpasse'">{{'UTILISATEUR_PAGE.TITRE_MODIFIER_MDPASSE' | translate}}</ion-title>
     <ion-title *ngIf="action == 'identifiant'">{{'UTILISATEUR_PAGE.TITRE_MODIFIER_IDENTIFIANT' | translate}}</ion-title>
     
-    <ion-buttons *ngIf="!idUtilisateur && mobile && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!filtreDonneesUtilisateurs && !idUtilisateur && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only color="danger" (click)="supprimer(unUtilisateur.name)">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
@@ -40,16 +40,16 @@
         <ion-icon name="done-all"></ion-icon>
       </ion-button>
                 
-      <ion-button ion-button icon-only [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
+      <ion-button ion-button icon-only *ngIf="!filtreDonneesUtilisateurs" [hidden]="estModeCocherElemListe" (click)="listMorePopover($event)">
         <ion-icon name="more"></ion-icon>
       </ion-button>
 
-      <ion-button ion-button icon-only [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
+      <ion-button ion-button icon-only *ngIf="!filtreDonneesUtilisateurs" [hidden]="!estModeCocherElemListe || !selectedIndexes.length" (click)="listActionPopover($event)">
         <ion-icon name="ios-build"></ion-icon>
       </ion-button>
-    </ion-buttons>
+    </ion-buttons> 
 
-    <ion-buttons *ngIf="idUtilisateur" slot="end" style="padding-right: 5px !important">
+    <ion-buttons *ngIf="idUtilisateur || filtreDonneesUtilisateurs" slot="end" style="padding-right: 5px !important">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only  (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -77,7 +77,7 @@
           <ion-icon name="checkbox"></ion-icon>
         </ion-button>
 
-        <ion-button class="button-no-padding" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
+        <ion-button class="button-no-padding" *ngIf="!filtreDonneesUtilisateurs" title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="selectionPopover($event)">
           <i style="font-size: 18px" class="fa fa-caret-down"></i>
         </ion-button>
 
@@ -108,7 +108,7 @@
       </ion-buttons>
 
       <!--Action pour selection-->
-      <ion-buttons slot="end" style="padding-right: 5px !important">
+      <ion-buttons slot="end" *ngIf="!filtreDonneesUtilisateurs" style="padding-right: 5px !important">
         <ion-button title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" *ngIf="selectedIndexes && selectedIndexes.length > 0" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
@@ -134,18 +134,21 @@
             <ion-icon name="arrow-back"></ion-icon>
           </ion-button>
 
-          <ion-button class="hid-boutons-petit-ecran"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
-            <ion-icon name="create"></ion-icon>
-          </ion-button>
+          <ng-container *ngIf="!filtreDonneesUtilisateurs">
+            <ion-button class="hid-boutons-petit-ecran"  title="{{'GENERAL.MODIFIER' | translate}}" (click)="selectedItemModifier()">
+              <ion-icon name="create"></ion-icon>
+            </ion-button>
+  
+            <ion-button color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
+              <ion-icon name="trash"></ion-icon>
+            </ion-button>
+  
+            <ion-button title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
+              <ion-icon name="more"></ion-icon>
+            </ion-button>  
+          </ng-container>
 
-          <ion-button color="danger" title="{{'GENERAL.SUPPRIMER' | translate}}" (click)="suppressionMultipleDefinitive(selectedIndexes)">
-            <ion-icon name="trash"></ion-icon>
-          </ion-button>
-
-          <ion-button title="{{'GENERAL.PLUS_DE_OPTIONS' | translate}}" (click)="datatableConstructPopover($event)">
-            <ion-icon name="more"></ion-icon>
-          </ion-button>
-
+          
         </ion-buttons>      
  
         <!--Button vers la droite-->
@@ -239,11 +242,26 @@
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter' || action == 'mdpasse' || action == 'identifiant'" *ngIf="!mobile">
     <ion-card-content>
 
+      <div class="text-center" [hidden]="!loading">
+        <!-- Animated Spinner -->
+        <div class="lds-roller mb-1">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <h4 class="text-uppercase font-weight-bold">{{'GENERAL.CHARGEMENT' | translate}}</h4>
+      </div>
       <!--Toutes les utilisateurs->
       <div *ngIf="(!idPays || !idRegion || !idDepartement || !idCommune) && utilisateurs && utilisateursData && utilisateursData.length > 0" class="table-responsive" id="utilisateur-pays"></div-->
       
       <!--les région du pays sélectionnée-->
-      <div class="table-responsive" id="utilisateur"></div>
+      <div *ngIf="filtreDonneesUtilisateurs" class="table-responsive" id="utilisateur-relation"></div>
+      <div *ngIf="!filtreDonneesUtilisateurs" class="table-responsive" id="utilisateur"></div>
       <!--Si le tableau est vide-->
       <!--ion-list *ngIf="!utilisateurHTMLTable || !utilisateurHTMLTable.datatable" lines="none">        
         <ion-item class="vide">
@@ -289,17 +307,29 @@
             <h4>{{'UTILISATEUR_PAGE.PERMISSIONSACCES' | translate}}</h4>
 
             <div class="form-group mt-2" (dblclick)="modifier(unUtilisateur)">
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.PARTENAIRES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePartenaire(unUtilisateur.accessDonnes.partenaires)">{{unUtilisateur.accessDonnes.partenaires.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.PAYS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePays(unUtilisateur.accessDonnes.pays)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.pays">{{unUtilisateur.accessDonnes.pays.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.pays">0</span></a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.UNIONS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreUnion(unUtilisateur.accessDonnes.unions)">{{unUtilisateur.accessDonnes.unions.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.REGIONS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreRegion(unUtilisateur.accessDonnes.regions)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.regions">{{unUtilisateur.accessDonnes.regions.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.regions">0</span></a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.OPS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreOP(unUtilisateur.accessDonnes.ops)">{{unUtilisateur.accessDonnes.ops.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.DEPARTEMENTS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreDepartement(unUtilisateur.accessDonnes.departements)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.departements">{{unUtilisateur.accessDonnes.departements.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.departements">0</span></a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.PERSONNES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePersonne(unUtilisateur.accessDonnes.personnes)">{{unUtilisateur.accessDonnes.personnes.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.COMMUNES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreCommune(unUtilisateur.accessDonnes.communes)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.communes">{{unUtilisateur.accessDonnes.communes.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.communes">0</span></a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.PROJETS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProjet(unUtilisateur.accessDonnes.projets)">{{unUtilisateur.accessDonnes.projets.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.PARTENAIRES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePartenaire(unUtilisateur.accessDonnes.partenaires)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.partenaires">{{unUtilisateur.accessDonnes.partenaires.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.partenaires">0</span></a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.PROTOCOLES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProtocole(unUtilisateur.accessDonnes.protocoles)">{{unUtilisateur.accessDonnes.protocoles.length}}</a></ion-col></ion-row>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.UNIONS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreUnion(unUtilisateur.accessDonnes.unions)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.unions">{{unUtilisateur.accessDonnes.unions.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.unions">0</span></a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.OPS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreOP(unUtilisateur.accessDonnes.ops)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.ops">{{unUtilisateur.accessDonnes.ops.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.ops">0</span></a></ion-col></ion-row>
+              <div class="hr"></div>
+              <!--ion-row ><ion-col><h2><strong>{{'GENERAL.PERSONNES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePersonne(unUtilisateur.accessDonnes.personnes)">{{unUtilisateur.accessDonnes.personnes.length}}</a></ion-col></ion-row>
+              <div class="hr"></div-->
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.PROJETS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProjet(unUtilisateur.accessDonnes.projets)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.projets">{{unUtilisateur.accessDonnes.projets.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.projets">0</span></a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.PROTOCOLES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProtocole(unUtilisateur.accessDonnes.protocoles)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.protocoles">{{unUtilisateur.accessDonnes.protocoles.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.protocoles">0</span></a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.STATIONMETEOS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreStationMeteo(unUtilisateur.accessDonnes.stationMeteos)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.stationMeteos">{{unUtilisateur.accessDonnes.stationMeteos.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.stationMeteos">0</span></a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.DONNEESUTILISATEURS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreDonneesUtilisateurs(unUtilisateur.accessDonnes.donneesUtilisateurs)"><span *ngIf="unUtilisateur.accessDonnes && unUtilisateur.accessDonnes.donneesUtilisateurs">{{unUtilisateur.accessDonnes.donneesUtilisateurs.length}}</span><span *ngIf="!unUtilisateur.accessDonnes || !unUtilisateur.accessDonnes.donneesUtilisateurs">0</span></a></ion-col></ion-row>
                             
             </div>
           </div>
@@ -445,11 +475,15 @@
               <div class="hr"></div>
               <ion-row ><ion-col><h2><strong>{{'GENERAL.OPS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreOP(utilisateurForm.controls.accessDonnes.value.ops, true, utilisateurForm.controls.accessDonnes.value.unions)">{{utilisateurForm.controls.accessDonnes.value.ops.length}}</a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row ><ion-col><h2><strong>{{'GENERAL.PERSONNES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePersonne(utilisateurForm.controls.accessDonnes.value.personnes, true)">{{utilisateurForm.controls.accessDonnes.value.personnes.length}}</a></ion-col></ion-row>
-              <div class="hr"></div>
+              <!--ion-row ><ion-col><h2><strong>{{'GENERAL.PERSONNES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltrePersonne(utilisateurForm.controls.accessDonnes.value.personnes, true)">{{utilisateurForm.controls.accessDonnes.value.personnes.length}}</a></ion-col></ion-row>
+              <div class="hr"></div-->
               <ion-row ><ion-col><h2><strong>{{'GENERAL.PROJETS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProjet(utilisateurForm.controls.accessDonnes.value.projets, true)">{{utilisateurForm.controls.accessDonnes.value.projets.length}}</a></ion-col></ion-row>
               <div class="hr"></div>
               <ion-row ><ion-col><h2><strong>{{'GENERAL.PROTOCOLES' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreProtocole(utilisateurForm.controls.accessDonnes.value.protocoles, true, utilisateurForm.controls.accessDonnes.value.projets)">{{utilisateurForm.controls.accessDonnes.value.protocoles.length}}</a></ion-col></ion-row>
+              <div class="hr">
+              </div><ion-row ><ion-col><h2><strong>{{'GENERAL.STATIONMETEOS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreStationMeteo(utilisateurForm.controls.accessDonnes.value.stationMeteos, true)">{{utilisateurForm.controls.accessDonnes.value.stationMeteos.length}}</a></ion-col></ion-row>
+              <div class="hr"></div>
+              <ion-row ><ion-col><h2><strong>{{'GENERAL.DONNEESUTILISATEURS' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentFiltreDonneesUtilisateurs(utilisateurForm.controls.accessDonnes.value.donneesUtilisateurs, true)">{{utilisateurForm.controls.accessDonnes.value.donneesUtilisateurs.length}}</a></ion-col></ion-row>
 
             </div>
           </div>
@@ -472,24 +506,24 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="!mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreDonneesUtilisateurs && !mobile && action == 'liste'" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreDonneesUtilisateurs && mobile && action == 'liste' && !selectedIndexes.length" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
 
 
-  <ion-fab *ngIf="mobile && !idUtilisateur && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreDonneesUtilisateurs && mobile && !idUtilisateur && action == 'infos' && cacheAction == 'liste'" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(unUtilisateur)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
-  <ion-fab *ngIf="!mobile && !idUtilisateur && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unUtilisateur)" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreDonneesUtilisateurs && !mobile && !idUtilisateur && action == 'infos' && cacheAction == 'liste'" (click)="modifier(unUtilisateur)" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="create"></ion-icon>
     </ion-fab-button>
@@ -497,3 +531,12 @@
 
 </ion-content>
 
+
+<ion-footer *ngIf="filtreDonneesUtilisateurs">
+  <ion-toolbar>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+      <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="valider()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

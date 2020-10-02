@@ -41,21 +41,38 @@ export class PouchdbService {
     PouchDB.plugin(PouchAuth);
     PouchDB.plugin(Relational);
     PouchDB.plugin(PouchdbFind);
-    this.getConfServeur();
 
     this.localDB = new PouchDB('frna-db');
-    this.localDB_Back = new PouchDB('frna-db');
-    this.localDB.setMaxListeners(20); // or 30 or 40 or however many you need, 
+    //this.localDB_Back = new PouchDB('frna-db');
+    this.localDB.setMaxListeners(100); // or 30 or 40 or however many you need, 
                                       //to prevent warning (node) warning: possible EventEmitter memory leak detected. 11 listeners added. 
                                       //Use emitter.setMaxListeners() to increase limit.
     //this.remoteDB = new PouchDB('http://localhost:5984/frna-v2');
-    this.remoteDBOld = new PouchDB('http://localhost:5984/frna_db');
+    //this.remoteDBOld = new PouchDB('http://localhost:5984/frna_db');
     //this.sync();
     //this.localDB.sync(this.remoteDB, { live: true, retry: true }).on('error', console.log.bind(console));
-    this.creatDocByTypeSecondIndex();
     this.createDBSchema();
+    this.creatDocByTypeSecondIndex();
+    this.ajouterFiltre();
+    this.getConfServeur();
     //this.createDBSchema(this.remoteDB);
    }
+
+
+   ajouterFiltre(){
+    this.getLocalDocById('_design/filtreDonnees').catch((err) => {
+      console.log(err);
+      this.filtreDesignDoc(this.localDB).then((res) => {
+        //console.log(res);
+        this.afficheMessage('Filtre ajouté avec succes')
+      }).catch((err) => {
+        console.log(err);
+        this.afficheMessage('Erreur ajout filtre');
+      })
+    })
+    
+  }
+
 
    getInfoSimEmei(){
     this.sim.getSimInfo().then(
@@ -94,42 +111,59 @@ export class PouchdbService {
       console.log(err)
       this.remoteDB = null;
     })
+
+    /*this.storage.get('frna_v2_info_connexion').then((res) => {
+      //console.log(res)
+      if(res && res != ''){
+        global.estConnecte = true;
+      }
+    })*/
   }
 
+  
+
   testerConnexion(){
-    this.getSessionUtilisateur().then((res) => {
-      if(res.userCtx.name){
+    this.getSessionUtilisateur().then((res1) => {
+      if(res1.userCtx.name){
         global.estConnecte = true;
-        global.info_user.name = res.userCtx.name;
-        global.info_user.roles = res.userCtx.roles;
-        this.getInfosUtilisateur(res.userCtx.name).then((res) => {
-          global.info_user.groupes = res.groupes;
-          global.info_user.permissionsAccesModel = [];
-          global.info_user.accessDonnes = res.accessDonnes;
-          this.sync();
-          //console.log(global.info_user.groupes)
-          this.findRelationalDocByTypeAndID('groupe', res.groupes).then((res) => {
-            if(res){
-              //console.log(res)
-              res.groupes.forEach((g) => {
-                g.formData.permissionAcces.forEach((p) => {
-                  if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
-                    global.info_user.permissionsAccesModel.push(p)
-                  }
-                })
-                
-              });
-              //console.log(global.info_user.permissionsAccesDonnees)
+        global.info_user.name = res1.userCtx.name;
+        global.info_user.roles = res1.userCtx.roles;
+        //console.log(res1.userCtx.roles.indexOf('_admin'))
+        if(res1.userCtx.roles.indexOf('_admin') === -1 && res1.userCtx.roles.indexOf('admin') === -1){
+          //console.log('ici')
+          this.getInfosUtilisateur(res1.userCtx.name).then((res2) => {
+            global.info_user.groupes = res2.groupes;
+            global.info_user.permissionsAccesModel = [];
+            global.info_user.accessDonnes = res2.accessDonnes;
+            this.sync();
+            //console.log(global.info_user.groupes)
+            this.getGroupes(res2.groupes).then((res3) => {
+              if(res3){
+                //console.log(res)
+                res3.forEach((g) => {
+                  g.formData.permissionAcces.forEach((p) => {
+                    if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
+                      global.info_user.permissionsAccesModel.push(p)
+                    }
+                  })
+                  
+                });
+                this.storage.set('frna_v2_info_user', global.info_user);
+                //console.log(global.info_user.permissionsAccesDonnees)
+              }
+            })
+          }).catch((err) => {
+            if(err){
+              console.log("Problème de réseau ou privilèges insuffisants ", err)
             }
-          })
-        }).catch((err) => {
-          if(err){
-            console.log("Problème de réseau ou privilèges insuffisants ", err)
-          }
-        });
+          });
+        }else{
+          this.storage.set('frna_v2_info_user', global.info_user);
+        }
+        
       }else{
-        global.estConnecte = false;
-        global.info_user.name = 'default';
+        //global.estConnecte = false;
+        /*global.info_user.name = 'default';
         global.info_user.roles = [];
         global.info_user.groupes = [];
         global.info_user.permissionsAccesModel = [];
@@ -146,13 +180,15 @@ export class PouchdbService {
           ops: [],
           personnes: [],
           projets: [],
-          protocoles: []
-        };
+          protocoles: [],
+          donneesUtilisateurs: [],
+          stationMeteos: []
+        };*/
       }
     }).catch((err) => {
         console.log("Problème de réseau ", err)
-        global.estConnecte = false;
-        global.info_user.name = 'default';
+        //global.estConnecte = false;
+        /*global.info_user.name = 'default';
         global.info_user.roles = [];
         global.info_user.groupes = [];
         global.info_user.permissionsAccesModel = [];
@@ -169,8 +205,10 @@ export class PouchdbService {
           ops: [],
           personnes: [],
           projets: [],
-          protocoles: []
-        };
+          protocoles: [],
+          donneesUtilisateurs: [],
+          stationMeteos: []
+        };*/
     });
   }
   
@@ -178,8 +216,8 @@ export class PouchdbService {
     //une fédération peut avoir plusieurs union
     db.setSchema([
       {
-        singular: 'essai',
-        plural: 'essais',
+        singular: 'collectedonnee',
+        plural: 'collectedonnees',
         relations: {
           'protocole': {belongsTo: 'protocole'},
           'personne': {belongsTo: 'personne'},
@@ -246,7 +284,7 @@ export class PouchdbService {
         singular: 'departement',
         plural: 'departements',
         relations: {
-          //'pays': {belongsTo: 'pays'},
+          'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
           
           
@@ -259,8 +297,8 @@ export class PouchdbService {
         singular: 'commune',
         plural: 'communes',
         relations: {
-          //'pays': {belongsTo: 'pays'},
-          //'region': {belongsTo: 'region'},
+          'pays': {belongsTo: 'pays'},
+          'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
           
           
@@ -272,9 +310,9 @@ export class PouchdbService {
         singular: 'localite',
         plural: 'localites',
         relations: {
-          //'pays': {belongsTo: 'pays'},
-          //'region': {belongsTo: 'region'},
-          //'departement': {belongsTo: 'departement'},
+          'pays': {belongsTo: 'pays'},
+          'region': {belongsTo: 'region'},
+          'departement': {belongsTo: 'departement'},
           'commune': {belongsTo: 'commune'},
           
           
@@ -286,10 +324,10 @@ export class PouchdbService {
         singular: 'partenaire',
         plural: 'partenaires',
         relations: {
-         //'pays': {belongsTo: 'pays'},
-         //'region': {belongsTo: 'region'},
-         //'departement': {belongsTo: 'departement'},
-         //'commune': {belongsTo: 'commune'},
+         'pays': {belongsTo: 'pays'},
+         'region': {belongsTo: 'region'},
+         'departement': {belongsTo: 'departement'},
+         'commune': {belongsTo: 'commune'},
          'localite': {belongsTo: 'localite'},
           
          
@@ -301,10 +339,10 @@ export class PouchdbService {
         singular: 'union',
         plural: 'unions',
         relations: {
-          //'pays': {belongsTo: 'pays'},
-          //'region': {belongsTo: 'region'},
-          //'departement': {belongsTo: 'departement'},
-          //'commune': {belongsTo: 'commune'},
+          'pays': {belongsTo: 'pays'},
+          'region': {belongsTo: 'region'},
+          'departement': {belongsTo: 'departement'},
+          'commune': {belongsTo: 'commune'},
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'}
         },
@@ -313,10 +351,10 @@ export class PouchdbService {
         singular: 'op',
         plural: 'ops',
         relations: {
-          /*'pays': {belongsTo: 'pays'},
+          'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
-          'commune': {belongsTo: 'commune'},*/
+          'commune': {belongsTo: 'commune'},
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'},
           'union': {belongsTo: 'union'}
@@ -326,10 +364,10 @@ export class PouchdbService {
         singular: 'personne',
         plural: 'personnes',
         relations: {
-          /*'pays': {belongsTo: 'pays'},
+          'pays': {belongsTo: 'pays'},
           'region': {belongsTo: 'region'},
           'departement': {belongsTo: 'departement'},
-          'commune': {belongsTo: 'commune'},*/
+          'commune': {belongsTo: 'commune'},
           'localite': {belongsTo: 'localite'},
           'partenaire': {belongsTo: 'partenaire'},
           'union': {belongsTo: 'union'},
@@ -358,9 +396,28 @@ export class PouchdbService {
           'personne': {belongsTo: 'personne'},
           'typesole': {belongsTo: 'typesole'}
         }
+      },{
+        singular: 'stationmeteo',
+        plural: 'stationmeteos',
+        relations: {
+         'localite': {belongsTo: 'localite'},
+        }
+      },{
+        singular: 'pluviometrie',
+        plural: 'pluviometries',
+        relations: {
+         'stationmeteo': {belongsTo: 'stationmeteo'},
+        }
       }
-    ]);
+    ])/*.then((res) => {
+      console.log('DBSchema ok');
+      console.log('DBSchema ok');
+    });*/
    }
+
+  relationalMakeId(type, id){
+    return this.localDB.rel.makeDocID({ "type": type, "id": id });;
+  }
 
   createRelationalDoc(doc){
     return this.localDB.rel.save(doc.type, doc);
@@ -401,9 +458,25 @@ export class PouchdbService {
     return this.localDB.rel.find(type,id);
   }
 
+  
+
   findRelationalDocByTypeAndID(type, id){
     return this.localDB.rel.find(type,id);
   }
+
+  findDocByTypePere(type, typePere, idPere){
+    //console.log(idPere)
+    /*return new Promise ( resolve => {*/
+      let s: any = {
+        "data.type": type,
+        "data.security.deleted": false,
+      }
+      s['data.'+typePere] = idPere
+    return  this.localDB.find({
+      selector: s
+    })  
+  }
+
 
   findRelationalDocByTypeAndCode(type, code){
     /*return new Promise ( resolve => {*/
@@ -497,6 +570,15 @@ export class PouchdbService {
         return this.localDB.rel.parseRelDocs(type, data.docs);
     })
   /*  });*/
+    
+  }
+
+  findDocByTypeAndDeleted(type, deleted: any = false){
+    return  this.localDB.find({
+      selector: {
+        "data.type": type,
+        "data.security.deleted": deleted,
+      }})
     
   }
 
@@ -610,10 +692,17 @@ export class PouchdbService {
       retry: true, 
       filter: 'filtreDonnees/filtrer',
       query_params: {
+        pays: global.info_user.accessDonnes.pays,
+        regions: global.info_user.accessDonnes.regions,
+        departements: global.info_user.accessDonnes.departements,
+        communes: global.info_user.accessDonnes.communes,
+        partenaires: global.info_user.accessDonnes.partenaires,
         unions: global.info_user.accessDonnes.unions,
         ops: global.info_user.accessDonnes.ops,
         projets: global.info_user.accessDonnes.projets,
         protocoles: global.info_user.accessDonnes.protocoles,
+        donneesUtilisateurs: global.info_user.accessDonnes.donneesUtilisateurs,
+        stationMeteos: global.info_user.accessDonnes.stationMeteos,
         roles: global.info_user.roles
       } 
     };
@@ -623,10 +712,17 @@ export class PouchdbService {
     this.localDB.replicate.from(this.remoteDB, {
       filter: 'filtreDonnees/filtrer',
       query_params: {
+        pays: global.info_user.accessDonnes.pays,
+        regions: global.info_user.accessDonnes.regions,
+        departements: global.info_user.accessDonnes.departements,
+        communes: global.info_user.accessDonnes.communes,
+        partenaires: global.info_user.accessDonnes.partenaires,
         unions: global.info_user.accessDonnes.unions,
         ops: global.info_user.accessDonnes.ops,
         projets: global.info_user.accessDonnes.projets,
         protocoles: global.info_user.accessDonnes.protocoles,
+        donneesUtilisateurs: global.info_user.accessDonnes.donneesUtilisateurs,
+        stationMeteos: global.info_user.accessDonnes.stationMeteos,
         roles: global.info_user.roles
       }
     }).on('complete', (info) => {
@@ -652,13 +748,21 @@ export class PouchdbService {
   }
 
    replicationFromServerToLocal(){
+    //console.log(global.info_user)
     this.remoteDB.replicate.to(this.localDB, {
       filter: 'filtreDonnees/filtrer',
       query_params: {
+        pays: global.info_user.accessDonnes.pays,
+        regions: global.info_user.accessDonnes.regions,
+        departements: global.info_user.accessDonnes.departements,
+        communes: global.info_user.accessDonnes.communes,
+        partenaires: global.info_user.accessDonnes.partenaires,
         unions: global.info_user.accessDonnes.unions,
         ops: global.info_user.accessDonnes.ops,
         projets: global.info_user.accessDonnes.projets,
         protocoles: global.info_user.accessDonnes.protocoles,
+        donneesUtilisateurs: global.info_user.accessDonnes.donneesUtilisateurs,
+        stationMeteos: global.info_user.accessDonnes.stationMeteos,
         roles: global.info_user.roles
       }
     }).on('change', (info) => {
@@ -684,10 +788,17 @@ export class PouchdbService {
     this.localDB.replicate.to(this.remoteDB, {
       filter: 'filtreDonnees/filtrer',
       query_params: {
+        pays: global.info_user.accessDonnes.pays,
+        regions: global.info_user.accessDonnes.regions,
+        departements: global.info_user.accessDonnes.departements,
+        communes: global.info_user.accessDonnes.communes,
+        partenaires: global.info_user.accessDonnes.partenaires,
         unions: global.info_user.accessDonnes.unions,
         ops: global.info_user.accessDonnes.ops,
         projets: global.info_user.accessDonnes.projets,
         protocoles: global.info_user.accessDonnes.protocoles,
+        donneesUtilisateurs: global.info_user.accessDonnes.donneesUtilisateurs,
+        stationMeteos: global.info_user.accessDonnes.stationMeteos,
         roles: global.info_user.roles
       }
     }).on('change', (info) => {
@@ -736,39 +847,67 @@ export class PouchdbService {
       _id: '_design/filtreDonnees',
       filters: {
         filtrer: function (doc, req) {
-          /*var filtrableDocType = ['union', 'op', 'personnes', 'projet', 'protocole', 'essais'];
+          /*var filtrableDocType = ['union', 'op', 'personnes', 'projet', 'protocole', 'collectedonnee'];
           if(filtrableDocType.indexOf(doc.type) === -1){
             return 1;
           }else{*/
-            if(doc._id === '_design/filtreDonnees' || req.query.roles.indexOf('_admin') !== -1){
+            if(/*doc._id === '_design/filtreDonnees' || */doc._id.indexOf('_design') !== -1 || req.query.roles.indexOf('_admin') !== -1 ||  (doc.data && (doc.data.type === 'ethnie' || doc.data.type === 'profession' || doc.data.type === 'typesole' || doc.data.type === 'groupe'))){
               return 1;
-            }else if(doc.data && doc.data.type === 'pays'){
+            }else if(doc.data && doc.data.type === 'pays' && req.query.pays){
               return req.query.pays.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'region'){
+            }else if(doc.data && doc.data.type === 'region' && req.query.regions){
               return req.query.regions.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'departement'){
+            }else if(doc.data && doc.data.type === 'departement' && req.query.departements){
               return req.query.departements.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
             }else if(doc.data && doc.data.type === 'commune'){
               return req.query.communes.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'localite'){
+            }else if(doc.data && doc.data.type === 'localite' && req.query.communes){
               return req.query.communes.indexOf(doc.data.commune) !== -1;
             }else if(doc.data && doc.data.type === 'partenaire' && req.query.partenaires){
               return req.query.partenaires.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'union' && req.query.unions){
-              return req.query.unions.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'op' && req.query.ops){
-              return req.query.ops.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'personne' && req.query.ops){
-              return (req.query.ops.indexOf(doc.data.op) !== -1) || (doc.data.formData.niveau === '2');
+            }else if(doc.data && doc.data.type === 'union'){
+              if(doc.data.formData.niveau !== '2' && req.query.unions){
+                return req.query.unions.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+              }else if(doc.data.formData.niveau === '2' && req.query.communes){
+                return req.query.communes.indexOf(doc.data.commune) !== -1;
+              } 
+            }else if(doc.data && doc.data.type === 'op'){
+              if(doc.data.formData.niveau !== '3' && req.query.ops){
+                return req.query.ops.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+              }else if(doc.data.formData.niveau === '3' && req.query.communes){
+                return req.query.communes.indexOf(doc.data.commune) !== -1;
+              } 
+            }else if(doc.data && doc.data.type === 'personne'){
+              if(doc.data.formData.niveau !== '2' && req.query.ops){
+                return req.query.ops.indexOf(doc.data.op) !== -1;
+              }else if(doc.data.formData.niveau === '2' && req.query.communes){
+                return req.query.communes.indexOf(doc.data.commune) !== -1;
+              }
+            }else if(doc.data && doc.data.type === 'champ'){
+              if(req.query.ops){
+                return req.query.ops.indexOf(doc.data.op) !== -1;
+              }else if(req.query.communes){
+                return req.query.communes.indexOf(doc.data.commune) !== -1;
+              }
+            }else if(doc.data && doc.data.type === 'stationmeteo' && req.query.stationMeteos){
+              return req.query.stationMeteos.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
+            }else if(doc.data && doc.data.type === 'pluviometrie' && req.query.stationMeteos){
+              return req.query.stationMeteos.indexOf(doc.data.stationmeteo) !== -1;
             }else if(doc.data && doc.data.type === 'projet' && req.query.projets){
               return req.query.projets.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
             }else if(doc.data && doc.data.type === 'protocole' && req.query.protocoles){
               return req.query.protocoles.indexOf(doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length)) !== -1;
-            }else if(doc.data && doc.data.type === 'essai' && req.query.protocoles){
+            }else if(doc.data && doc.data.type === 'formulaireprotocole' && req.query.protocoles){
               return req.query.protocoles.indexOf(doc.data.protocole) !== -1;
-            }else {
-              return 1;
+            }else if(doc.data && doc.data.type === 'collectedonnee' && req.query.protocoles && req.query.donneesUtilisateurs){
+              return (req.query.protocoles.indexOf(doc.data.protocole) !== -1 && req.query.donneesUtilisateurs.indexOf(doc.data.security.created_by) !== -1);
             }
+            
+            
+            
+            /*else {
+              return 1;
+            }*/
           //}
         }.toString()
       }
@@ -836,6 +975,16 @@ export class PouchdbService {
       }});
   }
 
+  findDocByTypeNiveauAndDeleted(type, niveau, deleted = false/* , sort = true*/){  
+    return this.localDB.find( {
+      selector: {
+        "data.type": type,
+        "data.formData.niveau": niveau,
+        "data.security.deleted": deleted,
+      }})
+      
+  }
+
   findRelationalDocByTypeNiveauAndDeleted(type, niveau, deleted = false/* , sort = true*/){  
     return this.localDB.find( {
       selector: {
@@ -846,7 +995,6 @@ export class PouchdbService {
         return this.localDB.rel.parseRelDocs(type, data.docs);
       });
   }
-
   getMonInstitution(type, monInstitution,  deleted: any = false, archived : any = {$ne: null}, shared: any = {$ne: null}){  
     return  this.localDB.find({
       selector: {
@@ -997,6 +1145,91 @@ export class PouchdbService {
     this.localDB.createIndex({
       index: {
         fields: ['data.type', 'data.formData.nom']
+      }
+    })
+
+
+    //pour recherche par type et pays
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.pays', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et region
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.region', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et departement
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.departement', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et commune
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.commune', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et localite
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.localite', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père projet
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.projet', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père union
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.union', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père op
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.op', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père partenaire
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.partenaire', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père personne
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.personne', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père champ
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.champ', 'data.security.deleted']
+      }
+    })
+
+    //pour recherche par type et père satation meteo
+    this.localDB.createIndex({
+      index: {
+        fields: ['data.type', 'data.stationmeteo', 'data.security.deleted']
       }
     })
 
@@ -1762,6 +1995,43 @@ export class PouchdbService {
     return this.remoteDB.deleteAdmin(username);
   } 
   
+
+  
+
+  getGroupes(groupes){
+
+    //si non vide
+    let data: any;
+    if(data){
+      return data
+    }
+ 
+    
+    return new Promise ( resolve => {
+      this.remoteDB.allDocs({
+        include_docs: true,
+        startkey: 'groupe',
+        endkey: 'groupe_\uffff'
+      }).then((result) => {
+        //console.log(result)
+        data = [];
+        let doc = result.rows.map((row) => {
+           if(groupes.indexOf(row.doc._id.substring(row.doc._id.lastIndexOf('_') + 1, row.doc._id.length)) !== -1){
+            //data.push(row);
+            data.push(row.doc.data);
+          }
+        });
+
+        //console.log(data)
+        resolve(data);
+
+        }).catch((err) => {
+          //console.log('err edd')
+          console.log(err)
+        });
+    } );
+  }
+
   
   getAllUsers(){
     var users_db = new PouchDB(global.conf_serveur.domaine+/*'http://localhost:5984'+*/'/_users'/*, {

@@ -45,6 +45,7 @@ export class ProjetPage implements OnInit {
 
   global = global;
   start: any;
+  loading: boolean = false;
   moment = moment;
   projetForm: FormGroup;
   action: string = 'liste';
@@ -1774,6 +1775,7 @@ export class ProjetPage implements OnInit {
         componentProps: { 
           idModele: 'projets', _id: projet.id, _rev: projet.rev, security: projet.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2017,6 +2019,7 @@ export class ProjetPage implements OnInit {
         componentProps: { 
           idModele: 'projets', idProjet: idProjet },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2028,6 +2031,7 @@ export class ProjetPage implements OnInit {
         componentProps: { 
           idModele: 'projets', idProjet: idProjet },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2494,6 +2498,7 @@ export class ProjetPage implements OnInit {
   
     getProjet(){
       //tous les departements
+      this.loading = true;
       if(this.idProjet && this.idProjet != ''){
         this.servicePouchdb.findRelationalDocByID('projet', this.idProjet).then((res) => {
           if(res && res.projets[0]){
@@ -2508,13 +2513,16 @@ export class ProjetPage implements OnInit {
               res.projets[0].formData = this.addItemToObjectAtSpecificPosition(res.projets[0].formData, 'numeroInstitution', null, 2);
               res.projets[0].formData = this.addItemToObjectAtSpecificPosition(res.projets[0].formData, 'nomInstitution', null, 3);
             }
+            this.loading = false;
 
             this.infos({id: res.projets[0].id, idInstitution: f,  ...res.projets[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
         }).catch((err) => {
+          this.loading = false;
           alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           console.log(err)
           this.close();
@@ -2616,6 +2624,7 @@ export class ProjetPage implements OnInit {
   
             //this.projetsData = [...datas];
   
+            this.loading = false;
             if(this.mobile){
               this.projetsData = projetsData;
               this.projetsData.sort((a, b) => {
@@ -2647,6 +2656,7 @@ export class ProjetPage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.projets = [];
           this.projetsData = [];
           console.log(err)
@@ -2716,6 +2726,7 @@ export class ProjetPage implements OnInit {
 
             //this.projetsData = [...datas];
   
+            this.loading = false;
             if(this.mobile){
               this.projetsData = projetsData;
               this.projetsData.sort((a, b) => {
@@ -2742,6 +2753,7 @@ export class ProjetPage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.projets = [];
           this.projetsData = [];
           console.log(err)

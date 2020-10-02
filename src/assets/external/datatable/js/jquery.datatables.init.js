@@ -1,4 +1,4 @@
-var handleDataTableButtons = function(id, columns, formData, langue, tanslate, peutExporterDonnees) {
+var handleDataTableButtons = function(id, columns, formData, langue, tanslate, peutExporterDonnees, filename) {
         "use strict";
 
         //gerer les message d'erreur du datatable
@@ -77,13 +77,43 @@ var handleDataTableButtons = function(id, columns, formData, langue, tanslate, p
                         className: "btn-sm"
                     }, {
                         extend: "csv",
-                        className: "btn-sm"
+                        className: "btn-sm",
+                        title: function(){
+                            if(!filename){
+                                filename = 'export'
+                            }/*else{
+                                filename = 'export_'+filename
+                            }*/
+                            var d = new Date();
+                            var n = d.getDate()+'-'+(d.getMonth() +1)+'-'+d.getFullYear()+'_'+d.getHours()+'-'+d.getMinutes()+'-'+d.getSeconds()+'-'+d.getMilliseconds();
+                            return filename+'_' + n;
+                        }
                     }, {
                         extend: "excel",
-                        className: "btn-sm"
+                        className: "btn-sm",
+                        title: function(){
+                            if(!filename){
+                                filename = 'export'
+                            }/*else{
+                                filename = 'export_'+filename
+                            }*/
+                            var d = new Date();
+                            var n = d.getDate()+'-'+(d.getMonth() +1)+'-'+d.getFullYear()+'_'+d.getHours()+'-'+d.getMinutes()+'-'+d.getSeconds()+'-'+d.getMilliseconds();
+                            return filename+'_' + n;
+                        }
                     }, {
                         extend: "pdf",
-                        className: "btn-sm"
+                        className: "btn-sm",
+                        title: function(){
+                            if(!filename){
+                                filename = 'export'
+                            }/*else{
+                                filename = 'export_'+filename
+                            }*/
+                            var d = new Date();
+                            var n = d.getDate()+'-'+(d.getMonth() +1)+'-'+d.getFullYear()+'_'+d.getHours()+'-'+d.getMinutes()+'-'+d.getSeconds()+'-'+d.getMilliseconds();
+                            return filename+'_' + n;
+                        }
                     }, /*{
                         extend: "print",
                         //className: "btn-sm"
@@ -237,8 +267,8 @@ var handleDataTableButtons = function(id, columns, formData, langue, tanslate, p
     TableManageButtons = function() {
         "use strict";
         return {
-            init: function(id, columns, formData, langue, tanslate, peutExporterDonnees) {
-               return handleDataTableButtons(id, columns, formData, langue, tanslate, peutExporterDonnees);
+            init: function(id, columns, formData, langue, tanslate, peutExporterDonnees, filename) {
+               return handleDataTableButtons(id, columns, formData, langue, tanslate, peutExporterDonnees, filename);
             }
         }
     }();

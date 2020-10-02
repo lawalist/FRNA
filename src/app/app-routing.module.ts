@@ -15,7 +15,9 @@ const routes: Routes = [
   //{ path: /*'institution/*/'membres', loadChildren: './institution/membre/membre.module#MembrePageModule' },
   { path: 'personnes', loadChildren: './institution/personnes/personnes.module#PersonnesPageModule' },
   { path: /*configuration/*/'champ', loadChildren: './institution/champ/champ.module#ChampPageModule' },
-  
+  { path: 'station-meteo', loadChildren: './institution/station-meteo/station-meteo.module#StationMeteoPageModule' },
+  { path: 'pluviometrie', loadChildren: './institution/pluviometrie/pluviometrie.module#PluviometriePageModule' },
+    
   { path: /*recherche/*/'projets', loadChildren: './recherche/projet/projet.module#ProjetPageModule' },
   { path: 'protocoles', loadChildren: './recherche/protocole/protocole.module#ProtocolePageModule' },
   //{ path: 'traitements', loadChildren: './recherche/traitement/traitement.module#TraitementPageModule' },
@@ -54,7 +56,7 @@ const routes: Routes = [
   { path: 'connexion', loadChildren: './utilisateur/connexion/connexion.module#ConnexionPageModule' },
   { path: 'profil', loadChildren: './utilisateur/profil/profil.module#ProfilPageModule' },
   { path: 'changer-md-passe', loadChildren: './utilisateur/changer-md-passe/changer-md-passe.module#ChangerMdPassePageModule' },
-   
+  
 ];
 
 @NgModule({

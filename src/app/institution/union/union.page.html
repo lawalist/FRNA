@@ -299,6 +299,21 @@
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
 
+      <div class="text-center" [hidden]="!loading">
+        <!-- Animated Spinner -->
+        <div class="lds-roller mb-1">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <h4 class="text-uppercase font-weight-bold">{{'GENERAL.CHARGEMENT' | translate}}</h4>
+      </div>
+      
       <div *ngIf="!idPartenaire && !filtreUnion" class="table-responsive" id="union"></div>
 
       <div *ngIf="idPartenaire || filtreUnion" class="table-responsive" id="union-partenaire"></div>

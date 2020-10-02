@@ -48,6 +48,7 @@ export class PartenairePage implements OnInit {
 
   global = global;
   start: any;
+  loading: boolean = false;
   partenaireForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -1714,6 +1715,7 @@ export class PartenairePage implements OnInit {
     }
 
     getPartenaireWithConflicts(event = null){
+      this.loading = true;
       this.action = 'conflits';
       this.cacheAction = 'conflits';
       this.selectedIndexes = [];
@@ -1839,6 +1841,7 @@ export class PartenairePage implements OnInit {
             partenairesData.push({id: p.id, idPays: idPays, idRegion: idRegion, idDepartement: idDepartement, idCommune: idCommune, idSiege: idSiege, ...p.formData, ...p.formioData, ...p.security});
           }
 
+          this.loading = false;
           if(this.mobile){
             partenairesData.sort((a, b) => {
               if (a.nom < b.nom) {
@@ -1871,6 +1874,7 @@ export class PartenairePage implements OnInit {
         if(event)
           event.target.complete();
       }).catch((err) => {
+        this.loading = false;
         this.partenaires = [];
         this.partenairesData = [];
         console.log(err);
@@ -1932,6 +1936,7 @@ export class PartenairePage implements OnInit {
         componentProps: { 
           idModele: 'partenaires', _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2188,6 +2193,7 @@ export class PartenairePage implements OnInit {
         componentProps: {
           idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2199,6 +2205,7 @@ export class PartenairePage implements OnInit {
         componentProps: {
           idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2210,6 +2217,7 @@ export class PartenairePage implements OnInit {
         componentProps: {
           idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2221,6 +2229,7 @@ export class PartenairePage implements OnInit {
         componentProps: {
           idModele: 'partenaires', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2870,6 +2879,8 @@ export class PartenairePage implements OnInit {
         id = 'partenaire-relation';
       }
 
+      this.loading = true;
+
       if(this.idPartenaire && this.idPartenaire != ''){
         this.servicePouchdb.findRelationalDocByID('partenaire', this.idPartenaire).then((res) => {
 
@@ -2898,8 +2909,10 @@ export class PartenairePage implements OnInit {
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'nomSiege', res.localites[0].formData.nom, 14);  
             res.partenaires[0].formData = this.addItemToObjectAtSpecificPosition(res.partenaires[0].formData, 'codeSiege', res.localites[0].formData.code, 15);    
 
+            this.loading = false;
             this.infos({id: res.partenaires[0].id, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idSiege: res.localites[0].id, ...res.partenaires[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
@@ -3159,6 +3172,7 @@ export class PartenairePage implements OnInit {
             }
 
 
+            this.loading = false;
             if(this.mobile){
               partenairesData.sort((a, b) => {
                 if (a.nom < b.nom) {
@@ -3196,6 +3210,7 @@ export class PartenairePage implements OnInit {
            
           }
         }).catch((err) => {
+          this.loading = false;
           this.partenaires = [];
           this.partenairesData = [];
           this.allPartenairesData = [];

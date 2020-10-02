@@ -1029,6 +1029,7 @@ export class LocalitePage implements OnInit {
         component: DerniereModificationComponent,
         componentProps: { _id: localite.id, _rev: localite.rev, security: localite.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();

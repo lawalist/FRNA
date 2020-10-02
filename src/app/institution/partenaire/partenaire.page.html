@@ -295,6 +295,20 @@
   <!--Mode tableau-->
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
     <ion-card-content>
+      <div class="text-center" [hidden]="!loading">
+        <!-- Animated Spinner -->
+        <div class="lds-roller mb-1">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <h4 class="text-uppercase font-weight-bold">{{'GENERAL.CHARGEMENT' | translate}}</h4>
+      </div>
       <!--Toutes les partenaires->
       <div *ngIf="(!idPays || !idRegion || !idDepartement || !idCommune) && partenaires && partenairesData && partenairesData.length > 0" class="table-responsive" id="partenaire-pays"></div-->
       

@@ -1,10 +1,10 @@
 //prend en parametre un tableau d'bojet JSON et renvoi un tableau HTML
-function createDataTable(id, columns, data, langue, tanslate, peutExporterDonnees) {
+function createDataTable(id, columns, data, langue, tanslate, peutExporterDonnees, filename) {
        var result = {};
        result.table =  createEmptyHtmlTableWithColumns(id, columns);
        document.getElementById(id).innerHTML = result.table;
        var resizefunc = [];
-       result.datatable = TableManageButtons.init(id+"-datatable", columns, data, langue, tanslate, peutExporterDonnees);
+       result.datatable = TableManageButtons.init(id+"-datatable", columns, data, langue, tanslate, peutExporterDonnees, filename);
        return result;   
  }
 
@@ -53,7 +53,7 @@ function JSONToCSVAndTHMLTable(data, id, tanslate, format) {
  }
 
 
-function JSONToTHMLTable(data, id, langue, tanslate, peutExporterDonnees) {
+function JSONToTHMLTable(data, id, langue, tanslate, peutExporterDonnees, filename) {
        var s = JSON.stringify(data);
        var delimiter = ",";
        var nobreaks  = false;
@@ -85,7 +85,7 @@ function JSONToTHMLTable(data, id, langue, tanslate, peutExporterDonnees) {
           result.table = csvToTable(CSV, true, false,false,a,id+"-datatable", tanslate.instant('GENERAL.FIELD'));
           document.getElementById(id).innerHTML = result.table;
           var resizefunc = [];
-          result.datatable = TableManageButtons.init(id+"-datatable", langue, tanslate, peutExporterDonnees);
+          result.datatable = TableManageButtons.init(id+"-datatable", langue, tanslate, peutExporterDonnees, filename);
           return result;
          }
          catch (e) {
@@ -96,13 +96,13 @@ function JSONToTHMLTable(data, id, langue, tanslate, peutExporterDonnees) {
     }
 
     
-    function reCreateTHMLTable(table, id, langue, tanslate, peutExporterDonnees) {
+    function reCreateTHMLTable(table, id, langue, tanslate, peutExporterDonnees, filename) {
       try {
         var result = {};
         result.table = table;
         document.getElementById(id).innerHTML = table;
         var resizefunc = [];
-        result.datatable = TableManageButtons.init(id+"-datatable", langue, tanslate, peutExporterDonnees);
+        result.datatable = TableManageButtons.init(id+"-datatable", langue, tanslate, peutExporterDonnees, filename);
         return result;
       }
       catch (e) {

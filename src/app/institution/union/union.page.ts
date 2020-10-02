@@ -48,6 +48,7 @@ export class UnionPage implements OnInit {
 
   global = global;
   start: any;
+  loading: boolean = false;
   unionForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -1997,6 +1998,7 @@ export class UnionPage implements OnInit {
         componentProps: {
           idModele: 'unions', _id: union.id, _rev: union.rev, security: union.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2234,6 +2236,7 @@ export class UnionPage implements OnInit {
         componentProps: {
           idModele: 'unions',  idUnion: idUnion },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2245,6 +2248,7 @@ export class UnionPage implements OnInit {
         componentProps: {
           idModele: 'unions',  idUnion: idUnion },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2560,7 +2564,7 @@ export class UnionPage implements OnInit {
   
               for(let u of res.unions){
                 if(this.filtreUnion){
-                  if((this.filtreUnion.indexOf(u.id) === -1) && ((this.filtrePartenaires.indexOf(u.partenaire) || u.formData.niveau == '2'))){
+                  if((this.filtreUnion.indexOf(u.id) === -1) && ((this.filtrePartenaires.indexOf(u.partenaire) !== -1 || u.formData.niveau == '2'))){
                     delete u.security['shared_history'];
     
                     this.translate.get('UNION_PAGE.CHOIXNIVEAU.'+u.formData.niveau).subscribe((res: string) => {
@@ -3049,6 +3053,7 @@ export class UnionPage implements OnInit {
   
     getUnion(){
       //tous les departements
+      this.loading = true;
       if(this.idUnion && this.idUnion != ''){
         this.servicePouchdb.findRelationalDocByID('union', this.idUnion).then((res) => {
           if(res && res.unions[0]){
@@ -3077,13 +3082,15 @@ export class UnionPage implements OnInit {
             res.unions[0].formData = this.addItemToObjectAtSpecificPosition(res.unions[0].formData, 'codeCommune', res.communes[0].formData.code, 13);   
             res.unions[0].formData = this.addItemToObjectAtSpecificPosition(res.unions[0].formData, 'nomSiege', res.localites[0].formData.nom, 14);  
             res.unions[0].formData = this.addItemToObjectAtSpecificPosition(res.unions[0].formData, 'codeSiege', res.localites[0].formData.code, 15);   
-            
+            this.loading = false;
             this.infos({id: res.unions[0].id, idFederation: f, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idSiege: res.localites[0].id, ...res.unions[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
         }).catch((err) => {
+          this.loading = false;
           alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           console.log(err)
           this.close();
@@ -3110,6 +3117,7 @@ export class UnionPage implements OnInit {
           shared = {$ne: null};
         }
         this.servicePouchdb.findRelationalDocOfTypeByPere('union', 'partenaire', this.idPartenaire, deleted, archived, shared).then((res) => {
+          //console.log(res)
           if(res && res.unions){
             //this.unions = [...unions];
             //this.unionsData = [];
@@ -3127,7 +3135,7 @@ export class UnionPage implements OnInit {
             for(let u of res.unions){
               //supprimer l'historique de la liste
               if(this.filtreUnion){
-                if((this.filtreUnion.indexOf(u.id) === -1) && ((this.filtrePartenaires.indexOf(u.partenaire) || u.formData.niveau == '2'))){
+                if((this.filtreUnion.indexOf(u.id) === -1) && ((this.filtrePartenaires.indexOf(u.partenaire) !== -1 || u.formData.niveau == '2'))){
                   delete u.security['shared_history'];
   
                   this.translate.get('UNION_PAGE.CHOIXNIVEAU.'+u.formData.niveau).subscribe((res: string) => {
@@ -3365,6 +3373,7 @@ export class UnionPage implements OnInit {
   
             //this.unionsData = [...datas];
   
+            this.loading = false;
             if(this.mobile){
               this.unionsData = unionsData;
               this.unionsData.sort((a, b) => {
@@ -3424,7 +3433,7 @@ export class UnionPage implements OnInit {
           shared = {$ne: null};
         }
         this.servicePouchdb.findRelationalDocByType('union', deleted, archived, shared).then((res) => {
-          //console.log(res)
+         // console.log(res)
           if(res && res.unions){
             //this.unions = [...unions];
             //this.unionsData = [];
@@ -3559,6 +3568,7 @@ export class UnionPage implements OnInit {
 
             //this.unionsData = [...datas];
   
+            this.loading = false;
             if(this.mobile){
               this.unionsData = unionsData;
               this.unionsData.sort((a, b) => {
@@ -3585,6 +3595,7 @@ export class UnionPage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.unions = [];
           this.unionsData = [];
           console.log(err)

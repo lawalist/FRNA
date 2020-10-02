@@ -132,11 +132,11 @@ export var global = {
     },
     dataTable: true,
     peutExporterDonnees: true,
-    mobile: false,
+    mobile: true,
     enLigne: false,
     selectedIndexes: [],
     estConnecte: false,
-    estModeTeste: true,
+    estModeTeste: false,
     remoteSaved: null,
     //info_user: null,
     conf_serveur: {
@@ -166,7 +166,9 @@ export var global = {
         ops: [],
         personnes: [],
         projets: [],
-        protocoles: []
+        protocoles: [],
+        donneesUtilisateurs: [],
+        stationMeteos: []
       }
     },
     info_connexion: null,

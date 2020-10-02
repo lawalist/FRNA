@@ -75,6 +75,7 @@ export class PaysPage implements OnInit {
    }
 
   ngOnInit() {
+    //console.log('ff: '+this.filtrePays)
     this.translateLangue();
     this.getPays();
     //this.initForm();
@@ -683,6 +684,7 @@ export class PaysPage implements OnInit {
       component: DerniereModificationComponent,
       componentProps: { _id: pays.id, _rev: pays.rev, security: pays.security },
       mode: 'ios',
+      backdropDismiss: false,
       //cssClass: 'costom-modal',
     });
     return await modal.present();
@@ -912,6 +914,7 @@ export class PaysPage implements OnInit {
       component: RegionPage,
       componentProps: { idPays: idPays },
       mode: 'ios',
+      backdropDismiss: false,
       cssClass: 'costom-modal',
     });
     return await modal.present();
@@ -922,6 +925,7 @@ export class PaysPage implements OnInit {
       component: DepartementPage,
       componentProps: { idPays: idPays },
       mode: 'ios',
+      backdropDismiss: false,
       cssClass: 'costom-modal',
     });
     return await modal.present();
@@ -932,6 +936,7 @@ export class PaysPage implements OnInit {
       component: CommunePage,
       componentProps: { idPays: idPays },
       mode: 'ios',
+      backdropDismiss: false,
       cssClass: 'costom-modal',
     });
     return await modal.present();
@@ -942,6 +947,7 @@ export class PaysPage implements OnInit {
       component: LocalitePage,
       componentProps: { idPays: idPays },
       mode: 'ios',
+      backdropDismiss: false,
       cssClass: 'costom-modal',
     });
     return await modal.present();
@@ -1141,6 +1147,7 @@ export class PaysPage implements OnInit {
         for(let p of res.pays){
           if(this.filtrePays){
             //if(){
+              console.log(this.filtrePays.indexOf(p.id))
             if(this.filtrePays.indexOf(p.id) === -1){
               paysData.push({id: p.id, ...p.formData, ...p.formioData, ...p.security});
             }
@@ -1223,7 +1230,7 @@ export class PaysPage implements OnInit {
 
     let id = 'pays';
     if(this.filtrePays){
-      id = 'pays-relation';
+      id = 'pays-relation'; 
     }
 
     if(this.idPays && this.idPays != ''){

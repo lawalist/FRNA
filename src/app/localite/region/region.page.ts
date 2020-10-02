@@ -871,6 +871,7 @@ export class RegionPage implements OnInit {
         component: DerniereModificationComponent,
         componentProps: { _id: region.id, _rev: region.rev, security: region.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1097,6 +1098,7 @@ export class RegionPage implements OnInit {
         component: DepartementPage,
         componentProps: { idRegion: idRegion },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1107,6 +1109,7 @@ export class RegionPage implements OnInit {
         component: CommunePage,
         componentProps: { idRegion: idRegion },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1117,6 +1120,7 @@ export class RegionPage implements OnInit {
         component: LocalitePage,
         componentProps: { idRegion: idRegion },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1353,7 +1357,7 @@ export class RegionPage implements OnInit {
 
             for(let r of res.regions){
               if(this.filtreRegion){
-                if((this.filtreRegion.indexOf(r.id) === -1) && (this.filtrePays.indexOf(r.pays))){
+                if((this.filtreRegion.indexOf(r.id) === -1) && (this.filtrePays.indexOf(r.pays)  !== -1)){
                   r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[0].formData.nom, 0);    
                   r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[0].formData.code, 1); 
                   this.regionsData.push({id: r.id, idPays: res.pays[0].id, ...r.formData, ...r.formioData, ...r.security})    
@@ -1572,7 +1576,7 @@ export class RegionPage implements OnInit {
             let paysIndex = [];
             for(let r of res.regions){
               if(this.filtreRegion){
-                if((this.filtreRegion.indexOf(r.id) === -1) && this.filtrePays.indexOf(r.pays)){
+                if((this.filtreRegion.indexOf(r.id) === -1) && this.filtrePays.indexOf(r.pays) !== -1){
                   if(isDefined(paysIndex[r.pays])){
                     r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'nomPays', res.pays[paysIndex[r.pays]].formData.nom, 0);
                     r.formData = this.addItemToObjectAtSpecificPosition(r.formData, 'codePays', res.pays[paysIndex[r.pays]].formData.code, 1);       

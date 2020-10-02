@@ -967,6 +967,7 @@ export class CommunePage implements OnInit {
         component: DerniereModificationComponent,
         componentProps: { _id: commune.id, _rev: commune.rev, security: commune.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1181,6 +1182,7 @@ export class CommunePage implements OnInit {
         component: LocalitePage,
         componentProps: { idCommune: idCommune },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1463,7 +1465,7 @@ export class CommunePage implements OnInit {
             let idDepartement;
             for(let c of res.communes){
               if(this.filtreCommune){
-                if((this.filtreCommune.indexOf(c.id) === -1) && (this.filtreDepartements.indexOf(c.departement))){
+                if((this.filtreCommune.indexOf(c.id) === -1) && (this.filtreDepartements.indexOf(c.departement) !== -1)){
                   if(isDefined(paysIndex[c.pays])){
                     c.formData = this.addItemToObjectAtSpecificPosition(c.formData, 'nomPays', res.pays[paysIndex[c.pays]].formData.nom, 0);
                     c.formData = this.addItemToObjectAtSpecificPosition(c.formData, 'codePays', res.pays[paysIndex[c.pays]].formData.code, 1);
@@ -1826,7 +1828,7 @@ export class CommunePage implements OnInit {
             let idDepartement;
             for(let c of res.communes){
               if(this.filtreCommune){
-                if((this.filtreCommune.indexOf(c.id) === -1) && this.filtreDepartements.indexOf(c.departement)){
+                if((this.filtreCommune.indexOf(c.id) === -1) && this.filtreDepartements.indexOf(c.departement) !== -1){
                   if(isDefined(paysIndex[c.pays])){
                     c.formData = this.addItemToObjectAtSpecificPosition(c.formData, 'nomPays', res.pays[paysIndex[c.pays]].formData.nom, 0);
                     c.formData = this.addItemToObjectAtSpecificPosition(c.formData, 'codePays', res.pays[paysIndex[c.pays]].formData.code, 1);

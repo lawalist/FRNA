@@ -50,6 +50,7 @@ export class ProtocolePage implements OnInit {
 
   global = global;
   moment = moment;
+  loading: boolean = false;
   start: any;
   protocoleForm: FormGroup;
   action: string = 'liste';
@@ -63,7 +64,7 @@ export class ProtocolePage implements OnInit {
   domaines = ['Agronamie', 'Santé', 'Environement', 'Gouvernement'];
   niveauCollectes = [{id:"pays", val: "Pays"}, {id:"region", val:"Region"},{id: "commune", val: "Commune"},
     {id:"departement", val: "Departement"}, {id: "localite", val: "Localité"}, {id: "union", val: "Union"},
-    {id: "op", val: "OP"}, {id: "personne", val: "Personne"}, {id:"champ", val: "Champ"}];
+    {id: "op", val: "OP"}, {id: "personne", val: "Personne"}, {id:"champ", val: "Champ"}, {id:"aucun", val: "Aucun"}];
   unProtocole: any;
   unProtocoleDoc: any;
   protocoleHTMLTable: any;
@@ -1977,6 +1978,7 @@ export class ProtocolePage implements OnInit {
         componentProps: {  
           idModele: 'protocoles', _id: protocole.id, _rev: protocole.rev, security: protocole.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2170,6 +2172,7 @@ export class ProtocolePage implements OnInit {
           idModele: 'protocoles', idProtocole: idProtocole },
         //backdropDismiss: false,
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2182,6 +2185,7 @@ export class ProtocolePage implements OnInit {
           idModele: 'protocoles', idProtocole: idProtocole },
         //backdropDismiss: false,
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2824,6 +2828,7 @@ export class ProtocolePage implements OnInit {
   
     getProtocole(){
       //tous les departements
+      this.loading = true;
       if(this.idProtocole && this.idProtocole != ''){
         this.servicePouchdb.findRelationalDocByID('protocole', this.idProtocole).then((res) => {
           if(res && res.protocoles[0]){
@@ -2853,13 +2858,15 @@ export class ProtocolePage implements OnInit {
               u = null;
             }
 
-            
+            this.loading = false;
             this.infos({id: res.partenaires[0].id, idInstitution: f, idProjet: u, ...res.protocoles[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
         }).catch((err) => {
+          this.loading = false;
           alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           console.log(err)
           this.close();
@@ -2907,7 +2914,7 @@ export class ProtocolePage implements OnInit {
               
               if(this.filtreProtocole){
                 //console.log(u.projet+ "  "+this.filtreProjets)
-                if((this.filtreProtocole.indexOf(u.id) === -1)  && (this.filtreProjets.indexOf(u.projet) !== -1)){
+                if((this.filtreProtocole.indexOf(u.id) === -1) && (this.filtreProjets.indexOf(u.projet) !== -1)){
                   delete u.security['shared_history'];
 
                   this.translate.get('PROTOCOLE_PAGE.CHOIXNIVEAUCOLLECTE.'+u.formData.niveauCollecte).subscribe((res: string) => {
@@ -3022,6 +3029,7 @@ export class ProtocolePage implements OnInit {
 
             //this.protocolesData = [...datas]; 
   
+            this.loading = false;
             if(this.mobile){
               this.protocolesData = protocolesData;
               this.protocolesData.sort((a, b) => {
@@ -3052,6 +3060,7 @@ export class ProtocolePage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.protocoles = [];
           this.protocolesData = [];
           console.log(err)
@@ -3148,6 +3157,7 @@ export class ProtocolePage implements OnInit {
 
             //this.protocolesData = [...datas];
   
+            this.loading = false;
             //console.log(protocolesData)
             if(this.mobile){
               this.protocolesData = protocolesData;
@@ -3174,6 +3184,7 @@ export class ProtocolePage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.protocoles = [];
           this.protocolesData = [];
           console.log(err)

@@ -27,6 +27,8 @@ import { FiltrePaysComponent } from 'src/app/component/filtre-pays/filtre-pays.c
 import { FiltreRegionComponent } from 'src/app/component/filtre-region/filtre-region.component';
 import { FiltreDepartementComponent } from 'src/app/component/filtre-departement/filtre-departement.component';
 import { FiltreCommuneComponent } from 'src/app/component/filtre-commune/filtre-commune.component';
+import { FiltreDonneesUtilisateursComponent } from 'src/app/component/filtre-donnees-utilisateurs/filtre-donnees-utilisateurs.component';
+import { FiltreStationMeteoComponent } from 'src/app/component/filtre-station-meteo/filtre-station-meteo.component';
 
 const routes: Routes = [
   {
@@ -52,7 +54,7 @@ const routes: Routes = [
     }),
     RouterModule.forChild(routes)
   ],
-  declarations: [UtilisateursPage, FiltrePaysComponent, FiltreRegionComponent, FiltreDepartementComponent, FiltreCommuneComponent, FiltrePartenaireComponent, FiltreUnionComponent, FiltreOpComponent, FiltrePersonneComponent, FiltreProjetComponent, FiltreProtocoleComponent],
-  entryComponents: [FiltrePaysComponent, FiltreRegionComponent, FiltreDepartementComponent, FiltreCommuneComponent, FiltrePartenaireComponent, FiltreUnionComponent, FiltreOpComponent, FiltrePersonneComponent, FiltreProjetComponent, FiltreProtocoleComponent],
+  declarations: [UtilisateursPage, FiltrePaysComponent, FiltreRegionComponent, FiltreDepartementComponent, FiltreCommuneComponent, FiltrePartenaireComponent, FiltreUnionComponent, FiltreOpComponent, FiltrePersonneComponent, FiltreProjetComponent, FiltreProtocoleComponent, FiltreDonneesUtilisateursComponent, FiltreStationMeteoComponent],
+  entryComponents: [FiltrePaysComponent, FiltreRegionComponent, FiltreDepartementComponent, FiltreCommuneComponent, FiltrePartenaireComponent, FiltreUnionComponent, FiltreOpComponent, FiltrePersonneComponent, FiltreProjetComponent, FiltreProtocoleComponent, FiltreDonneesUtilisateursComponent, FiltreStationMeteoComponent],
 })
 export class UtilisateursPageModule {}

@@ -21,7 +21,7 @@
     <ion-title *ngIf="action == 'infos'">{{'REGION_PAGE.TITRE_INFO' | translate}}</ion-title>
     <ion-title *ngIf="action == 'modifier'">{{'REGION_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="!idRegion && mobile && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!filtreRegion && !idRegion && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only (click)="openRelationRegion($event)">
         <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
       </ion-button>
@@ -32,7 +32,7 @@
     </ion-buttons>
 
     <!--Si liste mobile-->
-    <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
+    <ion-buttons *ngIf="!filtreRegion && mobile && action == 'liste'" slot="end">
       <ion-button [disabled]="!global.controlAccesModele('regions', 'suppression')" *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
@@ -43,7 +43,7 @@
     </ion-buttons>
 
     <!--Close-->
-    <ion-buttons *ngIf="idRegion || (idPays && action == 'liste')" slot="end">
+    <ion-buttons *ngIf="idRegion || (idPays && action == 'liste') || filtreRegion" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -89,7 +89,7 @@
       </ion-buttons>
 
       
-      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+      <ion-buttons class="hid-boutons" *ngIf="!filtreRegion && selectedIndexes.length > 0" slot="end">
         <ion-button [disabled]="!global.controlAccesModele('regions', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
@@ -107,7 +107,7 @@
         </ion-button>
       </ion-buttons>
 
-      <ion-buttons class="hid-action" slot="end">
+      <ion-buttons class="hid-action" slot="end" *ngIf="!filtreRegion">
         <!--div [class.barre-verticale]="selectedIndexes.length > 0">
           <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
             <ion-icon name="more"></ion-icon>
@@ -234,7 +234,7 @@
       <div *ngIf="!idPays" class="table-responsive" id="region"></div>
       
       <!--les région du pays sélectionnée-->
-      <div *ngIf="idPays" class="table-responsive" id="region-pays"></div>
+      <div *ngIf="idPays || filtreRegion" class="table-responsive" id="region-pays"></div>
       <!--Si le tableau est vide>
       <ion-list *ngIf="!regionsData || !regionsData.length > 0" lines="none">        
         <ion-item class="vide">
@@ -363,7 +363,7 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="action == 'liste' && global.controlAccesModele('regions', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreRegion && action == 'liste' && global.controlAccesModele('regions', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
@@ -375,7 +375,7 @@
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!idRegion && action == 'infos' && global.controlAccesModele('regions', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreRegion && !idRegion && action == 'infos' && global.controlAccesModele('regions', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(uneRegion)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
@@ -386,4 +386,11 @@
   </ion-fab>
 </ion-content>
 
-
+<ion-footer *ngIf="filtreRegion">
+  <ion-toolbar>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+      <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="valider()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

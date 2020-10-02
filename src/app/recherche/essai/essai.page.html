@@ -54,7 +54,7 @@
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
-
+ 
 
   
   <!--Les bouton si mot mobile-->
@@ -207,14 +207,14 @@
           </ion-button>
         </ion-buttons>
 
-        <ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
+        <!--ion-item class="item-no-border" slot="end" style="padding-right: 5px !important"> 
           <ion-button title="{{'GENERAL.SAUVEGARDER' | translate}}" (click)="onSubmit()" type="submit" [disabled]="!essaiForm.valid" color="success">
             <ion-icon name="save"></ion-icon>
           </ion-button>
           <ion-button title="{{'GENERAL.ANNULER' | translate}}" color="light" class="m-l-5" (click)="annuler()">
               <ion-icon name="close"></ion-icon>
           </ion-button>
-        </ion-item>
+        </ion-item-->
       </ng-container>
   </ion-toolbar>
 
@@ -240,16 +240,54 @@
     </ion-card-header>
     <ion-card-content>
       <!--ion-searchbar placeholder="{{'GENERAL.RECHERCHER' | translate}}" (ionInput)="filter($event)" mode="ios" animated></ion-searchbar-->
-      <ng-container *ngIf="essaisData && essaisData.length > 0">
+      <ion-row *ngIf="!idProtocole">
+        <ion-col *ngIf="!idProjet">
+          <div id="selectProjet" class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.PROJETS' | translate}}</label>
+            <select class="select2 form-control" data-allow-clear="1">
+              <option></option>
+              <option *ngFor="let u of selectProjetData" [value]=u.id >{{u.nom}}</option>
+            </select>
+          </div>
+        </ion-col>
+        <ion-col>
+          <div id="selectProtocole" class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.PROTOCOLES' | translate}}</label>
+            <select class="select2 form-control" data-allow-clear="1">
+              <option></option>
+              <option *ngFor="let u of selectProtocoleData" [value]=u.id >{{u.nom}}</option>
+            </select>
+          </div>
+        </ion-col>
+      </ion-row>
+
+      <div class="text-center" [hidden]="!loading">
+        <!-- Animated Spinner -->
+        <div class="lds-roller mb-1">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <h4 class="text-uppercase font-weight-bold">{{'GENERAL.CHARGEMENT' | translate}}</h4>
+      </div>
+
+      <ng-container *ngIf="!loading && !hideData && essaisData && essaisData.length > 0">
         <ion-virtual-scroll [items]="essaisData">
           <ion-item-sliding *virtualItem="let p; let i =index">
             <ion-item ion-long-press [interval]="400" (onPressing)="active()" (click)="infos(p)">
               <ion-label>
-                <h2 ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NOM' | translate}}:</strong-->{{p.nom}}</h2>
-                <h3 ion-text-capitalize>{{p.nomProjet}}</h3>
+                <h2 ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NOM' | translate}}:</strong-->{{p.nomPersonne}} {{p.prenomPersonne}}</h2>
+                <h3 ion-text-capitalize>{{p.nomProtocole}}</h3>
 
                 <!--h2 ion-text-capitalize>{{p.numero}}</h2-->
-                <p ion-text-capitalize><!--strong>{{'ESSAI_PAGE.NUMERO' | translate}}:</strong-->{{p.nomLocalite}}</p>
+                <p ion-text-capitalize *ngIf="p.parcelle">{{p.parcelle}}</p>
+                <p ion-text-capitalize *ngIf="p.variete">{{p.variete}}</p>
+				        <p ion-text-capitalize *ngIf="p.entree">{{p.entree}}</p>
               </ion-label>
               <ion-checkbox [hidden]="!estModeCocherElemListe" (click)="cocherElemListe(p.id)" slot="end"></ion-checkbox>
             </ion-item>
@@ -270,7 +308,7 @@
       </ng-container>
       
       <!--Si la liste est vide-->
-      <ion-list *ngIf="!essaisData || !essaisData.length > 0" lines="none">        
+      <ion-list *ngIf="!loading && !hideData && (!essaisData || !essaisData.length > 0)" lines="none">        
         <ion-item class="vide">
           <ion-label>{{'GENERAL.LISTE_VIDE' | translate}}</ion-label>
         </ion-item>
@@ -280,10 +318,48 @@
 
   <!--Mode tableau-->
   <ion-card [hidden]="action == 'infos' || action == 'modifier' || action == 'ajouter'" *ngIf="!mobile">
+    <ion-card-header>
+      <ion-row *ngIf="!idProtocole">
+        <ion-col *ngIf="!idProjet">
+          <div id="selectProjet" class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.PROJETS' | translate}}</label>
+            <select class="select2 form-control" data-allow-clear="1">
+              <option></option>
+              <option *ngFor="let u of selectProjetData" [value]=u.id >{{u.nom}}</option>
+            </select>
+          </div>
+        </ion-col>
+        <ion-col>
+          <div id="selectProtocole" class="form-group has-feedback">
+            <label class="control-label">{{'GENERAL.PROTOCOLES' | translate}}</label>
+            <select class="select2 form-control" data-allow-clear="1">
+              <option></option>
+              <option *ngFor="let u of selectProtocoleData" [value]=u.id >{{u.nom}}</option>
+            </select>
+          </div>
+        </ion-col>
+      </ion-row>
+    </ion-card-header>
     <ion-card-content>
-      <div *ngIf="!idChamp && !idPersonne && !idPartenaire && !idProjet && !idProtocole" class="table-responsive" id="essai"></div>
+ 
+      <div class="text-center" [hidden]="!loading">
+        <!-- Animated Spinner -->
+        <div class="lds-roller mb-1">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <h4 class="text-uppercase font-weight-bold">{{'GENERAL.CHARGEMENT' | translate}}</h4>
+      </div>
+      
+      <div [hidden]="loading || hideData" *ngIf="!init && !idChamp && !idPersonne && !idPartenaire && !idProjet && !idProtocole" class="table-responsive" id="essai"></div>
 
-      <div *ngIf="idChamp || idPersonne || idPartenaire || idProjet || idProtocole" class="table-responsive" id="essai-relation"></div>
+      <div [hidden]="loading  || hideData" *ngIf="init || idChamp || idPersonne || idPartenaire || idProjet || idProtocole" class="table-responsive" id="essai-relation"></div>
 
       <!--Si le tableau est vide>
       <ion-list *ngIf="!essaisData || !essaisData.length > 0" lines="none">        
@@ -325,7 +401,7 @@
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.PROTOCOLE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentProtocole(unEssai.idProtocole)">{{unEssai.nomProtocole}}</a></ion-col></ion-row>
               <div class="hr"></div>
-              <ion-row><ion-col><h2><strong>{{'GENERAL.PERSONNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPersonne(unEssai.idPersonne)">{{unEssai.nomPersonne}}</a></ion-col></ion-row>
+              <ion-row><ion-col><h2><strong>{{'GENERAL.PERSONNE' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentPersonne(unEssai.idPersonne)">{{unEssai.nomPersonne}} {{unEssai.prenomPersonne}}</a></ion-col></ion-row>
               <div class="hr"></div>
               <ion-row><ion-col><h2><strong>{{'GENERAL.CHAMP' | translate}}:</strong></h2></ion-col><ion-col><a class="lien pointer" (click)="presentChamp(unEssai.idChamp)">{{unEssai.nomChamp}}</a></ion-col></ion-row>
 
@@ -738,8 +814,10 @@
 
 
                 </div> 
-                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Suivant" />
-            </fieldset>
+                <input type="button" name="next" [disabled]="!essaiForm.valid" class="next action-button m-l-5" value="Suivant" />
+                <input type="button" name="annuler" (click)="annuler()" class="annuler m-l-5" value="{{'GENERAL.ANNULER' | translate}}" />
+
+              </fieldset>
 
             <ng-container *ngFor="let f of formulaireData">
               <fieldset>
@@ -758,8 +836,9 @@
                     </div>
                        
                 </div> 
-                <input type="button" [hidden]="!(formioFormsData[f.formData.code] && formioFormsData[f.formData.code].submit)" name="next" [disabled]="!essaiForm.valid" class="next action-button" value="Suivant" /> 
-                <input type="button" name="previous" class="previous action-button-previous" value="Précédent" />
+                <input type="button" [hidden]="!(formioFormsData[f.formData.code] && formioFormsData[f.formData.code].submit)" name="next" [disabled]="!essaiForm.valid" class="next action-button m-l-5" value="Suivant" /> 
+                <input type="button" name="previous" class="previous action-button-previous m-l-5" value="Précédent" />
+                <input type="button" name="annuler" (click)="annuler()" class="annuler m-l-5" value="{{'GENERAL.ANNULER' | translate}}" />
               </fieldset>
             </ng-container>
             <!--fieldset>
@@ -798,7 +877,8 @@
                     </div>
                 </div>
                 <div class="row justify-content-center">
-                  <input type="button" name="previous" class="previous action-button-previous m-l-5" (click)="annuler()" value="{{'GENERAL.ANNULER' | translate}}" />
+                  <input type="button" name="annuler" (click)="annuler()" class="annuler m-l-5" value="{{'GENERAL.ANNULER' | translate}}" />
+                  <!--input type="button" name="previous" class="previous action-button-previous m-l-5" (click)="annuler()" value="{{'GENERAL.ANNULER' | translate}}" /-->
                   <input type="button" name="next" [disabled]="!essaiForm.valid" (click)="onSubmit()" class="next action-button m-l-5" value="{{'GENERAL.SAUVEGARDER' | translate}}" /> 
                 </div>
             </fieldset>

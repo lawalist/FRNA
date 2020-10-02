@@ -21,7 +21,7 @@
     <ion-title *ngIf="action == 'infos'">{{'COMMUNE_PAGE.TITRE_INFO' | translate}}</ion-title>
     <ion-title *ngIf="action == 'modifier'">{{'COMMUNE_PAGE.TITRE_MODIFIER' | translate}}</ion-title>
 
-    <ion-buttons *ngIf="!idCommune && mobile && action == 'infos'" slot="end">
+    <ion-buttons *ngIf="!filtreCommune && !idCommune && mobile && action == 'infos'" slot="end">
       <ion-button ion-button icon-only (click)="openRelationCommune($event)">
         <i style="font-size: 22px" class="mdi mdi-redo-variant mdi-rotate-90"></i>
       </ion-button>
@@ -32,7 +32,7 @@
     </ion-buttons>
 
     <!--Si liste mobile-->
-    <ion-buttons *ngIf="mobile && action == 'liste'" slot="end">
+    <ion-buttons *ngIf="!filtreCommune && mobile && action == 'liste'" slot="end">
       <ion-button [disabled]="!global.controlAccesModele('communes', 'suppression')" *ngIf="selectedIndexes.length > 0" color="danger" (click)="supprimerElemCocherListe()">
         <ion-icon name="trash"></ion-icon>
       </ion-button>
@@ -43,7 +43,7 @@
     </ion-buttons>
 
     <!--Close-->
-    <ion-buttons *ngIf="idCommune || ((idPays || idRegion || idDepartement) && action == 'liste')" slot="end">
+    <ion-buttons *ngIf="idCommune || ((idPays || idRegion || idDepartement) && action == 'liste') || filtreCommune" slot="end">
       <ion-button title="{{'GENERAL.FERMER' | translate}}" ion-button icon-only (click)="close()">
         <ion-icon name="close"></ion-icon>
       </ion-button>
@@ -90,7 +90,7 @@
       </ion-buttons>
 
       
-      <ion-buttons class="hid-boutons" *ngIf="selectedIndexes.length > 0" slot="end">
+      <ion-buttons class="hid-boutons" *ngIf="!filtreCommune && selectedIndexes.length > 0" slot="end">
         <ion-button [disabled]="!global.controlAccesModele('communes', 'lecture')" title="{{'GENERAL.AFFICHER_ENREGISTRMENT' | translate}}" slot="end" color="primary" (click)="selectedItemInfo()">
           <ion-icon name="eye"></ion-icon>
         </ion-button>
@@ -108,7 +108,7 @@
         </ion-button>
       </ion-buttons>
 
-      <ion-buttons class="hid-action" slot="end">
+      <ion-buttons class="hid-action" *ngIf="!filtreCommune" slot="end">
         <!--div [class.barre-verticale]="selectedIndexes.length > 0">
           <ion-button [class.marge-pour-barre-verticale]="selectedIndexes.length > 0" title="{{'GENERAL.OPTIONS ' | translate}}" slot="end" (click)="actionDatatablePopover($event)">
             <ion-icon name="more"></ion-icon>
@@ -232,10 +232,10 @@
       </ng-container-->
       <!--Le tabelau-->
       <!--Toutes les communes-->
-      <div *ngIf="!idPays || !idRegion || !idDepartement" class="table-responsive" id="commune"></div>
+      <div *ngIf="!idPays || !idRegion || !idDepartement || !filtreCommune" class="table-responsive" id="commune"></div>
       
       <!--les région du pays sélectionnée-->
-      <div *ngIf="idPays || idRegion || idDepartement" class="table-responsive" id="commune-pays"></div>
+      <div *ngIf="idPays || idRegion || idDepartement || filtreCommune" class="table-responsive" id="commune-pays"></div>
       <!--Si le tableau est vide->
       <ion-list *ngIf="!communesData || !communesData.length > 0" lines="none">        
         <ion-item class="vide">
@@ -398,7 +398,7 @@
   </ion-card>
 
   <br><br><br>
-  <ion-fab *ngIf="action == 'liste' && global.controlAccesModele('regions', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreCommune && action == 'liste' && global.controlAccesModele('regions', 'creation')" (click)="ajouter()" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button>
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
@@ -410,7 +410,7 @@
     </ion-fab-button>
   </ion-fab-->
 
-  <ion-fab *ngIf="!idCommune && action == 'infos' && global.controlAccesModele('communes', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
+  <ion-fab *ngIf="!filtreCommune && !idCommune && action == 'infos' && global.controlAccesModele('communes', 'modification')" vertical="bottom" horizontal="end" slot="fixed">
     <ion-fab-button (click)="modifier(uneCommune)" color="primary"><ion-icon name="create"></ion-icon></ion-fab-button>
   </ion-fab>
 
@@ -420,3 +420,12 @@
     </ion-fab-button>
   </ion-fab>
 </ion-content>
+
+<ion-footer *ngIf="filtreCommune">
+  <ion-toolbar>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" title="{{'GENERAL.ANNULER' | translate}}" (click)="close()"><span class="fa fa-times"></span> {{'GENERAL.ANNULER' | translate}}</button>
+      <button type="button" class="btn btn-primary" title="{{'GENERAL.VALIDER' | translate}}" (click)="valider()"><span class="fa fa-check"></span> {{'GENERAL.VALIDER' | translate}}</button>
+    </div>
+  </ion-toolbar>
+</ion-footer>

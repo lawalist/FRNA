@@ -7,6 +7,7 @@
         "GENERAL": "Général",
         "EDITER": "Editer",
         "TELEPHONE": "Téléphone",
+        "CHARGEMENT": "Chargement en cours...",
         "ADRESSE": "Adresse",
         "EMAIL": "E-mail",
         "INFOS_GENERAL": "Informations générales",
@@ -93,6 +94,8 @@
         "UNION": "Union",
         "UNIONS": "Unions",
         "OP": "OP",
+        "PLUVIOMETRIE": "Pluviometrie",
+        "STATIONMETEO": "Station météo",
         "OPS": "OPs",
         "ESSAIS": "Collecte de données",
         "CHAMPS": "Champs",
@@ -104,6 +107,8 @@
         "FORMULAIRE": "Formulaire",
         "FORMULAIRES": "Formulaires",
         "INFORMATION": "Information",
+        "STATIONMETEOS": "Stations météo",
+        "DONNEESUTILISATEURS": "Données utilisateurs",
         "PROFIL": "Profil",
         "DECONNEXION": "Deconnexion",
         "CONNEXION": "Connexion",
@@ -171,7 +176,9 @@
             "UNIONS": "Unions",
             "OPS": "OPs",
             "PERSONNES": "Personnes",
-            "CHAMP": "Champ"
+            "CHAMP": "Champ",
+            "STATIONMETEOS": "Stations météo",
+            "PLUVIOMETRIES": "Pluviometries"
         },
         "RECHERCHE": {
             "RECHERCHE": "Recherche",
@@ -782,8 +789,8 @@
             "1": "Aucun",
             "2": "Primaire non términée",
             "3": "Primaire",
-            "4": "Colège non términé",
-            "5": "Colège",
+            "4": "Collège non términé",
+            "5": "Collège",
             "6": "Lycée non términé",
             "7": "Lycée",
             "8": "Université"
@@ -1047,7 +1054,8 @@
             "3": "Gage", 
             "4": "Héritage", 
             "5": "Location", 
-            "6": "Prêt"
+            "6": "Prêt",
+            "7": "Autre"
         },
         "NUMERO_PERSONNE": "Numéro personne",
         "NOM_PERSONNE": "Nom personne",
@@ -1061,15 +1069,15 @@
         "NOMDEPARTEMENT": "Nom département",
         "CODECOMMUNE": "Code commune",
         "NOMCOMMUNET": "Nom commune",
-        "CODESIEGE": "Code siège",
-        "NOMSIEGE": "Nom siège",
+        "CODELOCALITE": "Code localité",
+        "NOMLOCALITE": "Nom localité",
         "SELECTIONPERSONNE": "Personne",
         "SELECTIONPAYS": "Pays",
         "SELECTIONREGION": "Région",
         "SELECTIONDEPARTEMENT": "Département",
         "SELECTIONCOMMUNE": "Commune",
         "SELECTIONTYPESOLE": "Type de sole",
-        "SELECTIONSIEGE": "Village",
+        "SELECTIONLOCALITE": "Localité",
         "FORMULAIRE_AJOUT": "Formulaire d'ajout d'un champ",
         "FORMULAIRE_MODIFICATION": "Formulaire de modification d'un champ",
         "MESSAGES_VALIDATION": {
@@ -1110,8 +1118,8 @@
             "CODECOMMUNE": {
                 "REQUIRED": "La commune est requise."
             },
-            "CODESIEGE": {
-                "REQUIRED": "Le siège est requis."
+            "CODELOCALITE": {
+                "REQUIRED": "La localité est requise."
             }
         }
     },
@@ -1176,7 +1184,8 @@
             "union": "Union",
             "op": "OP",
             "personne": "Personne",
-            "champ": "Champ"
+            "champ": "Champ",
+            "aucun": "Aucun"
         },
         "SELECTIONINSTITUTION": "Sélectionner l'institution",
         "UPDATEDATA": "Contunier à modifier les données apres la date fin ?",
@@ -1311,6 +1320,101 @@
                 "REQUIRED": "L'op est requise."
             }
         }
+    },
+    "STATIONMETEO_PAGE": {
+        "TITRE_LISTE": "Stations météo",
+        "TITRE_AJOUTER": "Ajouter une station météo",
+        "TITRE_INFO": "Infos station météo",
+        "TITRE_MODIFIER": "Modifier une station météo",
+        "CODE": "Code",
+        "NUMERO": "Numéro",
+        "NOM": "Nom",
+        "DATECREATION": "Date de création",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "CODECOMMUNE": "Code commune",
+        "NOMCOMMUNET": "Nom commune",
+        "CODELOCALITE": "Code localité",
+        "NOMLOCALITE": "Nom localité",
+        "SELECTIONPAYS": "Sélectionner le pays",
+        "SELECTIONREGION": "Sélectionner la région",
+        "SELECTIONDEPARTEMENT": "Sélectionner le département",
+        "SELECTIONCOMMUNE": "Sélectionner la commune",
+        "SELECTIONLOCALITE": "Sélectionner la localité",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une station météo",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une station météo",
+        "MESSAGES_VALIDATION": {
+            "NUMERO": {
+                "REQUIRED": "Le numéro est requis.",
+                "UNIQUENUMEROPARTENAIRE": "Le numéro a été déjà pris."
+            },
+            "NOM": {
+                "REQUIRED": "Le nom est requis."
+            },
+            "CODEPAYS": {
+                "REQUIRED": "Le pays est requis."
+            },
+            "CODEREGION": {
+                "REQUIRED": "La région est requise."
+            },
+            "CODEDEPARTEMENT": {
+                "REQUIRED": "Le département est requis."
+            },
+            "CODECOMMUNE": {
+                "REQUIRED": "La commune est requise."
+            },
+            "CODESIEGE": {
+                "REQUIRED": "La localité est requis."
+            }
+        }
+    },
+    "PLUVIOMETRIE_PAGE": {
+        "TITRE_LISTE": "Pluviometries",
+        "TITRE_AJOUTER": "Ajouter une pluviometrie",
+        "TITRE_INFO": "Infos pluviometrie",
+        "TITRE_MODIFIER": "Modifier une pluviometrie",
+        "DATE": "Date",
+        "NUMERO": "Numéro",
+        "QUANTITE": "Quantite",
+        "COMMENTAIRE": "Commentaire",
+        "NUMERO_SATATIONMETEO": "Numéro station météo",
+        "NOM_STATIONMETEO": "Nom station météo",
+        "CODEPAYS": "Code pays",
+        "NOMPAYS": "Nom pays",
+        "CODEREGION": "Code région",
+        "NOMREGION": "Nom région",
+        "CODEDEPARTEMENT": "Code département",
+        "NOMDEPARTEMENT": "Nom département",
+        "CODECOMMUNE": "Code commune",
+        "NOMCOMMUNET": "Nom commune",
+        "CODELOCALITE": "Code localité",
+        "NOMLOCALITE": "Nom localité",
+        "SELECTIONSTATIONMETEO": "Sélectionner la station météo",
+        "SELECTIONPAYS": "Sélectionner le pays",
+        "SELECTIONREGION": "Sélectionner la région",
+        "SELECTIONDEPARTEMENT": "Sélectionner le département",
+        "SELECTIONCOMMUNE": "Sélectionner la commune",
+        "SELECTIONLOCALITE": "Sélectionner la localité",
+        "FORMULAIRE_AJOUT": "Formulaire d'ajout d'une pluviometrie",
+        "FORMULAIRE_MODIFICATION": "Formulaire de modification d'une pluviometrie",
+        "MESSAGES_VALIDATION": {
+            "DATE": {
+                "REQUIRED": "Le code est requise."
+            },
+            "NUMERO": {
+                "REQUIRED": "Le numéro est requis.",
+                "UNIQUENUMEROPARTENAIRE": "Le numéro a été déjà pris."
+            },
+            "QUANTITE": {
+                "REQUIRED": "La quantité est requise."
+            },
+            "NUMERO_STATIONMETEO": {
+                "REQUIRED": "La station météo est requise."
+            }
+        }
     }
-
 }

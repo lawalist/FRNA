@@ -49,6 +49,10 @@ import { EssaiPageModule } from './recherche/essai/essai.module';
 import { ProtocolePageModule } from './recherche/protocole/protocole.module';
 import { ConnexionPageModule } from './utilisateur/connexion/connexion.module';
 import { ProfilPageModule } from './utilisateur/profil/profil.module';
+import { UtilisateursPageModule } from './administration/utilisateurs/utilisateurs.module';
+import { StationMeteoPageModule } from './institution/station-meteo/station-meteo.module';
+import { PluviometriePageModule } from './institution/pluviometrie/pluviometrie.module';
+import { ConfServeurPageModule } from './configuration/conf-serveur/conf-serveur.module';
 
 
 //Activé angular en mode production
@@ -89,7 +93,11 @@ export function HttpLoaderFactory(http: HttpClient) {
     ProtocolePageModule,
     FormulaireProtocolePageModule,
     ConnexionPageModule,
-    ProfilPageModule
+    ProfilPageModule,
+    UtilisateursPageModule,
+    StationMeteoPageModule,
+    PluviometriePageModule,
+    ConfServeurPageModule
   ],
   providers: [
     StatusBar,

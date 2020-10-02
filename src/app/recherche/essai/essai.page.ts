@@ -33,6 +33,7 @@ import { CommunePage } from 'src/app/localite/commune/commune.page';
 import { DepartementPage } from 'src/app/localite/departement/departement.page';
 import { RegionPage } from 'src/app/localite/region/region.page';
 import { PaysPage } from 'src/app/localite/pays/pays.page';
+var keysInObject = require('keys-in-object');
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var createDataTable: any;
@@ -65,6 +66,7 @@ export class EssaiPage implements OnInit {
 
   global = global;
   start: any;
+  loading: boolean = false;
   moment = moment;
   essaiForm: FormGroup;
   action: string = 'liste';
@@ -105,12 +107,19 @@ export class EssaiPage implements OnInit {
   rechargerListeMobile: boolean = false;
   formioForms = [];
   formioFormsData: any = {};
+  hideData = false;
+  init = false;
+  selectedProtocoleID: any = null;
+  formKeys: any = [];
 
   nbEtapes = 2;
   etapeCourante = 1;
   rev = 0;
 
-  tmpColonnes = ['numero', 'dateCollecte', 'niveauCollecte', 'nomInstitution', 'numeroInstitution', 'nomProjet', 'numeroProjet', 'nomProtocole', 'numeroProtocole']
+  selectProjetData: any = [];
+  selectProtocoleData: any = [];
+
+tmpColonnes = ['numero', 'nomProjet', 'nomProtocole', 'dateCollecte', 'niveauCollecte', 'matriculePersonne', 'nomPersonne', 'prenomPersonne', 'nomUnion', 'numeroUnion', 'nomOP', 'numeroOP', 'nomChamp', 'nomSite', 'codeSite', 'nomLocalite', 'codeLocalite']
   colonnes = [];
 
   messages_validation = {
@@ -160,9 +169,66 @@ export class EssaiPage implements OnInit {
     ngOnInit() {
       //au cas où la essai est en mode modal, on chercher info region
       this.translateLangue();
-      this.getEssai();
+      if(!this.idProjet && !this.idProtocole){
+        this.translate.get('GENERAL.PROJETS').subscribe((res: string) => {
+          this.initSelect2('selectProjet', res, true);
+        });
+      }
+      
+      if(!this.idProtocole){
+        this.translate.get('GENERAL.PROTOCOLES').subscribe((res: string) => {
+          this.initSelect2('selectProtocole', res, true);
+        });
+      }else{
+        this.getEssai();
+      }
+      
+      if(!this.idProjet && !this.idProtocole){
+        this.getProjetParDateCollecte(new Date(), true);
+      }
+      
+      if(this.idProjet){
+        this.getProtocoleParProjet(this.idProjet, true)
+      }
+      
+  
+      //
     }
 
+
+    getFormKeys(idProtocole){
+      this.formKeys = [];
+      this.servicePouchdb.findRelationalDocOfTypeByPere('formulaireprotocole', 'protocole', idProtocole, false).then((res) => {
+        //console.log(res)
+        if(res && res['formulaireprotocoles']){
+          
+          for(let u of res['formulaireprotocoles']){
+            var arrayOfKey = keysInObject(u.formioData.components, 'key');
+            //let cols = [];
+            for(let c of arrayOfKey){
+              this.formKeys = Array.from(new Set(this.formKeys.concat(c)));
+            }
+
+            /*if(u.formData.keys && u.formData.keys.length > 0){
+              this.formKeys = Array.from(new Set(this.formKeys.concat(u.formData.keys)));
+            }else{
+              var arrayOfKey = keysInObject(u.formioData.components, 'key');
+              //let cols = [];
+              for(let c of arrayOfKey){
+                this.formKeys = Array.from(new Set(this.formKeys.concat(c)));
+              }
+            }*/
+            
+          }
+
+          //console.log(this.formKeys);
+
+        }
+      }).catch((err) => {
+
+        console.log(err)
+      });
+    }
     setLiDynamiqueWidth(){
       $("#msform").ready(function(){
         var lis = $("#progressbar li");
@@ -179,7 +245,7 @@ export class EssaiPage implements OnInit {
         var current_fs, next_fs, previous_fs; //fieldsets
         var opacity;
         var current = 1;
-        var steps = $("fieldset").length;
+        var steps = $("fieldset").length - 1;
         
         setProgressBar(current);
         self.etapeCourante = current;
@@ -348,10 +414,10 @@ export class EssaiPage implements OnInit {
       });
     }
 
-    initSelect2(id, placeholder, search = false){
+    initSelect2(id, placeholder, noSearch = false){
       var self = this;
       var infinity = null;
-      if(search){
+      if(noSearch){
         infinity = Infinity;
       }
 
@@ -365,10 +431,20 @@ export class EssaiPage implements OnInit {
         });
 
         $('#'+id+' select').on('select2:select', function (e) {
-          //console.log('sele')
           //var data = e.params.data;
-          self.essaiForm.controls[id].setValue(e.params.data.id)
-          if(id == 'idInstitution'){
+          
+          if(self.essaiForm && self.essaiForm.controls[id]){
+            self.essaiForm.controls[id].setValue(e.params.data.id)
+          }
+          
+          if(id == 'selectProjet'){
+            self.getProtocoleParProjet(e.params.data.id, true)
+          }else if(id == 'selectProtocole'){
+            self.hideData = false;
+            self.selectedProtocoleID = e.params.data.id;
+            self.getFormKeys(e.params.data.id);
+            self.getEssai(e.params.data.id);
+          }else if(id == 'idInstitution'){
             self.setNumeroAndNomInstitution(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
           }else if(id == 'idProjet'){
@@ -412,12 +488,23 @@ export class EssaiPage implements OnInit {
           }else if(id == 'idOp'){
             self.setNumeroAndNomOp(self.essaiForm.value[id]);
             self.setSelectRequredError(id, id)
-          }         
+          }
+          
+         
         });
 
-        $('#'+id+' select').on("select2:unselect", function (e) { 
-          self.essaiForm.controls[id].setValue(null); 
-          if(id == 'idInstitution'){
+        $('#'+id+' select').on("select2:unselect", function (e) {
+          if(self.essaiForm && self.essaiForm.controls && self.essaiForm.controls[id]) {
+            self.essaiForm.controls[id].setValue(null);
+          }
+           
+          if(id == 'selectProjet'){
+            self.hideData = true;
+            //console.log(self.hideData)
+          }else if(id == 'selectProtocole'){
+            self.hideData = true;
+            self.selectedProtocoleID = null;
+          }else if(id == 'idInstitution'){
             self.essaiForm.controls.idInstitution.setValue(null);
             self.essaiForm.controls.numeroInstitution.setValue(null);
             self.essaiForm.controls.nomInstitution.setValue(null);
@@ -590,7 +677,7 @@ export class EssaiPage implements OnInit {
     }
   
     editForm(oDoc){
-      let essai = oDoc.essais[0];
+      let essai = oDoc.collectedonnees[0];
       let idInstitution;
       //let numeroInstitution;
       //let nomInstitution;
@@ -735,6 +822,9 @@ export class EssaiPage implements OnInit {
         idLocalite: [idLocalite, Validators.required]
       });
 
+      this.initRequired(u.niveauCollecte);
+
+      //console.log(this.essaiForm.value)
       this.validerNumero();
 
     }
@@ -837,6 +927,7 @@ export class EssaiPage implements OnInit {
             this.essaiForm.controls['nomLocalite'].clearValidators();
             this.essaiForm.controls['codeLocalite'].clearValidators();
             this.essaiForm.controls['idLocalite'].clearValidators();
+            console.log(this.essaiForm.value)
           } else if(value == 'champ'){
             this.essaiForm.controls['numeroUnion'].clearValidators();
             this.essaiForm.controls['nomUnion'].clearValidators();
@@ -1076,10 +1167,310 @@ export class EssaiPage implements OnInit {
           this.essaiForm.controls['idLocalite'].setValidators(Validators.required);
         }
 
-        console.log
+        //console.log
       });
     }
 
+
+    initRequired(value){
+      if(value == 'union'){
+        this.essaiForm.controls['numeroUnion'].setValidators(Validators.required);
+        this.essaiForm.controls['nomUnion'].setValidators(Validators.required);
+        this.essaiForm.controls['idUnion'].setValidators(Validators.required);
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+        this.essaiForm.controls['idPays'].clearValidators();
+        this.essaiForm.controls['nomPays'].clearValidators();
+        this.essaiForm.controls['codePays'].clearValidators();
+        this.essaiForm.controls['nomRegion'].clearValidators();
+        this.essaiForm.controls['codeRegion'].clearValidators();
+        this.essaiForm.controls['idRegion'].clearValidators();
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+
+      }else if(value == 'op'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].setValidators(Validators.required);
+        this.essaiForm.controls['nomOp'].setValidators(Validators.required);
+        this.essaiForm.controls['idOp'].setValidators(Validators.required);
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+        this.essaiForm.controls['idPays'].clearValidators();
+        this.essaiForm.controls['nomPays'].clearValidators();
+        this.essaiForm.controls['codePays'].clearValidators();
+        this.essaiForm.controls['nomRegion'].clearValidators();
+        this.essaiForm.controls['codeRegion'].clearValidators();
+        this.essaiForm.controls['idRegion'].clearValidators();
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else if(value == 'personne'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPersonne'].setValidators(Validators.required);
+        this.essaiForm.controls['idPersonne'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+        this.essaiForm.controls['idPays'].clearValidators();
+        this.essaiForm.controls['nomPays'].clearValidators();
+        this.essaiForm.controls['codePays'].clearValidators();
+        this.essaiForm.controls['nomRegion'].clearValidators();
+        this.essaiForm.controls['codeRegion'].clearValidators();
+        this.essaiForm.controls['idRegion'].clearValidators();
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+        //console.log(this.essaiForm.value)
+      } else if(value == 'champ'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPersonne'].setValidators(Validators.required);
+        this.essaiForm.controls['idPersonne'].setValidators(Validators.required);
+        this.essaiForm.controls['nomChamp'].setValidators(Validators.required);
+        this.essaiForm.controls['idChamp'].setValidators(Validators.required);
+        this.essaiForm.controls['codeChamp'].setValidators(Validators.required);
+
+        this.essaiForm.controls['idPays'].clearValidators();
+        this.essaiForm.controls['nomPays'].clearValidators();
+        this.essaiForm.controls['codePays'].clearValidators();
+        this.essaiForm.controls['nomRegion'].clearValidators();
+        this.essaiForm.controls['codeRegion'].clearValidators();
+        this.essaiForm.controls['idRegion'].clearValidators();
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else if(value == 'pays'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+
+        this.essaiForm.controls['idPays'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+        this.essaiForm.controls['codePays'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomRegion'].clearValidators();
+        this.essaiForm.controls['codeRegion'].clearValidators();
+        this.essaiForm.controls['idRegion'].clearValidators();
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else if(value == 'region'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+
+        this.essaiForm.controls['idPays'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+        this.essaiForm.controls['codePays'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomDepartement'].clearValidators();
+        this.essaiForm.controls['codeDepartement'].clearValidators();
+        this.essaiForm.controls['idDepartement'].clearValidators();
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else if(value == 'departement'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+
+        this.essaiForm.controls['idPays'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+        this.essaiForm.controls['codePays'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomCommune'].clearValidators();
+        this.essaiForm.controls['codeCommune'].clearValidators();
+        this.essaiForm.controls['idCommune'].clearValidators();
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else if(value == 'commune'){
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+
+        this.essaiForm.controls['idPays'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+        this.essaiForm.controls['codePays'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomCommune'].setValidators(Validators.required);
+        this.essaiForm.controls['codeCommune'].setValidators(Validators.required);
+        this.essaiForm.controls['idCommune'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomLocalite'].clearValidators();
+        this.essaiForm.controls['codeLocalite'].clearValidators();
+        this.essaiForm.controls['idLocalite'].clearValidators();
+      }else{
+        this.essaiForm.controls['numeroUnion'].clearValidators();
+        this.essaiForm.controls['nomUnion'].clearValidators();
+        this.essaiForm.controls['idUnion'].clearValidators();
+
+        this.essaiForm.controls['numeroOp'].clearValidators();
+        this.essaiForm.controls['nomOp'].clearValidators();
+        this.essaiForm.controls['idOp'].clearValidators();
+
+        this.essaiForm.controls['matriculePersonne'].clearValidators();
+        this.essaiForm.controls['nomPersonne'].clearValidators();
+        this.essaiForm.controls['idPersonne'].clearValidators();
+        this.essaiForm.controls['nomChamp'].clearValidators();
+        this.essaiForm.controls['idChamp'].clearValidators();
+        this.essaiForm.controls['codeChamp'].clearValidators();
+
+        this.essaiForm.controls['idPays'].setValidators(Validators.required);
+        this.essaiForm.controls['nomPays'].setValidators(Validators.required);
+        this.essaiForm.controls['codePays'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['codeRegion'].setValidators(Validators.required);
+        this.essaiForm.controls['idRegion'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['codeDepartement'].setValidators(Validators.required);
+        this.essaiForm.controls['idDepartement'].setValidators(Validators.required);
+
+        this.essaiForm.controls['nomCommune'].setValidators(Validators.required);
+        this.essaiForm.controls['codeCommune'].setValidators(Validators.required);
+        this.essaiForm.controls['idCommune'].setValidators(Validators.required);
+        
+        this.essaiForm.controls['nomLocalite'].setValidators(Validators.required);
+        this.essaiForm.controls['codeLocalite'].setValidators(Validators.required);
+        this.essaiForm.controls['idLocalite'].setValidators(Validators.required);
+      }
+    
+    }
     contunier(e, target){
       console.log(target)
       e.preventDefault();
@@ -1203,13 +1594,13 @@ export class EssaiPage implements OnInit {
           }
   
           this.action = 'infos';
-          this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
+          this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
             
-            if(res && res.essais[0]){
+            if(res && res.collectedonnees[0]){
               this.unEssaiDoc = res;
-              this.rev = res.essais[0].rev.substring(0, res.essais[0].rev.indexOf('-'));
-              //console.log(this.unEssaiDoc.essais[0])
-              this.showFormioData(res.essais[0].protocole, res.essais[0])
+              this.rev = res.collectedonnees[0].rev.substring(0, res.collectedonnees[0].rev.indexOf('-'));
+              //console.log(this.unEssaiDoc.collectedonnees[0])
+              this.showFormioData(res.collectedonnees[0].protocole, res.collectedonnees[0])
             }
           }).catch((err) => {
             alert(this.translate.instant('GENERAL.MODIFICATION_IMPOSSIBLE')+': '+err)
@@ -1237,7 +1628,7 @@ export class EssaiPage implements OnInit {
         //si l'utilisateur est passé par infos pour faire la modificatin
         if(this.action == 'infos' && this.unEssaiDoc){
             this.editForm(this.clone(this.unEssaiDoc));
-            this.unEssaiDoc = this.unEssaiDoc.essais[0];
+            this.unEssaiDoc = this.unEssaiDoc.collectedonnees[0];
   
             //this.getInstitution();
   
@@ -1281,10 +1672,10 @@ export class EssaiPage implements OnInit {
             this.wizarAction();
         }else{
           this.unEssaiDoc = null;
-          this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
+          this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
           
-            if(res && res.essais[0]){
-              let oDoc = res.essais[0];
+            if(res && res.collectedonnees[0]){
+              let oDoc = res.collectedonnees[0];
               this.unEssaiDoc = oDoc;
               this.editForm(res);
               //this.getInstitution();
@@ -1356,7 +1747,10 @@ export class EssaiPage implements OnInit {
           }
         };
 
-        formElement.innerHTML = '';
+        if(formElement){
+          formElement.innerHTML = '';
+        }
+        
         Formio.createForm(formElement, form, opts).then((form) => {
           //charger les données
           form.submission = {
@@ -1533,10 +1927,10 @@ export class EssaiPage implements OnInit {
             handler: (data) => {
               if(data.toString() != 'oui'){
 
-                this.servicePouchdb.findRelationalDocByID('essai', u.id).then((res) => {
-                  res.essais[0].security = this.servicePouchdb.garderDeleteTrace(res.essais[0].security);
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', u.id).then((res) => {
+                  res.collectedonnees[0].security = this.servicePouchdb.garderDeleteTrace(res.collectedonnees[0].security);
 
-                  this.servicePouchdb.updateRelationalDoc(res.essais[0]).then((res) => {
+                  this.servicePouchdb.updateRelationalDoc(res.collectedonnees[0]).then((res) => {
                     //mise à jour de la liste si mobile et mode liste
                     if(this.essaisData.indexOf(u) !== -1){
                       this.essaisData.splice(this.essaisData.indexOf(u), 1);
@@ -1567,8 +1961,8 @@ export class EssaiPage implements OnInit {
 
               }else{
 
-                this.servicePouchdb.findRelationalDocByID('essai', u.id).then((res) => {
-                 this.servicePouchdb.deleteRelationalDocDefinitivement(res.essais[0]).then((res) => {
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', u.id).then((res) => {
+                 this.servicePouchdb.deleteRelationalDocDefinitivement(res.collectedonnees[0]).then((res) => {
 
                   //mise à jour de la liste si mobile et mode liste
                   if(this.essaisData.indexOf(u) !== -1){
@@ -1738,9 +2132,9 @@ export class EssaiPage implements OnInit {
             handler: () => {
               for(let id of ids){
                 //var u = this.essaisData[i];
-                this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                  res.essais[0].security = this.servicePouchdb.garderArchivedTrace(res.essais[0].security);
-                  this.servicePouchdb.updateRelationalDoc(res.essais[0]).catch((err) => {
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                  res.collectedonnees[0].security = this.servicePouchdb.garderArchivedTrace(res.collectedonnees[0].security);
+                  this.servicePouchdb.updateRelationalDoc(res.collectedonnees[0]).catch((err) => {
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_ARCHIVAGE')+': '+err.toString());
                   });//fin update
                   
@@ -1797,9 +2191,9 @@ export class EssaiPage implements OnInit {
             cssClass: 'alert-danger',
             handler: () => {
               for(let id of ids){
-                this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                  res.essais[0].security = this.servicePouchdb.garderDesarchivedTrace(res.essais[0].security);
-                  this.servicePouchdb.updateRelationalDoc(res.essais[0]).catch((err) => {
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                  res.collectedonnees[0].security = this.servicePouchdb.garderDesarchivedTrace(res.collectedonnees[0].security);
+                  this.servicePouchdb.updateRelationalDoc(res.collectedonnees[0]).catch((err) => {
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_DESARCHIVAGE')+': '+err.toString());
                   });//fin update
                   
@@ -2160,9 +2554,9 @@ export class EssaiPage implements OnInit {
             handler: (data) => {
               if(data.toString() != 'oui'){
                 for(let id of ids){
-                  this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                    res.essais[0].security = this.servicePouchdb.garderDeleteTrace(res.essais[0].security);
-                    this.servicePouchdb.updateRelationalDoc(res.essais[0]).catch((err) => {
+                  this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                    res.collectedonnees[0].security = this.servicePouchdb.garderDeleteTrace(res.collectedonnees[0].security);
+                    this.servicePouchdb.updateRelationalDoc(res.collectedonnees[0]).catch((err) => {
                       this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
                     });//fin update
                     
@@ -2194,8 +2588,8 @@ export class EssaiPage implements OnInit {
                 //suppresion multiple définitive
                 for(let id of ids){
                   
-                  this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                    this.servicePouchdb.deleteRelationalDocDefinitivement(res.essais[0]).catch((err) => {
+                  this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                    this.servicePouchdb.deleteRelationalDocDefinitivement(res.collectedonnees[0]).catch((err) => {
                       this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
                     });//fin delete
                     
@@ -2252,8 +2646,8 @@ export class EssaiPage implements OnInit {
               //suppresion multiple définitive
               for(let id of ids){
                 
-                this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                  this.servicePouchdb.deleteRelationalDocDefinitivement(res.essais[0]).catch((err) => {
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                  this.servicePouchdb.deleteRelationalDocDefinitivement(res.collectedonnees[0]).catch((err) => {
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_SUPPRESSION')+': '+err.toString());
                   });//fin delete
                   
@@ -2309,9 +2703,9 @@ export class EssaiPage implements OnInit {
             handler: () => {
               for(let id of ids){
                 
-                this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-                  res.essais[0].security = this.servicePouchdb.garderRestaureTrace(res.essais[0].security);
-                  this.servicePouchdb.updateRelationalDoc(res.essais[0]).catch((err) => {
+                this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+                  res.collectedonnees[0].security = this.servicePouchdb.garderRestaureTrace(res.collectedonnees[0].security);
+                  this.servicePouchdb.updateRelationalDoc(res.collectedonnees[0]).catch((err) => {
                     this.afficheMessage(this.translate.instant('GENERAL.ALERT_ERREUR_RESTAURATION')+': '+err.toString());
                   });//fin update
                   
@@ -2624,8 +3018,9 @@ export class EssaiPage implements OnInit {
       this.recherchePlus = false;
       this.filterAjouter = false;
       let cols = [];
+      this.colonnes = [];
 
-      this.servicePouchdb.findRelationalDocInConflict('essai').then((res) => {
+      this.servicePouchdb.findRelationalDocInConflict('collectedonnee').then((res) => {
         if(res){
           let essaisData = [];
           let institutionIndex = [];
@@ -2634,7 +3029,7 @@ export class EssaiPage implements OnInit {
           let personneIndex = [];
           let champIndex = [];
           let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
-          for(let u of res.essais){
+          for(let u of res.collectedonnees){
             //supprimer l'historique de la liste
             delete u.security['shared_history'];
 
@@ -2711,12 +3106,14 @@ export class EssaiPage implements OnInit {
               if(isDefined(personneIndex[u.personne])){
                 u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
                 u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                u.formData.prenomPersonne = res.personnes[personneIndex[u.personne]].formData.prenom
                 idPersonne = res.personnes[personneIndex[u.personne]].id;
               }else{
                 for(let i=0; i < res.personnes.length; i++){
                   if(res.personnes[i].id == u.personne){
                     u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
                     u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                    u.formData.prenomPersonne = res.personnes[i].formData.prenom
                     personneIndex[u.personne] = i;
                     idPersonne = res.personnes[i].id;
                     break;
@@ -2727,6 +3124,7 @@ export class EssaiPage implements OnInit {
               //collone vide
               u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
               u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+              u.formData.prenomPersonne = null;
               idPersonne = null;
             }
 
@@ -2753,44 +3151,178 @@ export class EssaiPage implements OnInit {
               idChamp = null;
             }
 
+            //union
+            if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].union){
+              for(let i=0; i < res.unions.length; i++){
+                if(res.unions[i].id == res.personnes[personneIndex[u.personne]].union){
+                  u.formData.numeroUnion = res.unions[i].formData.numero
+                  u.formData.nomUnion = res.unions[i].formData.nom
+                  break;
+                }
+              }
+            }
 
-            essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
-            cols = Array.from(new Set(cols.concat(keys(u.formioData))));
+            //op
+            if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].op){
+              for(let i=0; i < res.ops.length; i++){
+                if(res.ops[i].id == res.personnes[personneIndex[u.personne]].op){
+                  u.formData.numeroOP = res.ops[i].formData.numero
+                  u.formData.nomOP = res.ops[i].formData.nom
+                  break;
+                }
+              }
+            }
+            
+
+            //communes
+            if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].commune){
+              for(let i=0; i < res.communes.length; i++){
+                if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                  u.formData.codeSite = res.communes[i].formData.code
+                  u.formData.nomSite = res.communes[i].formData.nom
+                  break;
+                }
+              }
+            }
+            
+            //localité
+            if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].localite){
+              for(let i=0; i < res.localites.length; i++){
+                if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                  u.formData.codeLocalite = res.localites[i].formData.code
+                  u.formData.nomLocalite = res.localites[i].formData.nom
+                  break;
+                }
+              }
+            }
+            
+            /*for(let i=0; i < res.communes.length; i++){
+              if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                u.formData.codeSite = res.communes[i].formData.code
+                u.formData.nomSite = res.communes[i].formData.nom
+                //champIndex[u.champ] = i;
+                //idChamp = res.champs[i].id;
+                break;
+              }
+            }
+
+            //localité
+            for(let i=0; i < res.localites.length; i++){
+              if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                u.formData.codeLocalite = res.localites[i].formData.code
+                u.formData.nomLocalite = res.localites[i].formData.nom
+                //champIndex[u.champ] = i;
+                //idChamp = res.champs[i].id;
+                break;
+              }
+            }*/
+            
+              
+              /*//communes
+              if(res.champs[champIndex[u.champ]].commune && res.champs[champIndex[u.champ]].commune != ''){
+                /*if(isDefined(communeIndex[res.champs[champIndex[u.champ]].commune])){
+                  u.formData.codeSite = res.champs[champIndex[u.champ]].formData.code
+                  u.formData.nomSite = res.champs[champIndex[u.champ]].formData.nom
+                }else{*****
+                  for(let i=0; i < res.communes.length; i++){
+                    if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                      u.formData.codeSite = res.communes[i].formData.code
+                      u.formData.nomSite = res.communes[i].formData.nom
+                      //champIndex[u.champ] = i;
+                      //idChamp = res.champs[i].id;
+                      break;
+                    }
+                  }
+               // }  
+              }else{
+                //collone vide
+                u.formData.codeSite = null
+                u.formData.nomSite = null
+              }
+
+              if(res.champs[champIndex[u.champ]].localite && res.champs[champIndex[u.champ]].localite != ''){
+                /*if(isDefined(localiteIndex[res.champs[champIndex[u.champ]].localite])){
+                  u.formData.codeLocalite = res.champs[champIndex[u.champ]].formData.code
+                  u.formData.nomLocalite = res.champs[champIndex[u.champ]].formData.nom
+                }else{***
+                  for(let i=0; i < res.localites.length; i++){
+                    if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                      u.formData.codeLocalite = res.localites[i].formData.code
+                      u.formData.nomLocalite = res.localites[i].formData.nom
+                      //champIndex[u.champ] = i;
+                      //idChamp = res.champs[i].id;
+                      break;
+                    }
+                  }
+               // }  
+              }else{
+                //collone vide
+                u.formData.codeLocalite = null
+                u.formData.nomLocalite = null
+              }*/
+
+
+            essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData[Object.keys(u.formioData)[0]], ...u.security});
+            cols = Array.from(new Set(cols.concat(keys(u.formioData[Object.keys(u.formioData)[0]]))));
           }
 
           cols.sort((a, b) => {
-            if (a < b) {
+            return this.formKeys.indexOf(a) - this.formKeys.indexOf(b)
+            /*if (a < b) {
               return -1;
             }
             if (a > b) {
               return 1;
             }
-            return 0;
+            return 0;*/
           });
 
           this.colonnes = this.tmpColonnes.concat(cols);
 
           if(this.mobile){
             this.essaisData = essaisData;
-            this.essaisData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
+            if(this.essaisData[0].parcelle){
+              this.essaisData.sort((a, b) => {
+                if (a.parcelle < b.parcelle) {
+                  return -1;
+                }
+                if (a.parcelle > b.parcelle) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else if(this.essaisData[0].variete){
+              this.essaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.essaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
+            
 
             this.allEssaisData = [...this.allEssaisData]
           } else{
             $('#essai').ready(()=>{
               if(global.langue == 'en'){
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }else{
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }
-              this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+              this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai');
             });
           }
         }
@@ -2859,6 +3391,7 @@ export class EssaiPage implements OnInit {
         componentProps: { 
           idModele: 'essais', _id: essai.id, _rev: essai.rev, security: essai.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2874,13 +3407,13 @@ export class EssaiPage implements OnInit {
 
 
       if(id && id != ''){
-        this.servicePouchdb.findRelationalDocByID('essai', id).then((res) => {
-          if(res && res.essais[0]){
+        this.servicePouchdb.findRelationalDocByID('collectedonnee', id).then((res) => {
+          if(res && res.collectedonnees[0]){
             if(this.estModeCocherElemListe){
               this.estModeCocherElemListe = false;
               this.decocherTousElemListe();
             }
-            this.presentDerniereModification(res.essais[0]);
+            this.presentDerniereModification(res.collectedonnees[0]);
           }else{
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           }
@@ -3022,7 +3555,7 @@ export class EssaiPage implements OnInit {
         let essai: any = {
           //_id: 'fuma:essai:'+data.numero,
           //id: formData.numero,
-          type: 'essai',
+          type: 'collectedonnee',
           partenaire: formData.idInstitution, //relation avec la fédération
           projet: formData.idProjet,
           protocole: formData.idProtocole,
@@ -3119,9 +3652,9 @@ export class EssaiPage implements OnInit {
 
         this.servicePouchdb.createRelationalDoc(doc).then((res) => {
           //fusionner les différend objets
-          let essaiData = {id: res.essais[0].id,...essai.formData, ...essai.formioData, ...essai.security};
+          let essaiData = {id: res.collectedonnees[0].id,...essai.formData, ...essai.formioData, ...essai.security};
           //this.essais = essai;
-          //essai._rev = res.essais[0].rev;
+          //essai._rev = res.collectedonnees[0].rev;
           //this.essais.push(essai);
           this.action = 'liste';
           //this.rechargerListeMobile = true;
@@ -3131,28 +3664,73 @@ export class EssaiPage implements OnInit {
           }else{
             //mobile, cache la liste des essai pour mettre à jour la base de données
             this.essaisData.push(essaiData);
-            this.essaisData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
+            if(this.essaisData[0].parcelle){
+              this.essaisData.sort((a, b) => {
+                if (a.parcelle < b.parcelle) {
+                  return -1;
+                }
+                if (a.parcelle > b.parcelle) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else if(this.essaisData[0].variete){
+              this.essaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.essaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
 
             this.essaisData = [...this.essaisData];
 
             this.allEssaisData.push(essaiData);
-            this.allEssaisData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
+            if(this.allEssaisData[0].parcelle){
+              this.allEssaisData.sort((a, b) => {
+                if (a.parcelle < b.parcelle) {
+                  return -1;
+                }
+                if (a.parcelle > b.parcelle) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else if(this.allEssaisData[0].variete){
+              this.allEssaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.allEssaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
+
           }
           //this.htmlTableAction = 'recharger';
 
@@ -3249,16 +3827,37 @@ export class EssaiPage implements OnInit {
               }
             }
 
-            this.essaisData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
-
+            if(this.essaisData[0].parcelle){
+              this.essaisData.sort((a, b) => {
+                if (a.parcelle < b.parcelle) {
+                  return -1;
+                }
+                if (a.parcelle > b.parcelle) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else if(this.essaisData[0].variete){
+              this.essaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.essaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
             //mise à jour dans la liste cache
             for(let i = 0; i < this.allEssaisData.length; i++){
               if(this.allEssaisData[i].id == essaiData.id){
@@ -3267,15 +3866,37 @@ export class EssaiPage implements OnInit {
               }
             }
 
-            this.allEssaisData.sort((a, b) => {
-              if (a.nom < b.nom) {
-                return -1;
-              }
-              if (a.nom > b.nom) {
-                return 1;
-              }
-              return 0;
-            });
+            if(this.allEssaisData[0].parcelle){
+              this.allEssaisData.sort((a, b) => {
+                if (a.parcelle < b.parcelle) {
+                  return -1;
+                }
+                if (a.parcelle > b.parcelle) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else if(this.allEssaisData[0].variete){
+              this.allEssaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.allEssaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
 
             this.rechargerListeMobile = true;
           }else{
@@ -3300,23 +3921,23 @@ export class EssaiPage implements OnInit {
             if(this.htmlTableAction && this.htmlTableAction != '' && this.htmlTableAction == 'recharger'){
               //si modification des données (ajout, modification, suppression), générer une nouvelle table avec les données à jour
               if(global.langue == 'en'){
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }else{
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }
               
               this.htmlTableAction = null;
             }else{
               //sinon pas de modification des données (ajout, modification, suppression), utiliser l'ancienne table déjà créée
               if(global.langue == 'en'){
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, null, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }else{
-                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.essaiHTMLTable = createDataTable("essai", this.colonnes, data, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
               }
               this.htmlTableAction = null;
             }
             
-            this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+            this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai');
           });
         }
       
@@ -3324,8 +3945,9 @@ export class EssaiPage implements OnInit {
   
     doRefresh(event) {
       let cols = [];
+      this.colonnes = [];
       if(this.action != 'conflits'){
-        if((this.idChamp && this.idChamp!= '') || (this.idPersonne && this.idPersonne!= '') || (this.idProtocole && this.idProtocole!= '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
+        if((this.selectedProtocoleID && this.selectedProtocoleID != '') || (this.idChamp && this.idChamp != '') || (this.idPersonne && this.idPersonne != '') || (this.idProtocole && this.idProtocole != '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
           var deleted: any;
           var archived: any;
           var shared: any;
@@ -3378,6 +4000,11 @@ export class EssaiPage implements OnInit {
           }else if(this.idProtocole){
             typePere = 'protocole';
             idPere = this.idProtocole;
+          }else if(this.selectedProtocoleID && !this.idChamp && !this.idPersonne && !this.idProtocole && !this.idProjet && !this.idPartenaire){
+            typePere = 'protocole';
+            idPere = this.selectedProtocoleID;
+            this.getFormKeys(idPere);
+            this.init = true;
           }else if(this.idProjet){
             typePere = 'projet';
             idPere = this.idProjet;
@@ -3385,180 +4012,307 @@ export class EssaiPage implements OnInit {
             typePere = 'partenaire';
             idPere = this.idPartenaire;
           }
-
-          this.servicePouchdb.findRelationalDocOfTypeByPere('essai', typePere, idPere, deleted, archived, shared).then((res) => {
-            if(res && res.essais){
+  
+          //console.log('2071234A-896E-8541-9990-C4B2F748417E => '+idPere)
+          //'5E9861AB-CEFE-C83F-BFD6-FB75D7E125DF'
+          this.servicePouchdb.findRelationalDocOfTypeByPere('collectedonnee', typePere, idPere, deleted, archived, shared).then((res) => {
+            //console.log(res)
+            if(res && res.collectedonnees){
               //this.essais = [...essais];
               let essaisData = [];
+              //var datas = [];
               let institutionIndex = [];
               let projetIndex = [];
               let protocoleIndex = [];
               let personneIndex = [];
               let champIndex = [];
-              let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
-              for(let u of res.essais){
+              let communeIndex = [];
+              let localiteIndex = [];
+              let idInstitution, idProjet, idProtocole, idPersonne, idChamp, idCommune, idLocalite;
+              for(let u of res.collectedonnees){
                 //supprimer l'historique de la liste
-                delete u.security['shared_history'];
+                if((idPere != this.selectedProtocoleID && u.protocole == this.selectedProtocoleID) || (idPere == this.selectedProtocoleID)){
+                  delete u.security['shared_history'];
   
-                if(u.partenaire && u.partenaire != ''){
-                  if(isDefined(institutionIndex[u.partenaire])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
-                    idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
-                  }else{
-                    for(let i=0; i < res.partenaires.length; i++){
-                      if(res.partenaires[i].id == u.partenaire){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                        institutionIndex[u.partenaire] = i;
-                        idInstitution =  res.partenaires[i].id;
-                        break;
-                      }
-                    }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                  idInstitution = null;
-                }
-  
-                if(u.projet && u.projet != ''){
-                  if(isDefined(projetIndex[u.projet])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
-                    idProjet = res.projets[projetIndex[u.projet]].id;
-                  }else{
-                    for(let i=0; i < res.projets.length; i++){
-                      if(res.projets[i].id == u.projet){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
-                        projetIndex[u.projet] = i;
-                        idProjet = res.projets[i].id;
-                        break;
-                      }
-                    }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
-                  idProjet = null;
-                }
-  
-                if(u.protocole && u.protocole != ''){
-                  if(isDefined(protocoleIndex[u.projet])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.numero, 6);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.nom, 7);
-                    idProtocole = res.protocoles[protocoleIndex[u.protocole]].id;
-                  }else{
-                    for(let i=0; i < res.protocoles.length; i++){
-                      if(res.protocoles[i].id == u.protocole){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[i].formData.numero, 6);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[i].formData.nom, 7);
-                        protocoleIndex[u.protocole] = i;
-                        idProtocole = res.protocoles[i].id;
-                        break;
-                      }
-                    }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', null, 6);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', null, 7);
-                  idProtocole = null;
-                }
 
-                if(u.personne && u.personne != ''){
-                  if(isDefined(personneIndex[u.personne])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
-                    idPersonne = res.personnes[personneIndex[u.personne]].id;
+                  if(u.partenaire && u.partenaire != ''){
+                    if(isDefined(institutionIndex[u.partenaire])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                      idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                    }else{
+                      for(let i=0; i < res.partenaires.length; i++){
+                        if(res.partenaires[i].id == u.partenaire){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                          institutionIndex[u.partenaire] = i;
+                          idInstitution =  res.partenaires[i].id;
+                          break;
+                        }
+                      }
+                    }  
                   }else{
-                    for(let i=0; i < res.personnes.length; i++){
-                      if(res.personnes[i].id == u.personne){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
-                        personneIndex[u.personne] = i;
-                        idPersonne = res.personnes[i].id;
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                    idInstitution = null;
+                  }
+    
+                  if(u.projet && u.projet != ''){
+                    if(isDefined(projetIndex[u.projet])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                      idProjet = res.projets[projetIndex[u.projet]].id;
+                    }else{
+                      for(let i=0; i < res.projets.length; i++){
+                        if(res.projets[i].id == u.projet){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                          projetIndex[u.projet] = i;
+                          idProjet = res.projets[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                    idProjet = null;
+                  }
+    
+                  if(u.protocole && u.protocole != ''){
+                    if(isDefined(protocoleIndex[u.projet])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.numero, 6);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.nom, 7);
+                      idProtocole = res.protocoles[protocoleIndex[u.protocole]].id;
+                    }else{
+                      for(let i=0; i < res.protocoles.length; i++){
+                        if(res.protocoles[i].id == u.protocole){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[i].formData.numero, 6);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[i].formData.nom, 7);
+                          protocoleIndex[u.protocole] = i;
+                          idProtocole = res.protocoles[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', null, 6);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', null, 7);
+                    idProtocole = null;
+                  }
+    
+                  if(u.personne && u.personne != ''){
+                    if(isDefined(personneIndex[u.personne])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                      u.formData.prenomPersonne = res.personnes[personneIndex[u.personne]].formData.prenom;
+                      idPersonne = res.personnes[personneIndex[u.personne]].id;
+                    }else{
+                      for(let i=0; i < res.personnes.length; i++){
+                        if(res.personnes[i].id == u.personne){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                          u.formData.prenomPersonne = res.personnes[i].formData.prenom;
+                          personneIndex[u.personne] = i;
+                          idPersonne = res.personnes[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                    u.formData.prenomPersonne = null;
+                    idPersonne = null;
+                  }
+    
+                  if(u.champ && u.champ != ''){
+                    if(isDefined(champIndex[u.champ])){
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[champIndex[u.champ]].formData.code, 10);
+                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[champIndex[u.champ]].formData.nom, 11);
+                      idChamp = res.champs[champIndex[u.champ]].id;
+                    }else{
+                      for(let i=0; i < res.champs.length; i++){
+                        if(res.champs[i].id == u.champ){
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[i].formData.code, 10);
+                          u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[i].formData.nom, 11);
+                          champIndex[u.champ] = i;
+                          idChamp = res.champs[i].id;
+                          break;
+                        }
+                      }
+                    }  
+                  }else{
+                    //collone vide
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', null, 10);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', null, 11);
+                    idChamp = null;
+                  }
+    
+                  //union
+                  if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].union){
+                    for(let i=0; i < res.unions.length; i++){
+                      if(res.unions[i].id == res.personnes[personneIndex[u.personne]].union){
+                        u.formData.numeroUnion = res.unions[i].formData.numero
+                        u.formData.nomUnion = res.unions[i].formData.nom
                         break;
                       }
                     }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
-                  idPersonne = null;
-                }
-
-                if(u.champ && u.champ != ''){
-                  if(isDefined(champIndex[u.champ])){
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[champIndex[u.champ]].formData.code, 10);
-                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[champIndex[u.champ]].formData.nom, 11);
-                    idChamp = res.champs[champIndex[u.champ]].id;
-                  }else{
-                    for(let i=0; i < res.champs.length; i++){
-                      if(res.champs[i].id == u.champ){
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[i].formData.code, 10);
-                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[i].formData.nom, 11);
-                        champIndex[u.champ] = i;
-                        idChamp = res.champs[i].id;
+                  }
+    
+                  //op
+                  if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].op){
+                    for(let i=0; i < res.ops.length; i++){
+                      if(res.ops[i].id == res.personnes[personneIndex[u.personne]].op){
+                        u.formData.numeroOP = res.ops[i].formData.numero
+                        u.formData.nomOP = res.ops[i].formData.nom
                         break;
                       }
                     }
-                  }  
-                }else{
-                  //collone vide
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', null, 10);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', null, 11);
-                  idChamp = null;
+                  }
+                  
+                  //communes
+                  if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].commune){
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                        u.formData.codeSite = res.communes[i].formData.code
+                        u.formData.nomSite = res.communes[i].formData.nom
+                        break;
+                      }
+                    }
+                  }
+                  
+                  //localité
+                  if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].localite){
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                        u.formData.codeLocalite = res.localites[i].formData.code
+                        u.formData.nomLocalite = res.localites[i].formData.nom
+                        break;
+                      }
+                    }
+                  }
+                  
+                  
+                  /*//communes
+                  if(res.champs[champIndex[u.champ]].commune && res.champs[champIndex[u.champ]].commune != ''){
+                    /*if(isDefined(communeIndex[res.champs[champIndex[u.champ]].commune])){
+                      u.formData.codeSite = res.champs[champIndex[u.champ]].formData.code
+                      u.formData.nomSite = res.champs[champIndex[u.champ]].formData.nom
+                    }else{*****
+                      for(let i=0; i < res.communes.length; i++){
+                        if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                          u.formData.codeSite = res.communes[i].formData.code
+                          u.formData.nomSite = res.communes[i].formData.nom
+                          //champIndex[u.champ] = i;
+                          //idChamp = res.champs[i].id;
+                          break;
+                        }
+                      }
+                   // }  
+                  }else{
+                    //collone vide
+                    u.formData.codeSite = null
+                    u.formData.nomSite = null
+                  }
+    
+                  if(res.champs[champIndex[u.champ]].localite && res.champs[champIndex[u.champ]].localite != ''){
+                    /*if(isDefined(localiteIndex[res.champs[champIndex[u.champ]].localite])){
+                      u.formData.codeLocalite = res.champs[champIndex[u.champ]].formData.code
+                      u.formData.nomLocalite = res.champs[champIndex[u.champ]].formData.nom
+                    }else{***
+                      for(let i=0; i < res.localites.length; i++){
+                        if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                          u.formData.codeLocalite = res.localites[i].formData.code
+                          u.formData.nomLocalite = res.localites[i].formData.nom
+                          //champIndex[u.champ] = i;
+                          //idChamp = res.champs[i].id;
+                          break;
+                        }
+                      }
+                   // }  
+                  }else{
+                    //collone vide
+                    u.formData.codeLocalite = null
+                    u.formData.nomLocalite = null
+                  }*/
+    
+                  essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData[Object.keys(u.formioData)[0]], ...u.security});
+                  cols = Array.from(new Set(cols.concat(keys(u.formioData[Object.keys(u.formioData)[0]]))));
                 }
-
-
-                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
-                cols = Array.from(new Set(cols.concat(keys(u.formioData))));
+                
               }
   
               cols.sort((a, b) => {
-                if (a < b) {
+                return this.formKeys.indexOf(a) - this.formKeys.indexOf(b)
+                /*if (a < b) {
                   return -1;
                 }
                 if (a > b) {
                   return 1;
                 }
-                return 0;
+                return 0;*/
               });
   
               this.colonnes = this.tmpColonnes.concat(cols);
-              //this.essaisData = [...datas];
+  
+              //this.essaisData = [...datas]; 
     
+              //this.loading = false;
               if(this.mobile){
                 this.essaisData = essaisData;
-                this.essaisData.sort((a, b) => {
-                  if (a.nom < b.nom) {
-                    return -1;
-                  }
-                  if (a.nom > b.nom) {
-                    return 1;
-                  }
-                  return 0;
-                });
+                if(this.essaisData[0].parcelle){
+                  this.essaisData.sort((a, b) => {
+                    if (a.parcelle < b.parcelle) {
+                      return -1;
+                    }
+                    if (a.parcelle > b.parcelle) {
+                      return 1;
+                    }
+                    return 0;
+                  });
+                }else if(this.essaisData[0].variete){
+                  this.essaisData.sort((a, b) => {
+                    if (a.variete < b.variete) {
+                      return -1;
+                    }
+                    if (a.variete > b.variete) {
+                      return 1;
+                    }
+                    return 0;
+                  });
+                }else{
+                  this.essaisData.sort((a, b) => {
+                    if (a.nomPersonne < b.nomPersonne) {
+                      return -1;
+                    }
+                    if (a.nomPersonne > b.nomPersonne) {
+                      return 1;
+                    }
+                    return 0;
+                  });
+                }
   
                 this.allEssaisData = [...this.essaisData];
               } else{
                 $('#essai-relation').ready(()=>{
                   if(global.langue == 'en'){
-                    this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees);
+                    this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                   }else{
-                    this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                    this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                   }
-                  this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+                  this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai-relation');
                 });
               }
+
               if(event)
               event.target.complete();
             }else{
+              this.loading = false
               this.essais = [];
               //if(this.mobile){
               this.essaisData = [];
@@ -3569,6 +4323,7 @@ export class EssaiPage implements OnInit {
                 event.target.complete();
             }
           }).catch((err) => {
+            this.loading = false;
             this.essais = [];
             this.essaisData = [];
             this.selectedIndexes = [];
@@ -3576,7 +4331,7 @@ export class EssaiPage implements OnInit {
                 event.target.complete();
             console.log(err)
           });
-        
+                
         }else{
           var deleted: any;
           var archived: any;
@@ -3599,17 +4354,17 @@ export class EssaiPage implements OnInit {
             shared = {$ne: null};
           }
   
-          this.servicePouchdb.findRelationalDocByType('essai', deleted, archived, shared).then((res) => {
-            if(res && res.essais){
+          this.servicePouchdb.findRelationalDocByType('collectedonnee', deleted, archived, shared).then((res) => {
+            if(res && res.collectedonnees){
+              //this.essais = [...essais];
               let essaisData = [];
-              //var datas = [];
               let institutionIndex = [];
               let projetIndex = [];
               let protocoleIndex = [];
               let personneIndex = [];
               let champIndex = [];
               let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
-              for(let u of res.essais){
+              for(let u of res.collectedonnees){
                 //supprimer l'historique de la liste
                 delete u.security['shared_history'];
   
@@ -3681,17 +4436,19 @@ export class EssaiPage implements OnInit {
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', null, 7);
                   idProtocole = null;
                 }
-
+  
                 if(u.personne && u.personne != ''){
                   if(isDefined(personneIndex[u.personne])){
                     u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
                     u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                    u.formData.prenomPersonne = res.personnes[personneIndex[u.personne]].formData.prenom
                     idPersonne = res.personnes[personneIndex[u.personne]].id;
                   }else{
                     for(let i=0; i < res.personnes.length; i++){
                       if(res.personnes[i].id == u.personne){
                         u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
                         u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                        u.formData.prenomPersonne = res.personnes[i].formData.prenom;
                         personneIndex[u.personne] = i;
                         idPersonne = res.personnes[i].id;
                         break;
@@ -3702,9 +4459,10 @@ export class EssaiPage implements OnInit {
                   //collone vide
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                  u.formData.prenomPersonne = null;
                   idPersonne = null;
                 }
-
+  
                 if(u.champ && u.champ != ''){
                   if(isDefined(champIndex[u.champ])){
                     u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[champIndex[u.champ]].formData.code, 10);
@@ -3727,45 +4485,182 @@ export class EssaiPage implements OnInit {
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', null, 11);
                   idChamp = null;
                 }
-
-
-                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
-                cols = Array.from(new Set(cols.concat(keys(u.formioData))));
+  
+                //union
+                if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].union){
+                  for(let i=0; i < res.unions.length; i++){
+                    if(res.unions[i].id == res.personnes[personneIndex[u.personne]].union){
+                      u.formData.numeroUnion = res.unions[i].formData.numero
+                      u.formData.nomUnion = res.unions[i].formData.nom
+                      break;
+                    }
+                  }
+                }
+  
+                //op
+                if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].op){
+                  for(let i=0; i < res.ops.length; i++){
+                    if(res.ops[i].id == res.personnes[personneIndex[u.personne]].op){
+                      u.formData.numeroOP = res.ops[i].formData.numero
+                      u.formData.nomOP = res.ops[i].formData.nom
+                      break;
+                    }
+                  }
+                }
+  
+                //communes
+                if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].commune){
+                  for(let i=0; i < res.communes.length; i++){
+                    if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                      u.formData.codeSite = res.communes[i].formData.code
+                      u.formData.nomSite = res.communes[i].formData.nom
+                      break;
+                    }
+                  }
+                }
+                
+                //localité
+                if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].localite){
+                  for(let i=0; i < res.localites.length; i++){
+                    if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                      u.formData.codeLocalite = res.localites[i].formData.code
+                      u.formData.nomLocalite = res.localites[i].formData.nom
+                      break;
+                    }
+                  }
+                }
+                
+                /*for(let i=0; i < res.communes.length; i++){
+                  if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                    u.formData.codeSite = res.communes[i].formData.code
+                    u.formData.nomSite = res.communes[i].formData.nom
+                    //champIndex[u.champ] = i;
+                    //idChamp = res.champs[i].id;
+                    break;
+                  }
+                }
+  
+                //localité
+                for(let i=0; i < res.localites.length; i++){
+                  if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                    u.formData.codeLocalite = res.localites[i].formData.code
+                    u.formData.nomLocalite = res.localites[i].formData.nom
+                    //champIndex[u.champ] = i;
+                    //idChamp = res.champs[i].id;
+                    break;
+                  }
+                }*/
+                
+                /*//communes
+                if(res.champs[champIndex[u.champ]].commune && res.champs[champIndex[u.champ]].commune != ''){
+                  /*if(isDefined(communeIndex[res.champs[champIndex[u.champ]].commune])){
+                    u.formData.codeSite = res.champs[champIndex[u.champ]].formData.code
+                    u.formData.nomSite = res.champs[champIndex[u.champ]].formData.nom
+                  }else{*****
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                        u.formData.codeSite = res.communes[i].formData.code
+                        u.formData.nomSite = res.communes[i].formData.nom
+                        //champIndex[u.champ] = i;
+                        //idChamp = res.champs[i].id;
+                        break;
+                      }
+                    }
+                 // }  
+                }else{
+                  //collone vide
+                  u.formData.codeSite = null
+                  u.formData.nomSite = null
+                }
+  
+                if(res.champs[champIndex[u.champ]].localite && res.champs[champIndex[u.champ]].localite != ''){
+                  /*if(isDefined(localiteIndex[res.champs[champIndex[u.champ]].localite])){
+                    u.formData.codeLocalite = res.champs[champIndex[u.champ]].formData.code
+                    u.formData.nomLocalite = res.champs[champIndex[u.champ]].formData.nom
+                  }else{***
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                        u.formData.codeLocalite = res.localites[i].formData.code
+                        u.formData.nomLocalite = res.localites[i].formData.nom
+                        //champIndex[u.champ] = i;
+                        //idChamp = res.champs[i].id;
+                        break;
+                      }
+                    }
+                 // }  
+                }else{
+                  //collone vide
+                  u.formData.codeLocalite = null
+                  u.formData.nomLocalite = null
+                }*/
+  
+  
+                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData[Object.keys(u.formioData)[0]], ...u.security});
+                
+                cols = Array.from(new Set(cols.concat(keys(u.formioData[Object.keys(u.formioData)[0]]))));
               }
   
               cols.sort((a, b) => {
-                if (a < b) {
+                return this.formKeys.indexOf(a) - this.formKeys.indexOf(b)
+                /*if (a < b) {
                   return -1;
                 }
                 if (a > b) {
                   return 1;
                 }
-                return 0;
+                return 0;*/
               });
   
               this.colonnes = this.tmpColonnes.concat(cols);
+  
+  
+              //this.essaisData = [...datas];
+    
+              //this.loading = false;  
                 //si mobile
             if(this.mobile){
               this.essaisData = essaisData;
-              this.essaisData.sort((a, b) => {
-                if (a.nom < b.nom) {
-                  return -1;
-                }
-                if (a.nom > b.nom) {
-                  return 1;
-                }
-                return 0;
-              });
-  
+              if(this.essaisData[0].parcelle){
+                this.essaisData.sort((a, b) => {
+                  if (a.parcelle < b.parcelle) {
+                    return -1;
+                  }
+                  if (a.parcelle > b.parcelle) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }else if(this.essaisData[0].variete){
+                this.essaisData.sort((a, b) => {
+                  if (a.variete < b.variete) {
+                    return -1;
+                  }
+                  if (a.variete > b.variete) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }else{
+                this.essaisData.sort((a, b) => {
+                  if (a.nomPersonne < b.nomPersonne) {
+                    return -1;
+                  }
+                  if (a.nomPersonne > b.nomPersonne) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }
+
               this.allEssaisData = [...this.essaisData]
             } else{
                 $('#essai').ready(()=>{
                   if(global.langue == 'en'){
-                    this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees);
+                    this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                   }else{
-                    this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                    this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                   }
-                  this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+                  this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai');
                 });
               }
               this.selectedIndexes = [];
@@ -3807,77 +4702,82 @@ export class EssaiPage implements OnInit {
       }, 2000);*/
     }
   
-    getEssai(){
+    getEssai(init: any = null){
       //tous les departements
+      this.loading = true;
       let cols = [];
+      this.colonnes = [];
       if(this.idEssai && this.idEssai != ''){
-        this.servicePouchdb.findRelationalDocByID('essai', this.idEssai).then((res) => {
-          if(res && res.essais[0]){
+        this.servicePouchdb.findRelationalDocByID('collectedonnee', this.idEssai).then((res) => {
+          if(res && res.collectedonnees[0]){
             let f, proj, proto, memb, champ;
-            //this.unEssai = res && res.essais[0];
+            //this.unEssai = res && res.collectedonnees[0];
 
 
             if(res.partenaires && res.partenaires[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroInstitution', res.partenaires[0].formData.numero, 2);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomInstitution', res.partenaires[0].formData.nom, 3);  
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroInstitution', res.partenaires[0].formData.numero, 2);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomInstitution', res.partenaires[0].formData.nom, 3);  
               f = res.partenaires[0].id;
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroInstitution', null, 2);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomInstitution', null, 3);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroInstitution', null, 2);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomInstitution', null, 3);
               f = null;
             }
             
             if(res.projets && res.projets[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroProjet', res.projets[0].formData.numero, 4);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomProjet', res.projets[0].formData.nom, 5); 
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroProjet', res.projets[0].formData.numero, 4);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomProjet', res.projets[0].formData.nom, 5); 
               proj = res.projets[0].id; 
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroProjet', null, 4);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomProjet', null, 5);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroProjet', null, 4);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomProjet', null, 5);
               proj = null;
             }
 
             if(res.protocoles && res.protocoles[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroProtocole', res.protocoles[0].formData.numero, 6);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomProtocole', res.protocoles[0].formData.nom, 7); 
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroProtocole', res.protocoles[0].formData.numero, 6);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomProtocole', res.protocoles[0].formData.nom, 7); 
               proto = res.protocoles[0].id; 
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'numeroProtocole', null, 6);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomProtocole', null, 7);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'numeroProtocole', null, 6);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomProtocole', null, 7);
               proto = null;
             }
 
             if(res.personnes && res.personnes[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculePersonne', res.personnes[0].formData.matricule, 8);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomPersonne', res.personnes[0].formData.nom, 9); 
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'matriculePersonne', res.personnes[0].formData.matricule, 8);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomPersonne', res.personnes[0].formData.nom, 9); 
               memb = res.personnes[0].id; 
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'matriculePersonne', null, 8);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomPersonne', null, 9);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'matriculePersonne', null, 8);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomPersonne', null, 9);
               memb = null;
             }
 
             if(res.champs && res.champs[0]){
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'codeChamp', res.champs[0].formData.code, 10);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomChamp', res.champs[0].formData.nom, 11); 
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'codeChamp', res.champs[0].formData.code, 10);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomChamp', res.champs[0].formData.nom, 11); 
               champ = res.champs[0].id; 
             }else{
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'codeChamp', null, 10);
-              res.essais[0].formData = this.addItemToObjectAtSpecificPosition(res.essais[0].formData, 'nomChamp', null, 11);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'codeChamp', null, 10);
+              res.collectedonnees[0].formData = this.addItemToObjectAtSpecificPosition(res.collectedonnees[0].formData, 'nomChamp', null, 11);
               champ = null;
             }
             
-            this.infos({id: res.partenaires[0].id, idInstitution: f, idProjet: proj, idProtocole: proto, idPersonne: memb, idChamp: champ, ...res.essais[0].formData}); 
+            this.loading = false;
+            this.infos({id: res.partenaires[0].id, idInstitution: f, idProjet: proj, idProtocole: proto, idPersonne: memb, idChamp: champ, ...res.collectedonnees[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
         }).catch((err) => {
+          this.loading = false;
           alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           console.log(err)
           this.close();
         });
-      }else if((this.idChamp && this.idChamp != '') || (this.idPersonne && this.idPersonne != '') || (this.idProtocole && this.idProtocole != '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
+      }else if((init && init != '' && !this.idChamp && !this.idPersonne && !this.idProtocole && !this.idProjet && !this.idPartenaire) || (this.idChamp && this.idChamp != '') || (this.idPersonne && this.idPersonne != '') || (this.idProtocole && this.idProtocole != '') || (this.idProjet && this.idProjet != '') || (this.idPartenaire && this.idPartenaire != '')){
         var deleted: any;
         var archived: any;
         var shared: any;
@@ -3930,6 +4830,10 @@ export class EssaiPage implements OnInit {
         }else if(this.idProtocole){
           typePere = 'protocole';
           idPere = this.idProtocole;
+        }else if(init && !this.idChamp && !this.idPersonne && !this.idProtocole && !this.idProjet && !this.idPartenaire){
+          typePere = 'protocole';
+          idPere = init;
+          this.init = true;
         }else if(this.idProjet){
           typePere = 'projet';
           idPere = this.idProjet;
@@ -3937,8 +4841,14 @@ export class EssaiPage implements OnInit {
           typePere = 'partenaire';
           idPere = this.idPartenaire;
         }
-        this.servicePouchdb.findRelationalDocOfTypeByPere('essai', typePere, idPere, deleted, archived, shared).then((res) => {
-          if(res && res.essais){
+
+        //console.log(idPere+'=='+init)
+
+        //console.log('2071234A-896E-8541-9990-C4B2F748417E => '+idPere)
+        //'5E9861AB-CEFE-C83F-BFD6-FB75D7E125DF'
+        this.servicePouchdb.findRelationalDocOfTypeByPere('collectedonnee', typePere, idPere, deleted, archived, shared).then((res) => {
+          //console.log(res)
+          if(res && res.collectedonnees){
             //this.essais = [...essais];
             let essaisData = [];
             //var datas = [];
@@ -3947,170 +4857,306 @@ export class EssaiPage implements OnInit {
             let protocoleIndex = [];
             let personneIndex = [];
             let champIndex = [];
-            let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
-            for(let u of res.essais){
+            let communeIndex = [];
+            let localiteIndex = [];
+            let idInstitution, idProjet, idProtocole, idPersonne, idChamp, idCommune, idLocalite;
+            for(let u of res.collectedonnees){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
-
-              if(u.partenaire && u.partenaire != ''){
-                if(isDefined(institutionIndex[u.partenaire])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
-                  idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+              if((idPere != init && u.protocole == init) || (idPere == init)){
+                if(u.partenaire && u.partenaire != ''){
+                  if(isDefined(institutionIndex[u.partenaire])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.numero, 2);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[institutionIndex[u.partenaire]].formData.nom, 3);
+                    idInstitution = res.partenaires[institutionIndex[u.partenaire]].id;
+                  }else{
+                    for(let i=0; i < res.partenaires.length; i++){
+                      if(res.partenaires[i].id == u.partenaire){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
+                        institutionIndex[u.partenaire] = i;
+                        idInstitution =  res.partenaires[i].id;
+                        break;
+                      }
+                    }
+                  }  
                 }else{
-                  for(let i=0; i < res.partenaires.length; i++){
-                    if(res.partenaires[i].id == u.partenaire){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', res.partenaires[i].formData.numero, 2);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', res.partenaires[i].formData.nom, 3);
-                      institutionIndex[u.partenaire] = i;
-                      idInstitution =  res.partenaires[i].id;
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
+                  idInstitution = null;
+                }
+  
+                if(u.projet && u.projet != ''){
+                  if(isDefined(projetIndex[u.projet])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
+                    idProjet = res.projets[projetIndex[u.projet]].id;
+                  }else{
+                    for(let i=0; i < res.projets.length; i++){
+                      if(res.projets[i].id == u.projet){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
+                        projetIndex[u.projet] = i;
+                        idProjet = res.projets[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
+                  idProjet = null;
+                }
+  
+                if(u.protocole && u.protocole != ''){
+                  if(isDefined(protocoleIndex[u.projet])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.numero, 6);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.nom, 7);
+                    idProtocole = res.protocoles[protocoleIndex[u.protocole]].id;
+                  }else{
+                    for(let i=0; i < res.protocoles.length; i++){
+                      if(res.protocoles[i].id == u.protocole){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[i].formData.numero, 6);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[i].formData.nom, 7);
+                        protocoleIndex[u.protocole] = i;
+                        idProtocole = res.protocoles[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', null, 6);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', null, 7);
+                  idProtocole = null;
+                }
+  
+                if(u.personne && u.personne != ''){
+                  if(isDefined(personneIndex[u.personne])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                    u.formData.prenomPersonne = res.personnes[personneIndex[u.personne]].formData.prenom;
+                    idPersonne = res.personnes[personneIndex[u.personne]].id;
+                  }else{
+                    for(let i=0; i < res.personnes.length; i++){
+                      if(res.personnes[i].id == u.personne){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                        u.formData.prenomPersonne = res.personnes[i].formData.prenom;
+                        personneIndex[u.personne] = i;
+                        idPersonne = res.personnes[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                  u.formData.prenomPersonne = null;
+                  idPersonne = null;
+                }
+  
+                if(u.champ && u.champ != ''){
+                  if(isDefined(champIndex[u.champ])){
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[champIndex[u.champ]].formData.code, 10);
+                    u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[champIndex[u.champ]].formData.nom, 11);
+                    idChamp = res.champs[champIndex[u.champ]].id;
+                  }else{
+                    for(let i=0; i < res.champs.length; i++){
+                      if(res.champs[i].id == u.champ){
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[i].formData.code, 10);
+                        u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[i].formData.nom, 11);
+                        champIndex[u.champ] = i;
+                        idChamp = res.champs[i].id;
+                        break;
+                      }
+                    }
+                  }  
+                }else{
+                  //collone vide
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', null, 10);
+                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', null, 11);
+                  idChamp = null;
+                }
+  
+                //union
+                if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].union){
+                  for(let i=0; i < res.unions.length; i++){
+                    if(res.unions[i].id == res.personnes[personneIndex[u.personne]].union){
+                      u.formData.numeroUnion = res.unions[i].formData.numero
+                      u.formData.nomUnion = res.unions[i].formData.nom
                       break;
                     }
                   }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroInstitution', null, 2);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomInstitution', null, 3);
-                idInstitution = null;
-              }
-
-              if(u.projet && u.projet != ''){
-                if(isDefined(projetIndex[u.projet])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[projetIndex[u.projet]].formData.numero, 4);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[projetIndex[u.projet]].formData.nom, 5);
-                  idProjet = res.projets[projetIndex[u.projet]].id;
-                }else{
-                  for(let i=0; i < res.projets.length; i++){
-                    if(res.projets[i].id == u.projet){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', res.projets[i].formData.numero, 4);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', res.projets[i].formData.nom, 5);
-                      projetIndex[u.projet] = i;
-                      idProjet = res.projets[i].id;
+                }
+  
+                //op
+                if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].op){
+                  for(let i=0; i < res.ops.length; i++){
+                    if(res.ops[i].id == res.personnes[personneIndex[u.personne]].op){
+                      u.formData.numeroOP = res.ops[i].formData.numero
+                      u.formData.nomOP = res.ops[i].formData.nom
                       break;
                     }
                   }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProjet', null, 4);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProjet', null, 5);
-                idProjet = null;
-              }
-
-              if(u.protocole && u.protocole != ''){
-                if(isDefined(protocoleIndex[u.projet])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.numero, 6);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[protocoleIndex[u.protocole]].formData.nom, 7);
-                  idProtocole = res.protocoles[protocoleIndex[u.protocole]].id;
-                }else{
-                  for(let i=0; i < res.protocoles.length; i++){
-                    if(res.protocoles[i].id == u.protocole){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', res.protocoles[i].formData.numero, 6);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', res.protocoles[i].formData.nom, 7);
-                      protocoleIndex[u.protocole] = i;
-                      idProtocole = res.protocoles[i].id;
+                }
+                
+                //communes
+                if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].commune){
+                  for(let i=0; i < res.communes.length; i++){
+                    if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                      u.formData.codeSite = res.communes[i].formData.code
+                      u.formData.nomSite = res.communes[i].formData.nom
                       break;
                     }
                   }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'numeroProtocole', null, 6);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomProtocole', null, 7);
-                idProtocole = null;
-              }
-
-              if(u.personne && u.personne != ''){
-                if(isDefined(personneIndex[u.personne])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
-                  idPersonne = res.personnes[personneIndex[u.personne]].id;
-                }else{
-                  for(let i=0; i < res.personnes.length; i++){
-                    if(res.personnes[i].id == u.personne){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
-                      personneIndex[u.personne] = i;
-                      idPersonne = res.personnes[i].id;
+                }
+                
+                //localité
+                if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].localite){
+                  for(let i=0; i < res.localites.length; i++){
+                    if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                      u.formData.codeLocalite = res.localites[i].formData.code
+                      u.formData.nomLocalite = res.localites[i].formData.nom
                       break;
                     }
                   }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
-                idPersonne = null;
-              }
-
-              if(u.champ && u.champ != ''){
-                if(isDefined(champIndex[u.champ])){
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[champIndex[u.champ]].formData.code, 10);
-                  u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[champIndex[u.champ]].formData.nom, 11);
-                  idChamp = res.champs[champIndex[u.champ]].id;
-                }else{
-                  for(let i=0; i < res.champs.length; i++){
-                    if(res.champs[i].id == u.champ){
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', res.champs[i].formData.code, 10);
-                      u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', res.champs[i].formData.nom, 11);
-                      champIndex[u.champ] = i;
-                      idChamp = res.champs[i].id;
-                      break;
+                }
+                
+                
+                /*//communes
+                if(res.champs[champIndex[u.champ]].commune && res.champs[champIndex[u.champ]].commune != ''){
+                  /*if(isDefined(communeIndex[res.champs[champIndex[u.champ]].commune])){
+                    u.formData.codeSite = res.champs[champIndex[u.champ]].formData.code
+                    u.formData.nomSite = res.champs[champIndex[u.champ]].formData.nom
+                  }else{*****
+                    for(let i=0; i < res.communes.length; i++){
+                      if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                        u.formData.codeSite = res.communes[i].formData.code
+                        u.formData.nomSite = res.communes[i].formData.nom
+                        //champIndex[u.champ] = i;
+                        //idChamp = res.champs[i].id;
+                        break;
+                      }
                     }
-                  }
-                }  
-              }else{
-                //collone vide
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'codeChamp', null, 10);
-                u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomChamp', null, 11);
-                idChamp = null;
+                 // }  
+                }else{
+                  //collone vide
+                  u.formData.codeSite = null
+                  u.formData.nomSite = null
+                }
+  
+                if(res.champs[champIndex[u.champ]].localite && res.champs[champIndex[u.champ]].localite != ''){
+                  /*if(isDefined(localiteIndex[res.champs[champIndex[u.champ]].localite])){
+                    u.formData.codeLocalite = res.champs[champIndex[u.champ]].formData.code
+                    u.formData.nomLocalite = res.champs[champIndex[u.champ]].formData.nom
+                  }else{***
+                    for(let i=0; i < res.localites.length; i++){
+                      if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                        u.formData.codeLocalite = res.localites[i].formData.code
+                        u.formData.nomLocalite = res.localites[i].formData.nom
+                        //champIndex[u.champ] = i;
+                        //idChamp = res.champs[i].id;
+                        break;
+                      }
+                    }
+                 // }  
+                }else{
+                  //collone vide
+                  u.formData.codeLocalite = null
+                  u.formData.nomLocalite = null
+                }*/
+  
+                /*console.log(u.id)
+                console.log(Object.keys(u.formioData))
+                console.log(Object.keys(u.formioData)[0])
+                console.log(u.formioData[Object.keys(u.formioData)[0]])
+                console.log(keys(u.formioData[Object.keys(u.formioData)[0]]))*/
+
+                essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData[Object.keys(u.formioData)[0]], ...u.security});
+                if(u.formioData && Object.keys(u.formioData) && Object.keys(u.formioData)[0] && keys(u.formioData[Object.keys(u.formioData)[0]])){
+                  cols = Array.from(new Set(cols.concat(keys(u.formioData[Object.keys(u.formioData)[0]]))));
+                  /*if(keys(u.formioData[Object.keys(u.formioData)[0]]).indexOf('FOEssai') !== -1){
+                    console.log(u.id)
+                    console.log(u.formData.numero)
+                  }*/
+                }else{
+                  console.log('Erreur: données formulaire vide ou invalid. Id_collecte = '+ u.id)
+                }
+                
+                //break              
               }
 
-
-              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
-              cols = Array.from(new Set(cols.concat(keys(u.formioData))));
+            
             }
 
             cols.sort((a, b) => {
-              if (a < b) {
+              return this.formKeys.indexOf(a) - this.formKeys.indexOf(b)
+              /*if (a < b) {
                 return -1;
               }
               if (a > b) {
                 return 1;
               }
-              return 0;
+              return 0;*/
             });
 
             this.colonnes = this.tmpColonnes.concat(cols);
 
             //this.essaisData = [...datas]; 
   
+            this.loading = false;
             if(this.mobile){
               this.essaisData = essaisData;
+              if(this.essaisData[0].parcelle){
               this.essaisData.sort((a, b) => {
-                if (a.nom < b.nom) {
+                if (a.parcelle < b.parcelle) {
                   return -1;
                 }
-                if (a.nom > b.nom) {
+                if (a.parcelle > b.parcelle) {
                   return 1;
                 }
                 return 0;
               });
+            }else if(this.essaisData[0].variete){
+              this.essaisData.sort((a, b) => {
+                if (a.variete < b.variete) {
+                  return -1;
+                }
+                if (a.variete > b.variete) {
+                  return 1;
+                }
+                return 0;
+              });
+            }else{
+              this.essaisData.sort((a, b) => {
+                if (a.nomPersonne < b.nomPersonne) {
+                  return -1;
+                }
+                if (a.nomPersonne > b.nomPersonne) {
+                  return 1;
+                }
+                return 0;
+              });
+            }
 
               this.allEssaisData = [...this.essaisData];
             } else{
               $('#essai-relation').ready(()=>{
                 if(global.langue == 'en'){
-                  this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees);
+                  this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                 }else{
-                  this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.essaiHTMLTable = createDataTable("essai-relation", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                 }
-                this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+                this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai-relation');
               });
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.essais = [];
           this.essaisData = [];
           console.log(err)
@@ -4137,9 +5183,9 @@ export class EssaiPage implements OnInit {
           deleted = false;
           shared = {$ne: null};
         }
-        this.servicePouchdb.findRelationalDocByType('essai', deleted, archived, shared).then((res) => {
+        this.servicePouchdb.findRelationalDocByType('collectedonnee', deleted, archived, shared).then((res) => {
            //console.log(res)
-          if(res && res.essais){
+          if(res && res.collectedonnees){
             //this.essais = [...essais];
             let essaisData = [];
             let institutionIndex = [];
@@ -4148,7 +5194,7 @@ export class EssaiPage implements OnInit {
             let personneIndex = [];
             let champIndex = [];
             let idInstitution, idProjet, idProtocole, idPersonne, idChamp;
-            for(let u of res.essais){
+            for(let u of res.collectedonnees){
               //supprimer l'historique de la liste
               delete u.security['shared_history'];
 
@@ -4225,12 +5271,14 @@ export class EssaiPage implements OnInit {
                 if(isDefined(personneIndex[u.personne])){
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[personneIndex[u.personne]].formData.matricule, 8);
                   u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[personneIndex[u.personne]].formData.nom, 9);
+                  u.formData.prenomPersonne = res.personnes[personneIndex[u.personne]].formData.prenom;
                   idPersonne = res.personnes[personneIndex[u.personne]].id;
                 }else{
                   for(let i=0; i < res.personnes.length; i++){
                     if(res.personnes[i].id == u.personne){
                       u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', res.personnes[i].formData.matricule, 8);
                       u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', res.personnes[i].formData.nom, 9);
+                      u.formData.prenomPersonne = res.personnes[i].formData.prenom;
                       personneIndex[u.personne] = i;
                       idPersonne = res.personnes[i].id;
                       break;
@@ -4241,6 +5289,7 @@ export class EssaiPage implements OnInit {
                 //collone vide
                 u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'matriculePersonne', null, 8);
                 u.formData = this.addItemToObjectAtSpecificPosition(u.formData, 'nomPersonne', null, 9);
+                u.formData.prenomPersonne = null;
                 idPersonne = null;
               }
 
@@ -4267,20 +5316,130 @@ export class EssaiPage implements OnInit {
                 idChamp = null;
               }
 
+              //union
+              if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].union){
+                for(let i=0; i < res.unions.length; i++){
+                  if(res.unions[i].id == res.personnes[personneIndex[u.personne]].union){
+                    u.formData.numeroUnion = res.unions[i].formData.numero
+                    u.formData.nomUnion = res.unions[i].formData.nom
+                    break;
+                  }
+                }
+              }
 
-              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData, ...u.security});
+              //op
+              if(res.personnes.length > 0 && res.personnes[personneIndex[u.personne]] && res.personnes[personneIndex[u.personne]].op){
+                for(let i=0; i < res.ops.length; i++){
+                  if(res.ops[i].id == res.personnes[personneIndex[u.personne]].op){
+                    u.formData.numeroOP = res.ops[i].formData.numero
+                    u.formData.nomOP = res.ops[i].formData.nom
+                    break;
+                  }
+                }
+              }
+
+              //communes
+              if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].commune){
+                for(let i=0; i < res.communes.length; i++){
+                  if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                    u.formData.codeSite = res.communes[i].formData.code
+                    u.formData.nomSite = res.communes[i].formData.nom
+                    break;
+                  }
+                }
+              }
               
-              cols = Array.from(new Set(cols.concat(keys(u.formioData))));
+              //localité
+              if(res.champs.length > 0 && res.champs[champIndex[u.champ]] && res.champs[champIndex[u.champ]].localite){
+                for(let i=0; i < res.localites.length; i++){
+                  if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                    u.formData.codeLocalite = res.localites[i].formData.code
+                    u.formData.nomLocalite = res.localites[i].formData.nom
+                    break;
+                  }
+                }
+              }
+              /*for(let i=0; i < res.communes.length; i++){
+                if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                  u.formData.codeSite = res.communes[i].formData.code
+                  u.formData.nomSite = res.communes[i].formData.nom
+                  //champIndex[u.champ] = i;
+                  //idChamp = res.champs[i].id;
+                  break;
+                }
+              }
+              
+
+              //localité
+              for(let i=0; i < res.localites.length; i++){
+                if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                  u.formData.codeLocalite = res.localites[i].formData.code
+                  u.formData.nomLocalite = res.localites[i].formData.nom
+                  //champIndex[u.champ] = i;
+                  //idChamp = res.champs[i].id;
+                  break;
+                }
+              }*/
+              
+              /*//communes
+              if(res.champs[champIndex[u.champ]].commune && res.champs[champIndex[u.champ]].commune != ''){
+                /*if(isDefined(communeIndex[res.champs[champIndex[u.champ]].commune])){
+                  u.formData.codeSite = res.champs[champIndex[u.champ]].formData.code
+                  u.formData.nomSite = res.champs[champIndex[u.champ]].formData.nom
+                }else{*****
+                  for(let i=0; i < res.communes.length; i++){
+                    if(res.communes[i].id == res.champs[champIndex[u.champ]].commune){
+                      u.formData.codeSite = res.communes[i].formData.code
+                      u.formData.nomSite = res.communes[i].formData.nom
+                      //champIndex[u.champ] = i;
+                      //idChamp = res.champs[i].id;
+                      break;
+                    }
+                  }
+               // }  
+              }else{
+                //collone vide
+                u.formData.codeSite = null
+                u.formData.nomSite = null
+              }
+
+              if(res.champs[champIndex[u.champ]].localite && res.champs[champIndex[u.champ]].localite != ''){
+                /*if(isDefined(localiteIndex[res.champs[champIndex[u.champ]].localite])){
+                  u.formData.codeLocalite = res.champs[champIndex[u.champ]].formData.code
+                  u.formData.nomLocalite = res.champs[champIndex[u.champ]].formData.nom
+                }else{***
+                  for(let i=0; i < res.localites.length; i++){
+                    if(res.localites[i].id == res.champs[champIndex[u.champ]].localite){
+                      u.formData.codeLocalite = res.localites[i].formData.code
+                      u.formData.nomLocalite = res.localites[i].formData.nom
+                      //champIndex[u.champ] = i;
+                      //idChamp = res.champs[i].id;
+                      break;
+                    }
+                  }
+               // }  
+              }else{
+                //collone vide
+                u.formData.codeLocalite = null
+                u.formData.nomLocalite = null
+              }*/
+
+
+              essaisData.push({id: u.id, idInstitution: idInstitution, idProjet: idProjet, idProtocole: idProtocole, idPersonne: idPersonne, idChamp: idChamp, ...u.formData, ...u.formioData[Object.keys(u.formioData)[0]], ...u.security});
+              
+              cols = Array.from(new Set(cols.concat(keys(u.formioData[Object.keys(u.formioData)[0]]))));
+            
             }
 
             cols.sort((a, b) => {
-              if (a < b) {
+              return this.formKeys.indexOf(a) - this.formKeys.indexOf(b)
+              /*if (a < b) {
                 return -1;
               }
               if (a > b) {
                 return 1;
               }
-              return 0;
+              return 0;*/
             });
 
             this.colonnes = this.tmpColonnes.concat(cols);
@@ -4288,31 +5447,54 @@ export class EssaiPage implements OnInit {
 
             //this.essaisData = [...datas];
   
+            this.loading = false;
             if(this.mobile){
               this.essaisData = essaisData;
-              this.essaisData.sort((a, b) => {
-                if (a.nom < b.nom) {
-                  return -1;
-                }
-                if (a.nom > b.nom) {
-                  return 1;
-                }
-                return 0;
-              });
-
+              if(this.essaisData[0].parcelle){
+                this.essaisData.sort((a, b) => {
+                  if (a.parcelle < b.parcelle) {
+                    return -1;
+                  }
+                  if (a.parcelle > b.parcelle) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }else if(this.essaisData[0].variete){
+                this.essaisData.sort((a, b) => {
+                  if (a.variete < b.variete) {
+                    return -1;
+                  }
+                  if (a.variete > b.variete) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }else{
+                this.essaisData.sort((a, b) => {
+                  if (a.nomPersonne < b.nomPersonne) {
+                    return -1;
+                  }
+                  if (a.nomPersonne > b.nomPersonne) {
+                    return 1;
+                  }
+                  return 0;
+                });
+              }
               this.allEssaisData = [...this.essaisData];
             } else{
               $('#essai').ready(()=>{
                 if(global.langue == 'en'){
-                  this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees);
+                  this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, null, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                 }else{
-                  this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                  this.essaiHTMLTable = createDataTable("essai", this.colonnes, essaisData, global.dataTable_fr, this.translate, global.peutExporterDonnees, this.translate.instant('ESSAI_PAGE.TITRE_LISTE'));
                 }
-                this.attacheEventToDataTable(this.essaiHTMLTable.datatable);
+                this.attacheEventToDataTable(this.essaiHTMLTable.datatable, 'essai');
               });
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.essais = [];
           this.essaisData = [];
           console.log(err)
@@ -4366,48 +5548,105 @@ export class EssaiPage implements OnInit {
       });
     }
 
-    getProjetParDateCollecte(dateCollecte){
-      this.projetData = [];
-      this.protocoleData = [];
-      this.servicePouchdb.findRelationalDocProjetAndProtocoleForDataCollect('projet', null, dateCollecte, false, false).then((res) => {
-        //console.log(res)
-        if(res && res.docs){
-          //this.projets = [...projets];
-          //var datas = [];
-          for(let p of res.docs){
-
-            if(this.idPartenaire && this.idPartenaire != ''){
-              if(p.data.partenaire == this.idPartenaire){
-                this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+    getProjetParDateCollecte(dateCollecte, init = false){
+      if(init){
+        this.loading = true;
+        this.selectProjetData = [];
+        this.selectProtocoleData = [];
+        this.init = true;
+        this.servicePouchdb.findRelationalDocProjetAndProtocoleForDataCollect('projet', null, dateCollecte, false, false).then((res) => {
+          if(res && res.docs){
+            for(let p of res.docs){
+              this.selectProjetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom});
+            }
+            
+            this.selectProjetData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
               }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+
+            if(this.selectProjetData.length > 0){
+              //console.log(this.selectProjetData[0].id)
+              this.setSelect2DefaultValue('selectProjet', this.selectProjetData[0].id);
+              //this.getProtocoleParProjet(this.selectProjetData[0].id, true)
             }else{
-              this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+              this.loading = false;
             }
+          }else{
+            this.loading = false;
           }
-          //console.log(this.projetData)
 
-          this.projetData.sort((a, b) => {
-            if (a.nom < b.nom) {
-              return -1;
-            }
-            if (a.nom > b.nom) {
-              return 1;
-            }
-            return 0;
-          });
-
-          if(this.doModification){
-            this.setSelect2DefaultValue('idProjet', this.unEssai.idProjet);
-          }else if(this.idProjet){
-            this.setSelect2DefaultValue('idProjet', this.idProjet);
-          }
-          
-        }
-      }).catch((err) => {
+        }).catch((err) => {
+          this.loading = false;
+          this.selectProjetData = [];
+          this.selectProtocoleData = [];
+          console.log(err)
+        });
+      
+      }else{
         this.projetData = [];
-        console.log(err)
-      });
+        this.protocoleData = [];
+        this.servicePouchdb.findRelationalDocProjetAndProtocoleForDataCollect('projet', null, dateCollecte, false, false).then((res) => {
+          if(res && res.docs){
+            if(init){
+              for(let p of res.docs){
+                this.selectProjetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom});
+              }
+             
+              this.selectProjetData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+  
+            }else{
+              for(let p of res.docs){
+  
+                if(this.idPartenaire && this.idPartenaire != ''){
+                  if(p.data.partenaire == this.idPartenaire){
+                    this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+                  }
+                }else{
+                  this.projetData.push({id: p._id.substring(p._id.lastIndexOf('_') + 1, p._id.length), idPartenaire: p.data.partenaire, numero: p.data.formData.numero, nom: p.data.formData.nom, dateDebut: p.data.dateDebut, dateFin: p.data.dateFin});
+                }
+              }
+              //console.log(this.projetData)
     
+              this.projetData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+    
+              if(this.doModification){
+                this.setSelect2DefaultValue('idProjet', this.unEssai.idProjet);
+              }else if(this.idProjet){
+                this.setSelect2DefaultValue('idProjet', this.idProjet);
+              }
+              
+            }
+            
+          }
+        }).catch((err) => {
+          this.projetData = [];
+          console.log(err)
+        });
+      
+      }
+      
       
     }
 
@@ -4469,59 +5708,24 @@ export class EssaiPage implements OnInit {
     }
 
     
-    getProtocoleParProjet(idProjet){
-      this.protocoleData = [];
-
-      if(this.idProtocole){
-        this.servicePouchdb.findRelationalDocByID('protocole', this.idProtocole).then((res) => {
-          if(res && res.protocoles && res.protocoles[0]){
-                //filtrer au cas ou un racoursi a été utilisé
-            let p = res.protocoles[0];
-            this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-
-            if(this.doModification){
-              this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
-            }else{
-              this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+    getProtocoleParProjet(idProjet, init = false){
+      if(init){
+        //console.log('proto')
+        this.loading = true;
+        this.init = true;
+        this.selectProtocoleData = [];
+        this.servicePouchdb.findDocByTypePere('protocole', 'projet', idProjet).then((res) => {
+          //console.log(res)
+          if(res.docs){
+            for(let doc of res.docs){
+              let p = doc.data;
+              //let id = doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length);
+              //if(!p.security.deleted){
+                this.selectProtocoleData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+              //}
             }
-            
-          }
-        }).catch((err) => {
-          this.protocoleData = [];
-          console.log(err)
-        });
-      }else if(idProjet && idProjet != ''){
-        this.servicePouchdb.findRelationalDocHasMany('protocole', 'projet', idProjet).then((res) => {
-          if(res && res.protocoles){
-            for(let p of res.protocoles){
-              if(!p.security.deleted && !p.security.archived && p.formData.dateDebut <= this.essaiForm.controls.dateCollecte.value && p.formData.dateFin >= this.essaiForm.controls.dateCollecte.value){
 
-                //filtrer au cas ou un racoursi a été utilisé
-                if(this.idUnion && this.idUnion != '' && (p.formData.niveauCollecte == 'union' || p.formData.niveauCollecte == 'op')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idOp && this.idOp != '' && p.formData.niveauCollecte == 'op'){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idPays && this.idPays != '' && (p.formData.niveauCollecte == 'pays' || p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idRegion && this.idRegion != '' && (p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idDepartement && this.idDepartement != '' && (p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idCommune && this.idCommune != '' && (p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idLocalite && this.idLocalite != '' && p.formData.niveauCollecte == 'localite'){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idChamp && this.idChamp != '' && (p.formData.niveauCollecte == 'champ')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else if(this.idPersonne && this.idPersonne != '' && (p.formData.niveauCollecte == 'personne' || p.formData.niveauCollecte == 'champ')){
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }else {
-                  this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
-                }
-              }
-            }
-  
-            this.protocoleData.sort((a, b) => {
+            this.selectProtocoleData.sort((a, b) => {
               if (a.nom < b.nom) {
                 return -1;
               }
@@ -4530,21 +5734,179 @@ export class EssaiPage implements OnInit {
               }
               return 0;
             });
+
+            //console.log(this.selectProtocoleData)
+            if(this.selectProtocoleData.length > 0){
+              //console.log(this.selectProtocoleData[0].id)
+              //this.selectProtocole = this.selectProtocoleData[0].id;
+              this.setSelect2DefaultValue('selectProtocole', this.selectProtocoleData[0].id);
+            }else{
+              this.loading = false;
+            }
+              
+          }else{
+            this.loading = false;
+          }
+          
+        }).catch((err)=>{
+          this.loading = false;
+          this.selectProtocoleData = [];
+          console.log(err)
+        })
+
+      }else{
+        this.protocoleData = [];
+
+        if(this.idProtocole){
+          this.servicePouchdb.getLocalDocById('protocole_2_'+ this.idProtocole).then((protocole) => {
+            if(protocole){
+              //filtrer au cas ou un racoursi a été utilisé
+              //let p = res.protocoles[0];
+              this.protocoleData.push({id: protocole._id.substring(protocole._id.lastIndexOf('_') + 1, protocole._id.length), numero: protocole.data.formData.numero, nom: protocole.data.formData.nom, niveauCollecte: protocole.data.formData.niveauCollecte});
   
-            if(this.doModification){
-              this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
-            }else if(this.idProtocole){
-              this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+              if(this.doModification){
+                this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
+              }else{
+                this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+              }
+            }
+          }).catch((err) => {
+            this.protocoleData = [];
+            console.log(err)
+          });
+          this.servicePouchdb.findRelationalDocByID('protocole', this.idProtocole).then((res) => {
+            if(res && res.protocoles && res.protocoles[0]){
+                  //filtrer au cas ou un racoursi a été utilisé
+              let p = res.protocoles[0];
+              this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+  
+              if(this.doModification){
+                this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
+              }else{
+                this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+              }
+              
+            }
+          }).catch((err) => {
+            this.protocoleData = [];
+            console.log(err)
+          });
+        }else if(idProjet && idProjet != ''){
+          //console.log('ici')
+          this.servicePouchdb.findDocByTypePere('protocole', 'projet', idProjet).then((res) => {
+            //console.log(res)
+            if(res.docs){
+              for(let doc of res.docs){
+                let p = doc.data;
+                let id = doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length);
+                if(!p.security.deleted && !p.security.archived && p.formData.dateDebut <= this.essaiForm.controls.dateCollecte.value && p.formData.dateFin >= this.essaiForm.controls.dateCollecte.value){
+  
+                  //filtrer au cas ou un racoursi a été utilisé
+                  if(this.idUnion && this.idUnion != '' && (p.formData.niveauCollecte == 'union' || p.formData.niveauCollecte == 'op')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idOp && this.idOp != '' && p.formData.niveauCollecte == 'op'){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idPays && this.idPays != '' && (p.formData.niveauCollecte == 'pays' || p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idRegion && this.idRegion != '' && (p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idDepartement && this.idDepartement != '' && (p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idCommune && this.idCommune != '' && (p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idLocalite && this.idLocalite != '' && p.formData.niveauCollecte == 'localite'){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idChamp && this.idChamp != '' && (p.formData.niveauCollecte == 'champ')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idPersonne && this.idPersonne != '' && (p.formData.niveauCollecte == 'personne' || p.formData.niveauCollecte == 'champ')){
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else {
+                    this.protocoleData.push({id: id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }
+                }
+              }
+  
+              //console.log(this.protocoleData)
+    
+              this.protocoleData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+    
+              if(this.doModification){
+                this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
+              }else if(this.idProtocole){
+                this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+              }
+              
             }
             
-          }
-        }).catch((err) => {
+          }).catch((err)=>{
+            this.protocoleData = [];
+            console.log(err)
+          })
+  
+         /* this.servicePouchdb.findRelationalDocHasMany('protocole', 'projet', idProjet).then((res) => {
+            if(res && res.protocoles){
+              for(let p of res.protocoles){
+                if(!p.security.deleted && !p.security.archived && p.formData.dateDebut <= this.essaiForm.controls.dateCollecte.value && p.formData.dateFin >= this.essaiForm.controls.dateCollecte.value){
+  
+                  //filtrer au cas ou un racoursi a été utilisé
+                  if(this.idUnion && this.idUnion != '' && (p.formData.niveauCollecte == 'union' || p.formData.niveauCollecte == 'op')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idOp && this.idOp != '' && p.formData.niveauCollecte == 'op'){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idPays && this.idPays != '' && (p.formData.niveauCollecte == 'pays' || p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idRegion && this.idRegion != '' && (p.formData.niveauCollecte == 'region' || p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idDepartement && this.idDepartement != '' && (p.formData.niveauCollecte == 'departement' || p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idCommune && this.idCommune != '' && (p.formData.niveauCollecte == 'commune' || p.formData.niveauCollecte == 'localite')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idLocalite && this.idLocalite != '' && p.formData.niveauCollecte == 'localite'){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idChamp && this.idChamp != '' && (p.formData.niveauCollecte == 'champ')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else if(this.idPersonne && this.idPersonne != '' && (p.formData.niveauCollecte == 'personne' || p.formData.niveauCollecte == 'champ')){
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }else {
+                    this.protocoleData.push({id: p.id, numero: p.formData.numero, nom: p.formData.nom, niveauCollecte: p.formData.niveauCollecte});
+                  }
+                }
+              }
+    
+              this.protocoleData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+    
+              if(this.doModification){
+                this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
+              }else if(this.idProtocole){
+                this.setSelect2DefaultValue('idProtocole', this.idProtocole);
+              }
+              
+            }
+          }).catch((err) => {
+            this.protocoleData = [];
+            console.log(err)
+          });*/
+          
+        }else {
           this.protocoleData = [];
-          console.log(err)
-        });
+        }
         
-      }else {
-        this.protocoleData = [];
       }
       
     }
@@ -4553,7 +5915,24 @@ export class EssaiPage implements OnInit {
     getPersonne(){
       this.personneData = [];
       if(this.idPersonne){
-        this.servicePouchdb.findRelationalDocByID('personne', this.idPersonne).then((res) => {
+        this.servicePouchdb.getLocalDocById('personne_2_'+ this.idPersonne).then((personne) => {
+          //console.log(personne)
+          if(personne){
+            this.personneData.push({id: personne._id.substring(personne._id.lastIndexOf('_') + 1, personne._id.length), matricule: personne.data.formData.matricule, nom: personne.data.formData.nom});
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idPersonne', this.unEssai.idPersonne);
+            }else{
+              this.setSelect2DefaultValue('idPersonne', this.idPersonne);
+            }
+            
+          }
+        }).catch((err) => {
+          this.personneData = [];
+          console.log(err)
+        });
+
+        /*this.servicePouchdb.findRelationalDocByID('personne', this.idPersonne).then((res) => {
           if(res && res.personnes && res.personnes[0]){
             this.personneData.push({id: res.personnes[0].id, matricule: res.personnes[0].formData.matricule, nom: res.personnes[0].formData.nom});
   
@@ -4567,12 +5946,12 @@ export class EssaiPage implements OnInit {
         }).catch((err) => {
           this.personneData = [];
           console.log(err)
-        });
+        });*/
       }else{
-        this.servicePouchdb.findRelationalDocByTypeAndDeleted('personne', false).then((res) => {
-          if(res && res.personnes){
-            for(let m of res.personnes){
-              this.personneData.push({id: m.id, matricule: m.formData.matricule, nom: m.formData.nom});
+        this.servicePouchdb.findDocByTypeAndDeleted('personne', false).then((res) => {
+          if(res){
+            for(let doc of res.docs){
+              this.personneData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), matricule: doc.data.formData.matricule, nom: doc.data.formData.nom});
             }
   
             this.personneData.sort((a, b) => {
@@ -4605,7 +5984,23 @@ export class EssaiPage implements OnInit {
       this.champData = [];
 
       if(this.idChamp){
-        this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
+        this.servicePouchdb.getLocalDocById('champ_2_'+ this.idChamp).then((champ) => {
+          if(champ){
+            this.champData.push({id: champ._id.substring(champ._id.lastIndexOf('_') + 1, champ._id.length), nom: champ.data.formData.nom, code: champ.data.formData.code});
+            //console.log(this.unEssai)
+            if(this.doModification){
+              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+            }else{
+              this.setSelect2DefaultValue('idChamp', this.idChamp);
+            }
+            
+          }
+        }).catch((err) => {
+          this.champData = [];
+          console.log(err)
+        });
+
+        /*this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
           if(res && res.champs && res.champs[0]){
             this.champData.push({id: res.champs[0].id, nom: res.champs[0].formData.nom});
             //console.log(this.unEssai)
@@ -4619,9 +6014,39 @@ export class EssaiPage implements OnInit {
         }).catch((err) => {
           this.champData = [];
           console.log(err)
-        });
+        });*/
       }else if(idPersonne && idPersonne != ''){
-        this.servicePouchdb.findRelationalDocHasMany('champ', 'personne', idPersonne).then((res) => {
+        this.servicePouchdb.findDocByTypePere('champ', 'personne', idPersonne).then((res) => {
+          if(res.docs){
+            for(let doc of res.docs){
+              //if(!doc.data.security.deleted){
+                this.champData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), nom: doc.data.formData.nom, code: doc.data.formData.code});
+              //}
+            }
+
+            this.champData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            //console.log(this.unEssai)
+            if(this.doModification){
+              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+            }else if(this.idChamp){
+              this.setSelect2DefaultValue('idChamp', this.idChamp);
+            }
+          }
+        }).catch((err) => {
+          this.champData = [];
+          console.log(err)
+        });
+
+        /*this.servicePouchdb.findRelationalDocHasMany('champ', 'personne', idPersonne).then((res) => {
           if(res && res.champs){
             for(let c of res.champs){
               if(!c.security.deleted){
@@ -4650,7 +6075,7 @@ export class EssaiPage implements OnInit {
         }).catch((err) => {
           this.champData = [];
           console.log(err)
-        });
+        });*/
       }else {
         this.champData = [];
       }
@@ -4678,7 +6103,54 @@ export class EssaiPage implements OnInit {
       this.formulaireData = [];
 
       if(idProtocole && idProtocole != ''){
-        this.servicePouchdb.findRelationalDocHasMany('formulaireprotocole', 'protocole', idProtocole).then((res) => {
+        this.servicePouchdb.findDocByTypePere('formulaireprotocole', 'protocole', idProtocole).then((res) => {
+          if(res.docs){
+            for(let doc of res.docs){
+              //let f = doc.data;
+              //if(!f.security.deleted){
+                this.formulaireData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), ...doc.data});
+              //}
+
+              if(this.formulaireData.length > 0){
+                this.nbEtapes = 2 + this.formulaireData.length;
+              }else{
+                this.nbEtapes = 2;
+              }
+              
+              this.formulaireData.sort((a, b) => {
+                if (a.nom < b.nom) {
+                  return -1;
+                }
+                if (a.nom > b.nom) {
+                  return 1;
+                }
+                return 0;
+              });
+  
+              //console.log(this.formulaireData)
+  
+              //this.setLiDynamiqueWidth();
+              this.wizarAction();
+              this.formioForms = [];
+              this.formioFormsData = {};
+              if(this.doModification){
+                for(let i=0; i < this.formulaireData.length; i++){
+                  this.renderFormulaireProtocole(this.formulaireData[i].formData.code, this.formulaireData[i].formioData, this.unEssaiDoc.formioData[this.formulaireData[i].formData.code]);
+                }
+              }else{
+                for(let i=0; i < this.formulaireData.length; i++){
+                  this.renderFormulaireProtocole(this.formulaireData[i].formData.code, this.formulaireData[i].formioData);
+                }
+             }
+            }
+          }
+        }).catch((err) => {
+          this.formulaireData = [];
+          this.nbEtapes = 2;
+          console.log(err)
+        });
+
+        /*this.servicePouchdb.findRelationalDocHasMany('formulaireprotocole', 'protocole', idProtocole).then((res) => {
           if(res && res['formulaireprotocoles']){
             for(let f of res['formulaireprotocoles']){
               if(!f.security.deleted){
@@ -4723,14 +6195,14 @@ export class EssaiPage implements OnInit {
               this.setSelect2DefaultValue('idProtocole', this.unEssai.idProtocole);
             }else if(this.idProtocole){
               this.setSelect2DefaultValue('idProtocole', this.idProtocole);
-            }*/
+            }********
             
           }
         }).catch((err) => {
           this.formulaireData = [];
           this.nbEtapes = 2;
           console.log(err)
-        });
+        });*/
       }else {
         this.formulaireData = [];
       }
@@ -4738,10 +6210,26 @@ export class EssaiPage implements OnInit {
     }
 
 
+    //getChampParPersonne
     getChampsParPersonne(idPersonne){
       this.champData = [];
       if(this.idChamp){
-          this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
+        this.servicePouchdb.getLocalDocById('champ_2_'+ this.idChamp).then((champ) => {
+          if(champ){
+            this.champData.push({id: champ._id.substring(champ._id.lastIndexOf('_') + 1, champ._id.length), code: champ.data.formData.code, nom: champ.data.formData.nom});
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+            }else{
+              this.setSelect2DefaultValue('idChamp', this.idChamp);
+            }
+          }
+        }).catch((err) => {
+          this.champData = [];
+          this.nbEtapes = 2;
+          console.log(err)
+        });
+         /* this.servicePouchdb.findRelationalDocByID('champ', this.idChamp).then((res) => {
             if(res && res.champs && res.champs[0]){
               this.champData.push({id: res.champs[0].id, code: res.champs[0].formData.code, nom: res.champs[0].formData.nom});
 
@@ -4755,8 +6243,39 @@ export class EssaiPage implements OnInit {
             this.champData = [];
             this.nbEtapes = 2;
             console.log(err)
-          });
+          });*/
       }else if(idPersonne && idPersonne != ''){
+        this.servicePouchdb.findDocByTypePere('champ', 'personne', idPersonne).then((res) => {
+          if(res.docs){
+            for(let doc of res.docs){
+              //if(!doc.data.security.deleted){
+                this.champData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), code: doc.data.formData.code, nom: doc.data.formData.nom});
+                //}
+            }
+
+            this.champData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idChamp', this.unEssai.idChamp);
+            }else if(this.idChamp){
+              this.setSelect2DefaultValue('idChamp', this.idChamp);
+            }
+
+          }
+        }).catch((err) => {
+          this.champData = [];
+          this.nbEtapes = 2;
+          console.log(err)
+        });
+/*
           this.servicePouchdb.findRelationalDocHasMany('champ', 'personne', idPersonne).then((res) => {
             if(res && res.champs){
               for(let c of res.champs){
@@ -4788,7 +6307,7 @@ export class EssaiPage implements OnInit {
             this.nbEtapes = 2;
             console.log(err)
           });
-            
+          */  
       }else {
         this.champData = [];
       }
@@ -4844,6 +6363,7 @@ export class EssaiPage implements OnInit {
             
             //console.log(idProjet)
             this.getProtocoleParProjet(idProjet);
+            
             break;
           }
         }
@@ -4859,6 +6379,8 @@ export class EssaiPage implements OnInit {
         
         this.getProtocoleParProjet(idProjet);
       }
+
+      //console.log(this.essaiForm.value)
     }
 
     
@@ -4879,7 +6401,8 @@ export class EssaiPage implements OnInit {
             this.essaiForm.controls.numeroProtocole.setValue(u.numero);
             this.essaiForm.controls.nomProtocole.setValue(u.nom);
             this.essaiForm.controls.niveauCollecte.setValue(u.niveauCollecte);
-            
+            this.getFormulaireParProtocole(idProtocole)
+
             this.essaiForm.controls['numeroUnion'].setValue(null);
             this.essaiForm.controls['nomUnion'].setValue(null);
             this.essaiForm.controls['idUnion'].setValue(null);
@@ -4949,7 +6472,6 @@ export class EssaiPage implements OnInit {
               this.initSelect2('idLocalite', this.translate.instant('ESSAI_PAGE.SELECTIONLOCALITE'));
             }
                   
-            this.getFormulaireParProtocole(idProtocole)
             break;
           }
         }
@@ -4989,6 +6511,7 @@ export class EssaiPage implements OnInit {
         this.getFormulaireParProtocole(idProtocole)
       }
 
+      //console.log(this.essaiForm.value)
     }
 
     setNumeroAndNomPersonne(idPersonne){
@@ -5015,6 +6538,7 @@ export class EssaiPage implements OnInit {
         this.getChampsParPersonne(idPersonne)
       }
 
+      //console.log(this.essaiForm.value)
     }
 
 
@@ -5022,9 +6546,11 @@ export class EssaiPage implements OnInit {
       if(idChamp && idChamp != ''){
         for(let c of this.champData){
           if(idChamp == c.id){
+            //console.log(c)
             this.essaiForm.controls.nomChamp.setValue(c.nom);
             this.essaiForm.controls.codeChamp.setValue(c.code);
-            
+            //console.log(this.essaiForm.controls.codeChamp.value)
+            //console.log(this.essaiForm.controls.nomChamp.value)
             break;
           }
         }
@@ -5033,13 +6559,14 @@ export class EssaiPage implements OnInit {
         this.essaiForm.controls.codeChamp.setValue(null);
       }
 
+     // console.log(this.essaiForm.value)
     }
   
     getUnion(){
       if(this.idUnion){
-        this.servicePouchdb.findRelationalDocByID('union', this.idUnion).then((res) => {
-          if(res && res.unions && res.unions[0]){
-              this.unionData.push({id: res.unions[0].id, numero: res.unions[0].formData.numero, nom: res.unions[0].formData.nom});
+        this.servicePouchdb.getLocalDocById('union_2_'+ this.idUnion).then((union) => {
+          if(union){
+            this.unionData.push({id: union._id.substring(union._id.lastIndexOf('_') + 1, union._id.length), numero: union.data.formData.numero, nom: union.data.formData.nom});
 
             if(this.doModification){
               this.setSelect2DefaultValue('idUnion', this.unEssai.idUnion);
@@ -5049,17 +6576,35 @@ export class EssaiPage implements OnInit {
                 $('#idUnion select').attr('disabled', true)
               });*/
             }
-            
           }
         }).catch((err) => {
           this.unionData = [];
           console.log(err)
         });
+
+        /*this.servicePouchdb.findRelationalDocByID('union', this.idUnion).then((res) => {
+          if(res && res.unions && res.unions[0]){
+              this.unionData.push({id: res.unions[0].id, numero: res.unions[0].formData.numero, nom: res.unions[0].formData.nom});
+
+            if(this.doModification){
+              this.setSelect2DefaultValue('idUnion', this.unEssai.idUnion);
+            }else{
+              this.setSelect2DefaultValue('idUnion', this.idUnion);
+              /*$('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });****
+            }
+            
+          }
+        }).catch((err) => {
+          this.unionData = [];
+          console.log(err)
+        });*/
       }else {
-        this.servicePouchdb.findRelationalDocByTypeAndDeleted('union', false).then((res) => {
-          if(res && res.unions){
-            for(let u of res.unions){
-                this.unionData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+        this.servicePouchdb.findDocByTypeAndDeleted('union', false).then((res) => {
+          if(res && res.docs){
+            for(let u of res.docs){
+                this.unionData.push({id: u._id.substring(u._id.lastIndexOf('_') + 1, u._id.length), numero: u.data.formData.numero, nom: u.data.formData.nom});
             }
   
             this.unionData.sort((a, b) => {
@@ -5086,6 +6631,37 @@ export class EssaiPage implements OnInit {
           this.unionData = [];
           console.log(err)
         });
+
+        /*this.servicePouchdb.findRelationalDocByTypeAndDeleted('union', false).then((res) => {
+          if(res && res.unions){
+            for(let u of res.unions){
+                this.unionData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+            }
+  
+            this.unionData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idUnion', this.unEssai.idUnion);
+            }/*else if(this.idUnion){
+              this.setSelect2DefaultValue('idUnion', this.idUnion);
+              $('#idUnion select').ready(()=>{
+                $('#idUnion select').attr('disabled', true)
+              });
+            }****
+            
+          }
+        }).catch((err) => {
+          this.unionData = [];
+          console.log(err)
+        });*/
       }
       
     }
@@ -5093,9 +6669,9 @@ export class EssaiPage implements OnInit {
     getOpParUnion(idUnion){
       this.opData = [];
       if(this.idOp){
-        this.servicePouchdb.findRelationalDocByID('op', this.idOp).then((res) => {
-          if(res && res.ops && res.ops[0]){
-            this.opData.push({id: res.ops[0].id, numero: res.ops[0].formData.numero, nom: res.ops[0].formData.nom});
+        this.servicePouchdb.getLocalDocById('op_2_'+ this.idOp).then((op) => {
+          if(op){
+            this.opData.push({id: op._id.substring(op._id.lastIndexOf('_') + 1, op._id.length), numero: op.data.formData.numero, nom: op.data.formData.nom});
   
             if(this.doModification){
               this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
@@ -5105,21 +6681,40 @@ export class EssaiPage implements OnInit {
                 $('#idOp select').attr('disabled', true)
               });*/
             }
-            
           }
         }).catch((err) => {
           this.opData = [];
           console.log(err)
         });
-      }else if(idUnion && idUnion != ''){
-        this.servicePouchdb.findRelationalDocHasMany('op', 'union', idUnion).then((res) => {
-          if(res && res.ops){
-            for(let u of res.ops){
-              if(!u.security.deleted){
-                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
-              }
-            }
+
+        /*this.servicePouchdb.findRelationalDocByID('op', this.idOp).then((res) => {
+          if(res && res.ops && res.ops[0]){
+            this.opData.push({id: res.ops[0].id, numero: res.ops[0].formData.numero, nom: res.ops[0].formData.nom});
   
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else {
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });*****
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });*/
+      }else if(idUnion && idUnion != ''){
+
+        this.servicePouchdb.findDocByTypePere('op', 'union', idUnion).then((res) => {
+          if(res.docs){
+            for(let doc of res.docs){
+              //if(!doc.data.security.deleted){
+                this.opData.push({id: doc._id.substring(doc._id.lastIndexOf('_') + 1, doc._id.length), numero: doc.data.formData.numero, nom: doc.data.formData.nom});
+              //}
+            }
+
             this.opData.sort((a, b) => {
               if (a.nom < b.nom) {
                 return -1;
@@ -5144,16 +6739,50 @@ export class EssaiPage implements OnInit {
           this.opData = [];
           console.log(err)
         });
+
+        /*this.servicePouchdb.findRelationalDocHasMany('op', 'union', idUnion).then((res) => {
+          if(res && res.ops){
+            for(let u of res.ops){
+              if(!u.security.deleted){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              }
+            }
+  
+            this.opData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });***
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });*/
       }else{
         //get les ops indépendantes
-        this.servicePouchdb.findRelationalDocByTypeNiveauAndDeleted('op', '3', false).then((res) => {
-          if(res && res.ops){
+        //get les ops indépendantes
+        this.servicePouchdb.findDocByTypeNiveauAndDeleted('op', '3', false).then((res) => {
+          if(res && res.docs){
             //this.unions = [...unions];
             this.opData = [];
             //var datas = [];
-            for(let u of res.ops){
+            for(let u of res.docs){
               //if(f.data.formData.categorie == 'Fédération'){
-                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+                this.opData.push({id: u._id.substring(u._id.lastIndexOf('_') + 1, u._id.length), numero: u.data.formData.numero, nom: u.data.formData.nom});
               //}
             }
   
@@ -5182,6 +6811,44 @@ export class EssaiPage implements OnInit {
           console.log(err)
         });
       }
+      /*
+
+        this.servicePouchdb.findRelationalDocByTypeNiveauAndDeleted('op', '3', false).then((res) => {
+          if(res && res.ops){
+            //this.unions = [...unions];
+            this.opData = [];
+            //var datas = [];
+            for(let u of res.ops){
+              //if(f.data.formData.categorie == 'Fédération'){
+                this.opData.push({id: u.id, numero: u.formData.numero, nom: u.formData.nom});
+              //}
+            }
+  
+            this.opData.sort((a, b) => {
+              if (a.nom < b.nom) {
+                return -1;
+              }
+              if (a.nom > b.nom) {
+                return 1;
+              }
+              return 0;
+            });
+  
+            if(this.doModification){
+              this.setSelect2DefaultValue('idOp', this.unEssai.idOp);
+            }else if(this.idOp){
+              this.setSelect2DefaultValue('idOp', this.idOp);
+              /*$('#idOp select').ready(()=>{
+                $('#idOp select').attr('disabled', true)
+              });******
+            }
+            
+          }
+        }).catch((err) => {
+          this.opData = [];
+          console.log(err)
+        });
+      }*/
       
     }
 
@@ -5628,9 +7295,9 @@ export class EssaiPage implements OnInit {
 
   
 
-    attacheEventToDataTable(datatable){
+    attacheEventToDataTable(datatable, id){
       var self = this;
-      var id = 'essai-datatable';
+      //var id = 'essai-datatable';
       datatable.on( 'select', function ( e, dt, type, indexes ) {
         for(const i of indexes){
           //pour éviter les doublon d'index

@@ -920,6 +920,7 @@ export class DepartementPage implements OnInit {
         component: DerniereModificationComponent,
         componentProps: { _id: departement.id, _rev: departement.rev, security: departement.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1138,6 +1139,7 @@ export class DepartementPage implements OnInit {
         component: CommunePage,
         componentProps: { idDepartement: idDepartement },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1148,6 +1150,7 @@ export class DepartementPage implements OnInit {
         component: LocalitePage,
         componentProps: { idDepartement: idDepartement },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1402,7 +1405,7 @@ export class DepartementPage implements OnInit {
             let idRegion;
             for(let d of res.departements){
               if(this.filtreDepartement){
-                if((this.filtreDepartement.indexOf(d.id) === -1) && (this.filtreRegions.indexOf(d.region))){
+                if((this.filtreDepartement.indexOf(d.id) === -1) && (this.filtreRegions.indexOf(d.region) !== -1)){
                   if(isDefined(paysIndex[d.pays])){
                     d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
                     d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);
@@ -1701,7 +1704,9 @@ export class DepartementPage implements OnInit {
             let idRegion;
             for(let d of res.departements){
               if(this.filtreDepartement){
-                if((this.filtreDepartement.indexOf(d.id) === -1) && this.filtreRegions.indexOf(d.region)){
+                //console.log(this.filtreRegions)
+                //console.log(d.region)
+                if((this.filtreDepartement.indexOf(d.id) === -1) && this.filtreRegions.indexOf(d.region) !== -1){
                   if(isDefined(paysIndex[d.pays])){
                     d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'nomPays', res.pays[paysIndex[d.pays]].formData.nom, 0);
                     d.formData = this.addItemToObjectAtSpecificPosition(d.formData, 'codePays', res.pays[paysIndex[d.pays]].formData.code, 1);

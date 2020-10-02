@@ -372,11 +372,11 @@ export class BDLocalePage implements OnInit {
 
     let o = 0;
     //let data = require('../../globale/'+type);
-    let personne = require('../../globale/personnes');
+    //let personne = require('../../globale/personnes');
     //let personnneIndex = [];
-    /*let personne = {
+    let personne = {
       personnes : []
-    }*/
+    }
     this.getData(type.toLowerCase()).then(data => {
     data.forEach((d, index) => {
       //console.log(d)
@@ -577,7 +577,9 @@ export class BDLocalePage implements OnInit {
         ops: [],
         personnes: [],
         projets: [],
-        protocoles: []
+        protocoles: [],
+        donneesUtilisateurs: [],
+        stationMeteos: []
       };
 
       this.servicePouchdb.destroyDB().then((res) => {

@@ -1845,6 +1845,7 @@ export class MonInstitutionPage implements OnInit {
         componentProps: { 
           idModele: 'mon-institution', _id: partenaire.id, _rev: partenaire.rev, security: partenaire.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2099,6 +2100,7 @@ export class MonInstitutionPage implements OnInit {
         componentProps: {
           idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2108,6 +2110,7 @@ export class MonInstitutionPage implements OnInit {
       const modal = await this.modalController.create({
         component: OpPage,
         componentProps: { idPartenaire: idPartenaire },
+        backdropDismiss: false,
         mode: 'ios',
         cssClass: 'costom-modal',
       });
@@ -2120,6 +2123,7 @@ export class MonInstitutionPage implements OnInit {
         componentProps: {
           idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2131,6 +2135,7 @@ export class MonInstitutionPage implements OnInit {
         componentProps: {
           idModele: 'mon-institution', idPartenaire: idPartenaire },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2144,7 +2149,7 @@ export class MonInstitutionPage implements OnInit {
       
         let partenaire: any = {
           //_id: 'fuma:partenaire:'+data.numero,
-          id: 'EA33DF01-09C0-4199-B55F-BB6F72857A00',
+          //id: 'EA33DF01-09C0-4199-B55F-BB6F72857A00',
           type: 'partenaire',
           pays: formData.idPays,
           region: formData.idRegion,

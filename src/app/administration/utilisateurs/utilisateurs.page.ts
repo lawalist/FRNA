@@ -27,6 +27,8 @@ import { FiltrePaysComponent } from 'src/app/component/filtre-pays/filtre-pays.c
 import { FiltreRegionComponent } from 'src/app/component/filtre-region/filtre-region.component';
 import { FiltreDepartementComponent } from 'src/app/component/filtre-departement/filtre-departement.component';
 import { FiltreCommuneComponent } from 'src/app/component/filtre-commune/filtre-commune.component';
+import { FiltreDonneesUtilisateursComponent } from 'src/app/component/filtre-donnees-utilisateurs/filtre-donnees-utilisateurs.component';
+import { FiltreStationMeteoComponent } from 'src/app/component/filtre-station-meteo/filtre-station-meteo.component';
 
 //JSONToTHMLTable importé dans index, il suffit de la déclarer en tant que variable globale
 declare var JSONToCSVAndTHMLTable: any;
@@ -43,8 +45,10 @@ declare var cordova: any;
 })
 export class UtilisateursPage implements OnInit {
   @Input() idUtilisateur: string;
+  @Input() filtreDonneesUtilisateurs: any;
 
   utilisateurForm: FormGroup;
+  loading: boolean = false;
   action: string = 'liste';
   cacheAction: string = 'liste';
   utilisateurs: any = [];
@@ -172,8 +176,9 @@ export class UtilisateursPage implements OnInit {
           ops: [],
           personnes: [],
           projets: [],
-          protocoles: []/*,
-          donnees: []*/
+          protocoles: [],
+          donneesUtilisateurs: [],
+          stationMeteos: []
         }]
       });
       
@@ -199,15 +204,41 @@ export class UtilisateursPage implements OnInit {
     }
   
     editForm(utilisateur){
-      
+	  let groupes = [];
+      let accessDonnes = {
+        exporter: false,
+        importer: false,
+        inclureDonneesDependantes: false,
+        pays: [],
+        regions: [],
+        departements: [],
+        communes: [],
+        partenaires: [],
+        unions: [],
+        ops: [],
+        personnes: [],
+        projets: [],
+        protocoles: [],
+        donneesUtilisateurs: [],
+        stationMeteos: []
+      }
+
+      if(utilisateur.accessDonnes && utilisateur.accessDonnes !== ''){
+        accessDonnes = utilisateur.accessDonnes;
+      }
+	  
+	  if(utilisateur.groupes && utilisateur.groupes !== ''){
+        groupes = utilisateur.groupes;
+      }
+
       this.utilisateurForm = this.formBuilder.group({
         nom: [utilisateur.nom, Validators.required],
         actif: [utilisateur.actif],
         identifiant: [utilisateur.identifiant, Validators.required],
         email: [utilisateur.email],
         mdPasse: [null],
-        groupes: [utilisateur.groupes],
-        accessDonnes: [utilisateur.accessDonnes],
+        groupes: [groupes],
+        accessDonnes: [accessDonnes],
       });
       
       this.howHidePassword()
@@ -267,22 +298,25 @@ export class UtilisateursPage implements OnInit {
   
     modifier(utilisateur){
       //console.log(utilisateur)
-      this.getGroupes();
-      this.message_err = '';
-      let id;
-      if(isObject(utilisateur)){
-        this.unUtilisateur = utilisateur
-      }else{
-        for(let p of this.utilisateursData){
-          if(p.name == utilisateur){
-            this.unUtilisateur = p;
-            break;
+      if(!this.filtreDonneesUtilisateurs){
+        this.getGroupes();
+        this.message_err = '';
+        let id;
+        if(isObject(utilisateur)){
+          this.unUtilisateur = utilisateur
+        }else{
+          for(let p of this.utilisateursData){
+            if(p.name == utilisateur){
+              this.unUtilisateur = p;
+              break;
+            }
           }
         }
+        this.doModification = true;
+        this.editForm(this.unUtilisateur); 
+        this.action ='modifier';     
+  
       }
-      this.doModification = true;
-      this.editForm(this.unUtilisateur); 
-      this.action ='modifier';     
     }
 
     changerMdPasse(utilisateur){
@@ -913,10 +947,12 @@ export class UtilisateursPage implements OnInit {
 
     
     async presentFiltrePays(filtrePays = [], doAjout = false) {
+      //console.log('filte: '+filtrePays)
       const modal = await this.modalController.create({
         component: FiltrePaysComponent,
         componentProps: { filtrePays: filtrePays, translate: this.translate, doAjout: doAjout },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -938,6 +974,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreRegionComponent,
         componentProps: { filtreRegion: filtreRegion, translate: this.translate, doAjout: doAjout, pays: pays },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -958,13 +995,14 @@ export class UtilisateursPage implements OnInit {
         component: FiltreDepartementComponent,
         componentProps: { filtreDepartement: filtreDepartement, translate: this.translate, doAjout: doAjout, regions: regions },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
       modal.onWillDismiss().then((dataReturned) => {
         if(dataReturned.data && dataReturned.data.filtreDepartement && dataReturned.data.filtreDepartement != ''){
           let acc = this.utilisateurForm.controls.accessDonnes.value;
-          acc.regions = dataReturned.data.filtreDepartement;
+          acc.departements = dataReturned.data.filtreDepartement;
           this.utilisateurForm.controls.accessDonnes.setValidators(acc);
         }
         //this.utilisateurForm.controls.accessDonnes = dataReturned.data.filtreDepartement;
@@ -978,6 +1016,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreCommuneComponent,
         componentProps: { filtreCommune: filtreCommune, translate: this.translate, doAjout: doAjout, departements: departements },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -998,12 +1037,14 @@ export class UtilisateursPage implements OnInit {
         component: FiltrePartenaireComponent,
         componentProps: { filtrePartenaire: filtrePartenaire, translate: this.translate, doAjout: doAjout },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
       modal.onWillDismiss().then((dataReturned) => {
         if(dataReturned.data && dataReturned.data.filtrePartenaire && dataReturned.data.filtrePartenaire != ''){
           //this.utilisateurForm.controls.accessDonnes = dataReturned.data.filtrePartenaire;
+          //console.log(this.utilisateurForm.controls)
           let acc = this.utilisateurForm.controls.accessDonnes.value;
           acc.partenaires = dataReturned.data.filtrePartenaire;
           this.utilisateurForm.controls.accessDonnes.setValidators(acc);
@@ -1019,6 +1060,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreUnionComponent,
         componentProps: { filtreUnion: filtreUnion, translate: this.translate, doAjout: doAjout, partenaires: partenaires },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -1039,6 +1081,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreOpComponent,
         componentProps: { filtreOP: filtreOP, translate: this.translate, doAjout: doAjout, unions: unions },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -1060,6 +1103,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltrePersonneComponent,
         componentProps: { filtrePersonne: filtrePersonne, translate: this.translate, doAjout: doAjout },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -1075,6 +1119,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreProjetComponent,
         componentProps: { filtreProjet: filtreProjet, translate: this.translate, doAjout: doAjout },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -1097,6 +1142,7 @@ export class UtilisateursPage implements OnInit {
         component: FiltreProtocoleComponent,
         componentProps: { filtreProtocole: filtreProtocole, translate: this.translate, doAjout: doAjout, projets: projets },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
 
@@ -1108,6 +1154,52 @@ export class UtilisateursPage implements OnInit {
         }
         
         //this.utilisateurForm.controls.accessDonnes = dataReturned.data.filtreProtocole;
+      });
+
+      return await modal.present();
+    }
+
+
+    async presentFiltreStationMeteo(filtreStationMeteo = [], doAjout = false) {
+      const modal = await this.modalController.create({
+        component: FiltreStationMeteoComponent,
+        componentProps: { filtreStationMeteo: filtreStationMeteo, translate: this.translate, doAjout: doAjout},
+        mode: 'ios',
+        backdropDismiss: false,
+        //cssClass: 'costom-modal',
+      });
+
+      modal.onWillDismiss().then((dataReturned) => {
+        if(dataReturned.data && dataReturned.data.filtreStationMeteo && dataReturned.data.filtreStationMeteo != ''){
+          let acc = this.utilisateurForm.controls.accessDonnes.value;
+          acc.stationMeteos = dataReturned.data.filtreStationMeteo;
+          this.utilisateurForm.controls.accessDonnes.setValidators(acc);
+        }
+        
+        //this.utilisateurForm.controls.accessDonnes = dataReturned.data.filtreProtocole;
+      });
+
+      return await modal.present();
+    }
+
+
+    async presentFiltreDonneesUtilisateurs(filtreDonneesUtilisateurs = [], doAjout = false) {
+      const modal = await this.modalController.create({
+        component: FiltreDonneesUtilisateursComponent,
+        componentProps: { filtreDonneesUtilisateurs: filtreDonneesUtilisateurs, translate: this.translate, doAjout: doAjout },
+        mode: 'ios',
+        backdropDismiss: false,
+        //cssClass: 'costom-modal',
+      });
+
+      modal.onWillDismiss().then((dataReturned) => {
+        if(dataReturned.data && dataReturned.data.filtreDonneesUtilisateurs && dataReturned.data.filtreDonneesUtilisateurs != ''){
+          let acc = this.utilisateurForm.controls.accessDonnes.value;
+          acc.donneesUtilisateurs = dataReturned.data.filtreDonneesUtilisateurs;
+          this.utilisateurForm.controls.accessDonnes.setValidators(acc);
+        }
+        
+        //this.utilisateurForm.controls.accessDonnes = dataReturned.data.filtreDonneesUtilisateurs;
       });
 
       return await modal.present();
@@ -1347,6 +1439,7 @@ export class UtilisateursPage implements OnInit {
         component: DerniereModificationComponent,
         componentProps: { _id: utilisateur.id, _rev: utilisateur.rev, security: utilisateur.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -1357,6 +1450,7 @@ export class UtilisateursPage implements OnInit {
         component: ConnexionPage,
         //componentProps: { idMembre: idMembre },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-connexion-modal',
       });
       return await modal.present();
@@ -1367,6 +1461,7 @@ export class UtilisateursPage implements OnInit {
         component: ProfilPage,
         //componentProps: { idMembre: idMembre },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-connexion-modal',
       });
       return await modal.present();
@@ -1527,6 +1622,8 @@ export class UtilisateursPage implements OnInit {
 
         delete formData.mdPasse;
         delete formData.identifiant;
+        //formData.roles = Array.from(new Set(formData.roles.concat(formData.groupes)));
+        //formData.roles = formData.groupe;
 
         this.servicePouchdb.creerUtilisateur(u.identifiant, u.mdPasse, formData).then((res) => {
           u._id = res.id;
@@ -1581,8 +1678,12 @@ export class UtilisateursPage implements OnInit {
       }else if(this.action === 'modifier'){
         let u = this.clone(formData);
 
+
         delete formData.mdPasse;
         delete formData.identifiant;
+
+        //formData.roles = formData.groupe;
+        //formData.roles = Array.from(new Set(formData.roles.concat(formData.groupes)));
   
         this.servicePouchdb.updateInfoUtilisateur(u.identifiant, formData).then((res) => {
           
@@ -1709,18 +1810,37 @@ export class UtilisateursPage implements OnInit {
     }
   
     doRefresh(event) {
+      let id = 'utilisateur';
+      if(this.filtreDonneesUtilisateurs){
+        id = 'utilisateur-relation';
+      }
+
       this.servicePouchdb.getAllUsers().then((res) => {
         //console.log(res)
         if(res){
 
           let utilisateursData = [];
-          res.rows.map((row) => {
-            //if(row.doc.db === 'frna'){
-              let doc: any =row.doc
-              doc.identifiant = doc.name
-              utilisateursData.push(doc);
-            //}
-          });
+          if(this.filtreDonneesUtilisateurs){
+            res.rows.map((row) => {
+              //if(row.doc.db === 'frna'){
+                let doc: any =row.doc
+                if(this.filtreDonneesUtilisateurs.indexOf(doc.name) === -1){
+                  doc.identifiant = doc.name
+                  utilisateursData.push(doc);
+                }
+              //}
+            });
+
+          }else{
+            res.rows.map((row) => {
+              //if(row.doc.db === 'frna'){
+                let doc: any =row.doc
+                doc.identifiant = doc.name
+                utilisateursData.push(doc);
+              //}
+            });
+          }
+  
 
 
           if(this.mobile){
@@ -1737,11 +1857,15 @@ export class UtilisateursPage implements OnInit {
             this.utilisateursData = [...utilisateursData];
             this.allUtilisateursData = [...utilisateursData];
           } else{
+            let expor = global.peutExporterDonnees;
+            if(this.filtreDonneesUtilisateurs){
+              expor = false;
+            }
             //$('#utilisateur').ready(()=>{
               if(global.langue == 'en'){
-                this.utilisateurHTMLTable = createDataTable("utilisateur", this.colonnes, utilisateursData, null, this.translate, global.peutExporterDonnees);
+                this.utilisateurHTMLTable = createDataTable(id, this.colonnes, utilisateursData, null, this.translate, expor);
               }else{
-                this.utilisateurHTMLTable = createDataTable("utilisateur", this.colonnes, utilisateursData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.utilisateurHTMLTable = createDataTable(id, this.colonnes, utilisateursData, global.dataTable_fr, this.translate, expor);
               }
 
               this.attacheEventToDataTable(this.utilisateurHTMLTable.datatable);
@@ -1823,22 +1947,42 @@ export class UtilisateursPage implements OnInit {
     }
   
     getUtilisateur(){
+      this.loading = true;
       //tous les utilisateurs
+      let id = 'utilisateur';
+      if(this.filtreDonneesUtilisateurs){
+        id = 'utilisateur-relation';
+      }
+
       this.servicePouchdb.getAllUsers().then((res) => {
         //console.log(res)
         if(res){
 
           let utilisateursData = [];
-          res.rows.map((row) => {
-            //if(row.doc.db === 'frna'){
-              let doc: any =row.doc
-              doc.identifiant = doc.name
-              utilisateursData.push(doc);
-            //}
-          });
+          if(this.filtreDonneesUtilisateurs){
+            res.rows.map((row) => {
+              //if(row.doc.db === 'frna'){
+                let doc: any =row.doc
+                if(this.filtreDonneesUtilisateurs.indexOf(doc.name) === -1){
+                  doc.identifiant = doc.name
+                  utilisateursData.push(doc);
+                }
+              //}
+            });
+
+          }else{
+            res.rows.map((row) => {
+              //if(row.doc.db === 'frna'){
+                let doc: any =row.doc
+                doc.identifiant = doc.name
+                utilisateursData.push(doc);
+              //}
+            });
+          }
 
           //let utilisateursData = res
 
+          this.loading = false;
           if(this.mobile){
             utilisateursData.sort((a, b) => {
               if (a.nom < b.nom) {
@@ -1854,14 +1998,17 @@ export class UtilisateursPage implements OnInit {
             this.allUtilisateursData = [...utilisateursData];
           } else{
               //this.utilisateursData = [...datas];
-
+            let expor = global.peutExporterDonnees;
+            if(this.filtreDonneesUtilisateurs){
+              expor = false;
+            }
             //si non mobile ou mobile + mode tableau et 
             //if(this.utilisateursData.length > 0){
             //$('#utilisateur').ready(()=>{
               if(global.langue == 'en'){
-                this.utilisateurHTMLTable = createDataTable("utilisateur", this.colonnes, utilisateursData, null, this.translate, global.peutExporterDonnees);
+                this.utilisateurHTMLTable = createDataTable(id, this.colonnes, utilisateursData, null, this.translate, expor);
               }else{
-                this.utilisateurHTMLTable = createDataTable("utilisateur", this.colonnes, utilisateursData, global.dataTable_fr, this.translate, global.peutExporterDonnees);
+                this.utilisateurHTMLTable = createDataTable(id, this.colonnes, utilisateursData, global.dataTable_fr, this.translate, expor);
               }
 
               this.attacheEventToDataTable(this.utilisateurHTMLTable.datatable);
@@ -1871,6 +2018,7 @@ export class UtilisateursPage implements OnInit {
           
         }
       }).catch((err) => {
+        this.loading = false;
         if(err){
           if(err.error === 'unauthorized'){
             console.log("Vous n'ètes pas administrateur du serveur ", err)
@@ -2192,8 +2340,19 @@ export class UtilisateursPage implements OnInit {
       
     }
     
-    async close(){
+    /*async close(){
       await this.modalController.dismiss();
+    }*/
+
+    async close(){
+      await this.modalController.dismiss({filtreDonneesUtilisateurs: this.filtreDonneesUtilisateurs});
+    }
+
+    async valider() {
+      //this.filtreDonneesUtilisateurs = [];
+      this.filtreDonneesUtilisateurs = this.filtreDonneesUtilisateurs.concat(this.selectedIndexes);
+
+      await this.modalController.dismiss({filtreDonneesUtilisateurs: this.filtreDonneesUtilisateurs});
     }
     
     ionViewDidEnter(){ 

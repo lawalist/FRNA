@@ -122,7 +122,20 @@ export class AppComponent implements OnInit {
           icon: 'document',
           color: '',
           id: 'champ'
-        },
+        },{
+          title: 'Stations météo',
+          url: '/station-meteo',
+          icon: 'document',
+          color: '',
+          id: 'stationmeteos'
+        },{
+          title: 'Pluviometries',
+          url: '/pluviometrie',
+          icon: 'document',
+          color: '',
+          id: 'pluviometrie'
+        }
+
       ]
     },
     {
@@ -366,16 +379,27 @@ export class AppComponent implements OnInit {
         global.mobile = true;
       }
       console.log('platform android ou ios = '+global.mobile);
-      this.initTranslate();  
+      this.initTranslate(); 
+      this.chargerUserInfo(); 
       //this.getConfServeur();    
 //this.initMultipleSelect(this.translate)
       
     });
   }
 
+  chargerUserInfo(){
+    //console.log('chargerUserInfo')
+    this.storage.get('frna_v2_info_user').then((res) => {
+     // console.log(res)
+      if(res && res != ''){
+        global.info_user = res;
+      }
+    })
+  }
+
   getConfServeur(){
     this.storage.get('conf-serveur').then((res) => {
-      console.log(res)
+      //console.log(res)
       if(res && res != ''){
         global.conf_serveur = res;
         this.servicePouchdb.remoteDB = new PouchDB(global.conf_serveur.domaine+'/'+global.conf_serveur.bd, this.servicePouchdb.pouchOpts /*'http://localhost:5984/frna-v2', {skip_setup: true}*/);
@@ -395,7 +419,7 @@ export class AppComponent implements OnInit {
 
   testerAccesMenu(idMenu){
     //console.log(global.info_user.roles)
-    if(global.estModeTeste || global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1){
+    if(global.estModeTeste || global.info_user.roles && (global.info_user.roles.indexOf('_admin') !== -1 || global.info_user.roles.indexOf('admin') !== -1)){
       return true;
     }else {
       for(let p of global.info_user.permissionsAccesModel){
@@ -493,6 +517,12 @@ export class AppComponent implements OnInit {
     });
     this.translate.get('MENU.INSTITUTION.CHAMP').subscribe((res: string) => {
       this.appPages[1].children[5].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.STATIONMETEOS').subscribe((res: string) => {
+      this.appPages[1].children[6].title = res;
+    });
+    this.translate.get('MENU.INSTITUTION.PLUVIOMETRIES').subscribe((res: string) => {
+      this.appPages[1].children[7].title = res;
     });
 
     //Recherche
@@ -706,8 +736,11 @@ deconnexion(){
       ops: [],
       personnes: [],
       projets: [],
-      protocoles: []
+      protocoles: [],
+      donneesUtilisateurs: [],
+      stationMeteos: []
     };
+    this.storage.remove('frna_v2_info_user')
 
     this.afficheMessage('Vous ètes déconnecté');
     
@@ -751,38 +784,44 @@ async profil() {
 
 
 testerConnexion(){
-  this.servicePouchdb.getSessionUtilisateur().then((res) => {
-    if(res.userCtx.name){
+  this.servicePouchdb.getSessionUtilisateur().then((res1) => {
+    if(res1.userCtx.name){
       global.estConnecte = true;
-      global.info_user.name = res.userCtx.name;
-      global.info_user.roles = res.userCtx.roles;
-      this.servicePouchdb.getInfosUtilisateur(res.userCtx.name).then((res) => {
-        global.info_user.groupes = res.groupes;
-        global.info_user.permissionsAccesModel = [];
-        global.info_user.accessDonnes = res.accessDonnes;
-        //console.log(global.info_user.groupes)
-        this.servicePouchdb.findRelationalDocByTypeAndID('groupe', res.groupes).then((res) => {
-          if(res){
-            //console.log(res)
-            res.groupes.forEach((g) => {
-              g.formData.permissionAcces.forEach((p) => {
-                if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
-                  global.info_user.permissionsAccesModel.push(p)
-                }
-              })
-              
-            });
-            //console.log(global.info_user.permissionsAccesDonnees)
+      global.info_user.name = res1.userCtx.name;
+      global.info_user.roles = res1.userCtx.roles;
+      if(res1.userCtx.roles.indexOf('_admin') === -1 && res1.userCtx.roles.indexOf('admin') === -1){
+        this.servicePouchdb.getInfosUtilisateur(res1.userCtx.name).then((res2) => {
+          global.info_user.groupes = res2.groupes;
+          global.info_user.permissionsAccesModel = [];
+          global.info_user.accessDonnes = res2.accessDonnes;
+          //console.log(global.info_user.groupes)
+          this.servicePouchdb.getGroupes(res2.groupes).then((res3) => {
+            if(res3){
+              //console.log(res)
+              res3.forEach((g) => {
+                g.formData.permissionAcces.forEach((p) => {
+                  if(global.info_user.permissionsAccesModel.indexOf(p) === -1){
+                    global.info_user.permissionsAccesModel.push(p)
+                  }
+                })
+                
+              });
+              this.storage.set('frna_v2_info_user', global.info_user);
+              //console.log(global.info_user.permissionsAccesDonnees)
+            }
+          })
+        }).catch((err) => {
+          if(err){
+            console.log("Problème de réseau ou privilèges insuffisants ", err)
           }
-        })
-      }).catch((err) => {
-        if(err){
-          console.log("Problème de réseau ou privilèges insuffisants ", err)
-        }
-      });
+        });
+      }else{
+        this.storage.set('frna_v2_info_user', global.info_user);
+      }
+      
     }else{
-      global.estConnecte = false;
-      global.info_user.name = 'default';
+      //global.estConnecte = false;
+      /*global.info_user.name = 'default';
       global.info_user.roles = [];
       global.info_user.groupes = [];
       global.info_user.permissionsAccesModel = [];
@@ -799,13 +838,15 @@ testerConnexion(){
         ops: [],
         personnes: [],
         projets: [],
-        protocoles: []
-      };
+        protocoles: [],
+        donneesUtilisateurs: [],
+        stationMeteos: []
+      };*/
     }
   }).catch((err) => {
       console.log("Problème de réseau ", err)
-      global.estConnecte = false;
-      global.info_user.name = 'default';
+      //global.estConnecte = false;
+      /*global.info_user.name = 'default';
       global.info_user.roles = [];
       global.info_user.groupes = [];
       global.info_user.permissionsAccesModel = [];
@@ -822,8 +863,10 @@ testerConnexion(){
         ops: [],
         personnes: [],
         projets: [],
-        protocoles: []
-      };
+        protocoles: [],
+        donneesUtilisateurs: [],
+        stationMeteos: []
+      };*/
   });
 }
 
@@ -831,4 +874,6 @@ testerConnexion(){
   boutonMenuControl(){
     this.boutonMenuClass = !this.boutonMenuClass;
   }
+
+  
 }

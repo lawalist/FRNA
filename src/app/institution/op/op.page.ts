@@ -4,7 +4,7 @@ import { File } from '@ionic-native/file/ngx';
 import { Geolocation } from '@ionic-native/geolocation/ngx';
 import { TranslateService } from '@ngx-translate/core';
 import { PouchdbService } from '../../services/pouchdb/pouchdb.service';
-import { AlertController, ToastController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
+import { AlertController, ToastController, LoadingController, ModalController, ActionSheetController, PopoverController } from '@ionic/angular';
 import { ActionComponent } from '../../component/action/action.component';
 import { RelationsOpComponent } from '../../component/relations-op/relations-op.component';
 import { global } from '../../../app/globale/variable';
@@ -48,6 +48,7 @@ export class OpPage implements OnInit {
 
   global = global;
   start: any;
+  loading: boolean = false;
   opForm: FormGroup;
   action: string = 'liste';
   cacheAction: string = 'liste';
@@ -119,7 +120,7 @@ export class OpPage implements OnInit {
   }
 
   
-    constructor(private formBuilder: FormBuilder, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
+    constructor(private formBuilder: FormBuilder, private loadingCtl: LoadingController, private modalController: ModalController, private geolocation: Geolocation, private file: File, private popoverController: PopoverController, private translate: TranslateService, private servicePouchdb: PouchdbService, public alertCtl: AlertController, private toastCtl: ToastController, public actionSheetCtl: ActionSheetController) {
       this.translate.setDefaultLang(global.langue);
 
     }
@@ -131,6 +132,70 @@ export class OpPage implements OnInit {
       this.translateChoixNiveau();
     }
   
+    async applayChangeOnPersonne(op){
+      let loading = await this.loadingCtl.create({
+        message: 'Application des changement au personnes et champs en cours...'
+      });
+      await loading.present();
+
+      this.servicePouchdb.findRelationalDocOfTypeByPere('personne', 'op', op.id, false).then((res) => {
+        //console.log(res);
+        if(res && res.personnes){
+          for(let p of res.personnes){
+            p.pays = op.pays;
+            p.region = op.region;
+            p.departement = op.departement;
+            p.commune = op.commune;
+            p.localite = op.localite;
+            p.union = op.union;
+            //p.op = op.id;
+            p.partenaire = op.partenaire;
+
+            p.security.update_start = moment().toISOString();
+            p.security.update_start = moment().toISOString();
+            p.security = this.servicePouchdb.garderUpdateTrace(p.security);
+
+            this.servicePouchdb.updateRelationalDoc(p).then((res) => {
+              this.applayChangeOnOP(p);
+            }).catch((err) => {
+              console.log(err)
+            });
+
+            loading.dismiss();
+          }
+        }
+      }).catch((err) => {
+        loading.dismiss();
+        console.log(err)
+      });
+    
+    }
+
+    applayChangeOnOP(personne){
+      this.servicePouchdb.findRelationalDocOfTypeByPere('champ', 'personne', personne.id, false).then((res) => {
+        //console.log(res);
+        if(res && res.champs){
+          for(let c of res.champs){
+            c.pays = personne.pays;
+            c.region = personne.region;
+            c.departement = personne.departement;
+            c.commune = personne.commune;
+            c.localite = personne.localite;
+            //c.personne = personne.id;
+            
+            c.security.update_start = moment().toISOString();
+            c.security.update_start = moment().toISOString();
+            c.security = this.servicePouchdb.garderUpdateTrace(c.security);
+
+            this.servicePouchdb.updateRelationalDoc(c).catch((err) => {
+              console.log(err)
+            });
+          }
+        }
+      }).catch((err) => {
+        console.log(err)
+      });
+    }
     translateChoixNiveau(){
       for(let i = 1; i <= 3; i++){
         this.translate.get('OP_PAGE.CHOIXNIVEAU.'+i).subscribe((res: string) => {
@@ -643,7 +708,10 @@ export class OpPage implements OnInit {
               
               if(oDoc.formData.niveau == '1'){
                 this.getFederation();
-                //this.getUnionParFederation(oDoc.numeroFederation);
+                this.getUnionParFederation(oDoc.partenaire);
+                //this.getUnionParFederation(idFederation)
+              }else if(oDoc.formData.niveau == '2'){
+                this.getUnionParFederation(null);
               }
     
     
@@ -2126,6 +2194,7 @@ export class OpPage implements OnInit {
         componentProps: {
           idModele: 'ops', _id: op.id, _rev: op.rev, security: op.security },
         mode: 'ios',
+        backdropDismiss: false,
         //cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2349,6 +2418,7 @@ export class OpPage implements OnInit {
         componentProps: {
           idModele: 'ops',  idOp: idOp },
         mode: 'ios',
+        backdropDismiss: false,
         cssClass: 'costom-modal',
       });
       return await modal.present();
@@ -2488,6 +2558,10 @@ export class OpPage implements OnInit {
   
       }else{
         //si modification
+        let modifier = false;
+        if(this.uneOpDoc.pays != formData.idPays || this.uneOpDoc.region != formData.idRegion || this.uneOpDoc.departement != formData.idDepartement || this.uneOpDoc.commune != formData.idCommune || this.uneOpDoc.localite != formData.idSiege || this.uneOpDoc.union != formData.idUnion || this.uneOpDoc.partenaire != formData.idFederation){
+          modifier = true;
+        }
         this.uneOpDoc.pays = formData.idPays;
         this.uneOpDoc.region = formData.idRegion;
         this.uneOpDoc.departement = formData.idDepartement;
@@ -2529,6 +2603,9 @@ export class OpPage implements OnInit {
         this.servicePouchdb.updateRelationalDoc(doc).then((res) => {
           //this.ops._rev = res.rev;
           //this.uneOpDoc._rev = res.rev;
+          if(modifier){
+            this.applayChangeOnPersonne(doc);
+          }
           let opData = {id: this.uneOpDoc.id, ...this.uneOpDoc.formData, ...this.uneOpDoc.formioData, ...this.uneOpDoc.security};
 
           this.translate.get('OP_PAGE.CHOIXNIVEAU.'+opData.niveau).subscribe((res2: string) => {
@@ -2676,7 +2753,7 @@ export class OpPage implements OnInit {
               for(let u of res.ops){
                 //supprimer l'historique de la liste
                 if(this.filtreOP){
-                  if((this.filtreOP.indexOf(u.id) === -1) && ((this.filtreUnions.indexOf(u.union) || u.formData.niveau == '3'))){
+                  if((this.filtreOP.indexOf(u.id) === -1) && ((this.filtreUnions.indexOf(u.union)  !== -1 || u.formData.niveau == '3'))){
                     delete u.security['shared_history'];
 
                     this.translate.get('OP_PAGE.CHOIXNIVEAU.'+u.formData.niveau).subscribe((res: string) => {
@@ -3251,6 +3328,7 @@ export class OpPage implements OnInit {
   
     getOp(){
       //tous les departements
+      this.loading = true;
       if(this.idOp && this.idOp != ''){
         this.servicePouchdb.findRelationalDocByID('op', this.idOp).then((res) => {
           if(res && res.ops[0]){
@@ -3291,12 +3369,15 @@ export class OpPage implements OnInit {
             res.ops[0].formData = this.addItemToObjectAtSpecificPosition(res.ops[0].formData, 'nomSiege', res.localites[0].formData.nom, 16);  
             res.ops[0].formData = this.addItemToObjectAtSpecificPosition(res.ops[0].formData, 'codeSiege', res.localites[0].formData.code, 17);   
             
+            this.loading = false;
             this.infos({id: res.partenaires[0].id, idFederation: f, idUnion: u, idPays: res.pays[0].id, idRegion: res.regions[0].id, idDepartement: res.departements[0].id, idCommune: res.communes[0].id, idSiege: res.localites[0].id, ...res.ops[0].formData}); 
           }else{
+            this.loading = false;
             alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
             this.close();
           }
         }).catch((err) => {
+          this.loading = false;
           alert(this.translate.instant('GENERAL.ENREGISTREMENT_NOT_FOUND'));
           console.log(err)
           this.close();
@@ -3347,7 +3428,7 @@ export class OpPage implements OnInit {
             for(let u of res.ops){
               //supprimer l'historique de la liste
               if(this.filtreOP){
-                if((this.filtreOP.indexOf(u.id) === -1) && ((this.filtreUnions.indexOf(u.union) || u.formData.niveau == '3'))){
+                if((this.filtreOP.indexOf(u.id) === -1) && ((this.filtreUnions.indexOf(u.union)  !== -1 || u.formData.niveau == '3'))){
                   delete u.security['shared_history'];
 
                   this.translate.get('OP_PAGE.CHOIXNIVEAU.'+u.formData.niveau).subscribe((res: string) => {
@@ -3631,6 +3712,7 @@ export class OpPage implements OnInit {
 
             //this.opsData = [...datas]; 
   
+            this.loading = false;
             if(this.mobile){
               this.opsData = opsData;
               this.opsData.sort((a, b) => {
@@ -3661,6 +3743,7 @@ export class OpPage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.ops = [];
           this.opsData = [];
           console.log(err)
@@ -3845,6 +3928,7 @@ export class OpPage implements OnInit {
 
             //this.opsData = [...datas];
   
+            this.loading = false;
             //console.log(opsData)
             if(this.mobile){
               this.opsData = opsData;
@@ -3871,6 +3955,7 @@ export class OpPage implements OnInit {
             }
           }
         }).catch((err) => {
+          this.loading = false;
           this.ops = [];
           this.opsData = [];
           console.log(err)
