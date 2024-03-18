@@ -1,0 +1,7 @@
+{
+  "name": "FRNA",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
